@@ -1427,3 +1427,63 @@ td.rank-cell { width: 74px; }
 
 /* 首屏分片加载提示（全区全服榜前 2000 名先出，其余后台补） */
 .rest-hint { color: var(--warn); font-weight: 600; }
+
+/* ---------- 多服对比：勾选钮 + 底部操作栏 ---------- */
+.srv-pick {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  margin-left: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid rgba(196, 78, 98, 0.45);
+  color: var(--slate-dim);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.srv-pick:hover { border-color: var(--warn); color: var(--warn); background: rgba(200, 16, 46, 0.18); }
+.srv-pick.is-on {
+  background: linear-gradient(140deg, #ff2e4d, #a3071c);
+  border-color: transparent;
+  color: #fff;
+  font-weight: 700;
+}
+.srv-item.is-picked { background: rgba(200, 16, 46, 0.12); }
+.srv-item.is-picked .srv-item-name { color: var(--gold-bright); }
+.srv-item.is-picked.is-active { background: linear-gradient(140deg, rgba(255, 46, 77, 0.32), rgba(109, 7, 24, 0.32)); }
+.srv-item.is-picked.is-active .srv-item-name { color: #fff; }
+
+.srv-cmp-bar {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px -4px -4px;
+  padding: 8px 10px;
+  border-top: 1px solid rgba(196, 78, 98, 0.25);
+  background: linear-gradient(180deg, rgba(20, 8, 12, 0.86), rgba(12, 5, 8, 0.98));
+  backdrop-filter: blur(6px);
+}
+.srv-cmp-hint { flex: 1; font-size: 11px; color: var(--slate-dim); }
+.srv-cmp-btn {
+  flex: 0 0 auto;
+  padding: 6px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(140deg, #ff2e4d, #a3071c);
+  color: #fff;
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.srv-cmp-btn[disabled] { background: rgba(120, 90, 96, 0.35); color: var(--slate-dim); cursor: default; }
+.srv-cmp-btn:not([disabled]):hover { filter: brightness(1.12); }
+.pod-tag.pod-sv { color: var(--gold-bright); border-color: rgba(214, 168, 88, 0.4); }
