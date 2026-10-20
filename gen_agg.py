@@ -26,7 +26,7 @@ import os
 import re
 import sys
 
-PUBLISH_DIR = os.environ.get('RANK_OUT') or '/root/.codebuddy/artifact/2f8a7d30-9c21-4f0b-1d4b-adc287da0000/publish'
+PUBLISH_DIR = '/root/.codebuddy/artifact/2f8a7d30-9c21-4f0b-1d4b-adc287da0000/publish'
 
 # 与 update.py 保持一致：这些大区不参与任何榜单（含全区全服）
 EXCLUDE_REGIONS = {'天下无双'}
@@ -181,14 +181,28 @@ def build(pub_dir):
              'window.__AGG_META', meta)
     stats.append(('agg-meta', 0, 0, n))
 
-    # 全区全服
+    # 全区全服：拆成「首屏」+「其余」两段。
+    # 国内访问 GitHub Pages 只有 20~60 KB/s，整包 2.7 MB 要 40 秒才出首屏；
+    # 首屏只放前 HEAD_ROLES 名 / HEAD_GUILDS 个帮派，其余后台静默加载。
+    HEAD_ROLES, HEAD_GUILDS = 2000, 300
     n = dump(os.path.join(data_dir, 'agg-all.js'), 'window.__AGG_ALL', {
         'label': '全区全服',
         'kind': 'all',
-        'roles': all_roles,
-        'guilds': all_guilds,
+        'partial': 1 if len(all_roles) > HEAD_ROLES or len(all_guilds) > HEAD_GUILDS else 0,
+        'totalRoles': len(all_roles),
+        'totalGuilds': len(all_guilds),
+        'roles': all_roles[:HEAD_ROLES],
+        'guilds': all_guilds[:HEAD_GUILDS],
     })
-    stats.append(('全区全服', len(all_roles), len(all_guilds), n))
+    stats.append(('全区全服(首屏)', min(len(all_roles), HEAD_ROLES),
+                  min(len(all_guilds), HEAD_GUILDS), n))
+
+    n_rest = dump(os.path.join(data_dir, 'agg-all-rest.js'), 'window.__AGG_ALL_REST', {
+        'roles': all_roles[HEAD_ROLES:],
+        'guilds': all_guilds[HEAD_GUILDS:],
+    })
+    stats.append(('全区全服(其余)', max(0, len(all_roles) - HEAD_ROLES),
+                  max(0, len(all_guilds) - HEAD_GUILDS), n_rest))
 
     # 各大区
     for region, reg in sorted(by_region.items(), key=lambda x: -len(x[1]['roles'])):
@@ -208,7 +222,7 @@ def build(pub_dir):
         stats.append((region, len(reg['roles']), len(reg['guilds']), n))
 
     # 可选：清理旧的聚合文件
-    keep = {'agg-meta.js', 'agg-all.js'} | {'agg-r-%s.js' % s[:2] for s in srv_ids}
+    keep = {'agg-meta.js', 'agg-all.js', 'agg-all-rest.js'} | {'agg-r-%s.js' % s[:2] for s in srv_ids}
     for f in glob.glob(os.path.join(data_dir, 'agg-*.js')):
         if os.path.basename(f) not in keep:
             os.remove(f)
