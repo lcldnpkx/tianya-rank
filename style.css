@@ -1424,3 +1424,6 @@ td.rank-cell { width: 74px; }
   transition: all 0.18s ease;
 }
 .gd-more-btn:hover { border-color: rgba(255, 46, 77, 0.45); color: var(--ink); background: rgba(200, 16, 46, 0.1); }
+
+/* 首屏分片加载提示（全区全服榜前 2000 名先出，其余后台补） */
+.rest-hint { color: var(--warn); font-weight: 600; }
