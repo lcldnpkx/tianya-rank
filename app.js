@@ -374,7 +374,10 @@
     var unit = isPower ? '名角色' : '个帮派';
     var extra = '';
     if (isPower && (state.menpai || state.guild || state.tier || state.q)) extra = '（已筛选）';
-    $('resultLine').innerHTML = '共 <b>' + total + '</b> ' + unit + extra +
+    // 首屏只载入前 N 名时如实说明，避免用户以为榜单只有这么点人
+    var loadingHint = (DB && DB.partial && isPower)
+      ? ' · <span class="rest-hint">前 ' + fmt(DB.roles.length) + ' 名已就绪，完整榜单载入中…</span>' : '';
+    $('resultLine').innerHTML = '共 <b>' + total + '</b> ' + unit + extra + loadingHint +
       (total ? ' · 当前显示第 ' + (start + 1) + '–' + (start + shown) + ' 条' : '');
   }
 
@@ -1404,8 +1407,31 @@
       region: raw.kind === 'all' ? '全区' : raw.label,
       snapshot: (AGG_META && AGG_META.snapshot) || '',
       roles: roles,
-      guilds: guilds
+      guilds: guilds,
+      partial: raw.partial || 0,          // 1 = 只载入了首屏，其余还在后台拉
+      totalRoles: raw.totalRoles || roles.length,
+      totalGuilds: raw.totalGuilds || guilds.length
     };
+  }
+
+  // 全区全服首屏只有前 2000 名；其余在后台静默接着拉，拉完原地合并重绘。
+  var REST_PENDING = {};
+  function prefetchAggRest(id, data) {
+    if (!data || !data.partial || REST_PENDING[id]) return;
+    REST_PENDING[id] = true;
+    loadScript('data/agg-all-rest.js').then(function () {
+      var raw = window.__AGG_ALL_REST;
+      if (!raw) return;
+      var more = decodeAgg({ label: data.label, kind: data.kind, roles: raw.roles || [], guilds: raw.guilds || [] });
+      data.roles = data.roles.concat(more.roles);
+      data.guilds = data.guilds.concat(more.guilds);
+      data.partial = 0;
+      if (state.view === id && DB === data) {
+        ROLES = data.roles;                 // 数组已被替换，必须同步引用
+        GUILDS = data.guilds.slice();
+        refresh();
+      }
+    }, function () { /* 拉不到就保持首屏，不影响使用 */ });
   }
 
   function loadView(id) {
@@ -1427,6 +1453,7 @@
         var raw = window[vname];
         if (!raw) throw new Error('聚合数据为空');
         AGG_CACHE[id] = decodeAgg(raw);
+        prefetchAggRest(id, AGG_CACHE[id]);
         return AGG_CACHE[id];
       });
     });
