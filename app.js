@@ -141,11 +141,14 @@
       var pos = i + 1;
       var power = powerHtml(r);
       var guild = r.g ? esc(r.g) : (r.gh ? '帮派隐藏' : '无帮派');
+      // 跨服视图（全区 / 大区 / 多服对比）要标出服务器，否则看不出是哪个服的人
+      var svTag = (IS_AGG && r.sv) ? '<span class="pod-tag pod-sv">' + esc(r.sv) + '</span>' : '';
       return '<li class="pod" data-pos="' + pos + '" data-idx="' + r._i + '">' +
         '<div class="pod-crown">TOP ' + pos + '</div>' +
         '<div class="pod-rank">' + pos + '</div>' +
         '<p class="pod-name' + (r.nh ? ' is-hidden' : '') + '">' + esc(r.n) + '</p>' +
         '<div class="pod-meta">' +
+          svTag +
           '<span class="pod-tag">' + esc(r.m) + '</span>' +
           '<span class="pod-tag">' + guild + '</span>' +
         '</div>' +
@@ -1157,6 +1160,26 @@
       toggleServerMenu();
     });
     $('srvMenu').addEventListener('click', function (e) {
+      // 勾选对比（不关闭菜单，方便连点两个服）
+      var pk = e.target.closest('.srv-pick');
+      if (pk) {
+        e.preventDefault();
+        e.stopPropagation();
+        togglePick(pk.getAttribute('data-pick'));
+        renderServerPicker();
+        markCurrentServer();
+        return;
+      }
+      // 开始对比
+      var cb = e.target.closest('[data-cmp]');
+      if (cb) {
+        e.preventDefault();
+        if (PICK.length >= 2) {
+          toggleServerMenu(false);
+          startCompare();
+        }
+        return;
+      }
       var b = e.target.closest('.srv-item');
       if (!b) return;
       toggleServerMenu(false);
@@ -1372,6 +1395,95 @@
     return null;
   }
 
+  /* ---------- 多服对比 ---------- */
+  // 在下拉列表里勾 2~4 个服，合成一个临时榜单：功力统一排序、行内标服务器。
+  var PICK = [];
+  var CMP_MAX = 4;
+
+  function savePick() {
+    try { localStorage.setItem('pick', JSON.stringify(PICK)); } catch (e) {}
+  }
+
+  function loadPick() {
+    try {
+      var raw = JSON.parse(localStorage.getItem('pick') || '[]');
+      if (Object.prototype.toString.call(raw) !== '[object Array]') return;
+      PICK = raw.filter(function (id) {
+        var v = viewById(id);
+        return v && v.kind === 'srv';
+      }).slice(0, CMP_MAX);
+    } catch (e) { PICK = []; }
+  }
+
+  function loadServerData(id) {
+    var c = store()[id];
+    if (c) return Promise.resolve(c);
+    return loadScript('data/s-' + id + '.js').then(function () { return store()[id] || null; });
+  }
+
+  function togglePick(id) {
+    var i = PICK.indexOf(id);
+    if (i >= 0) PICK.splice(i, 1);
+    else if (PICK.length >= CMP_MAX) return false;
+    else PICK.push(id);
+    savePick();
+    return true;
+  }
+
+  function buildCompareView(ids) {
+    return Promise.all(ids.map(loadServerData)).then(function (list) {
+      var roles = [], guilds = [], names = [], snap = '';
+      list.forEach(function (d, i) {
+        if (!d) return;
+        var sid = ids[i];
+        names.push(d.server);
+        snap = snap || d.snapshot || '';
+        (d.roles || []).forEach(function (r) {
+          var o = {};
+          for (var k in r) if (Object.prototype.hasOwnProperty.call(r, k)) o[k] = r[k];
+          o.rid = sid;
+          o.sv = d.server;
+          roles.push(o);
+        });
+        (d.guilds || []).forEach(function (g) {
+          var o = {};
+          for (var k in g) if (Object.prototype.hasOwnProperty.call(g, k)) o[k] = g[k];
+          o.rid = sid;
+          o.sv = d.server;
+          guilds.push(o);
+        });
+      });
+      var pv = function (r) { return (r.p !== null && r.p !== undefined) ? r.p : (r.pe || 0); };
+      roles.sort(function (a, b) { return pv(b) - pv(a) || (a.r || 0) - (b.r || 0); });
+      roles.forEach(function (r, i) { r.r = i + 1; });      // 合并后名次重排
+      guilds.sort(function (a, b) { return (guildPower(b) || 0) - (guildPower(a) || 0); });
+      return {
+        label: names.join(' + '),
+        kind: 'agg',
+        aggKind: 'cmp',
+        cmp: 1,
+        server: names.join(' + '),
+        region: '多服对比',
+        snapshot: snap,
+        roles: roles,
+        guilds: guilds,
+        partial: 0,
+        totalRoles: roles.length,
+        totalGuilds: guilds.length
+      };
+    });
+  }
+
+  function startCompare() {
+    if (PICK.length < 2) return;
+    var v = viewById('cmp');
+    if (!v) {
+      v = { id: 'cmp', kind: 'agg', cmp: 1, region: '', label: '', short: '对比', n: 0 };
+      VIEWS.splice(1, 0, v);        // 排在「全区全服」之后
+    }
+    switchView('cmp');
+  }
+
   function loadAggMeta() {
     if (AGG_META) return Promise.resolve(AGG_META);
     return loadScript('data/agg-meta.js').then(function () {
@@ -1437,6 +1549,13 @@
   function loadView(id) {
     var v = viewById(id);
     if (!v) return Promise.reject(new Error('未知的视图'));
+    if (v.cmp) {
+      return buildCompareView(PICK.slice()).then(function (d) {
+        var vv = viewById('cmp');
+        if (vv) { vv.label = d.label; vv.n = d.roles.length; }
+        return d;
+      });
+    }
     if (v.kind === 'srv') {
       var c = store()[id];
       if (c) return Promise.resolve(c);
@@ -1473,14 +1592,16 @@
     var v = viewById(state.view) || { label: '—', short: '—', kind: 'srv', region: '', id: '' };
     var snap = (DB && DB.snapshot) || META.snapshot || '—';
     var isAgg = v.kind === 'agg';
+    var isCmp = !!v.cmp;
     $('snapshotLine').innerHTML = '快照 <b>' + esc(snap) + '</b> · 全服 <b>' + fmt(META.total || 0) +
       '</b> 名角色 · <b>' + (META.servers || 0) + '</b> 个服务器';
-    $('heroEyebrow').textContent = (isAgg ? (v.id === 'all' ? '全区全服' : '大区榜') : v.region) +
+    $('heroEyebrow').textContent = (isCmp ? '多服对比'
+      : (isAgg ? (v.id === 'all' ? '全区全服' : '大区榜') : v.region)) +
       ' · ' + v.label + ' · ' + snap + ' 快照';
-    $('btMain').textContent = isAgg
-      ? (v.id === 'all' ? '全区全服功力榜' : v.label + '大区榜')
-      : v.label + ' 功力榜';
-    $('srvName').textContent = v.short;
+    $('btMain').textContent = isCmp ? '多服对比榜'
+      : (isAgg ? (v.id === 'all' ? '全区全服功力榜' : v.label + '大区榜')
+               : v.label + ' 功力榜');
+    $('srvName').textContent = isCmp ? '对比' : v.short;
     $('footSnap').textContent = '快照日期 ' + snap;
     var rm = $('riteMeta');
     if (rm) rm.textContent = (META.regions || 0) + ' 大区 ' + (META.servers || 0) + ' 服';
@@ -1512,7 +1633,7 @@
       state.sort = state.board === 'power' ? 'rank' : 'ov';
       $('q').value = '';
       $('findClear').hidden = true;
-      try { localStorage.setItem('view', id); } catch (e) {}
+      try { localStorage.setItem('view', v.cmp ? '' : id); } catch (e) {}
 
       renderHeader();
       renderStats();
@@ -1533,6 +1654,7 @@
     var html = '';
     var lastRegion = undefined;
     VIEWS.forEach(function (v) {
+      if (v.cmp) return;                       // 「对比」不是可选的目标，由勾选生成
       var isRegionHead = (v.kind === 'agg' && v.id !== 'all');
       if (v.region !== lastRegion) {
         if (lastRegion !== undefined) html += '</div>';
@@ -1540,14 +1662,30 @@
           (v.region ? '<div class="srv-group-title">' + esc(v.region) + '</div>' : '');
         lastRegion = v.region;
       }
-      var cls = 'srv-item' + (v.kind === 'agg' ? ' is-agg' : '');
+      var picked = PICK.indexOf(v.id) >= 0;
+      var cls = 'srv-item' + (v.kind === 'agg' ? ' is-agg' : '') + (picked ? ' is-picked' : '');
       var tag = v.id === 'all' ? '<span class="srv-tag">全部</span>'
               : (isRegionHead && !/大区$/.test(v.short) ? '<span class="srv-tag">大区</span>' : '');
+      // 单服右侧给一个勾选钮，用来多选对比
+      var pick = v.kind === 'srv'
+        ? '<span class="srv-pick' + (picked ? ' is-on' : '') + '" data-pick="' + esc(v.id) + '"' +
+          ' role="checkbox" aria-checked="' + picked + '" title="加入对比">' + (picked ? '✓' : '+') + '</span>'
+        : '';
       html += '<button type="button" class="' + cls + '" role="option" data-srv="' + esc(v.id) + '">' +
         '<span class="srv-item-name">' + esc(v.kind === 'agg' ? v.short : v.label) + tag + '</span>' +
+        pick +
         '<span class="srv-item-n">' + fmt(v.n) + '</span></button>';
     });
     if (lastRegion !== undefined) html += '</div>';
+
+    // 底部对比操作栏
+    var hint = PICK.length >= 2 ? '已选 ' + PICK.length + ' 个服'
+             : (PICK.length === 1 ? '再选 1 个服就能对比' : '点右侧 + 可多选对比（2~' + CMP_MAX + ' 个）');
+    html += '<div class="srv-cmp-bar">' +
+      '<span class="srv-cmp-hint">' + esc(hint) + '</span>' +
+      '<button type="button" class="srv-cmp-btn" data-cmp="go"' + (PICK.length < 2 ? ' disabled' : '') + '>' +
+      (PICK.length >= 2 ? '开始对比' : '对比') + '</button></div>';
+
     $('srvMenu').innerHTML = html;
   }
 
@@ -1572,6 +1710,7 @@
       return;
     }
     VIEWS = buildViews();
+    loadPick();
     renderServerPicker();
     renderHeader();
     bind();
