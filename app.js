@@ -1481,6 +1481,10 @@
       v = { id: 'cmp', kind: 'agg', cmp: 1, region: '', label: '', short: '对比', n: 0 };
       VIEWS.splice(1, 0, v);        // 排在「全区全服」之后
     }
+    // 先把名字填上，载入提示才是「正在合并 彼岸花 + 千秋月…」而不是空白
+    var names = PICK.map(function (id) { return SRV_NAME[id] || id; });
+    v.label = names.join(' + ');
+    v.short = names.length > 2 ? (names.length + ' 服') : names.join('/');
     switchView('cmp');
   }
 
@@ -1615,7 +1619,9 @@
     opts = opts || {};
     var v = viewById(id);
     if (!v) return;
-    setBusy(true, '正在载入 ' + v.label + ' 的数据…');
+    setBusy(true, v.cmp
+      ? ('正在合并 ' + (v.label || (PICK.length + ' 个服')) + ' 的数据…（首次需下载这几个服的完整数据）')
+      : ('正在载入 ' + v.label + ' 的数据…'));
     loadView(id).then(function (d) {
       DB = d;
       ROLES = d.roles || [];
