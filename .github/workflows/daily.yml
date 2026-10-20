@@ -5,6 +5,11 @@ on:
     # 05:00 UTC = 北京时间 13:00。GitHub 定时任务可能延迟 5~30 分钟，属正常。
     - cron: '0 5 * * *'
   workflow_dispatch:      # 也支持在网页上手动点一下立刻跑
+    inputs:
+      skip_curves:
+        description: '快速模式：跳过成长曲线（约 5 分钟上线，曲线留空）'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -18,7 +23,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 50
+    # 海外机器抓 2.6 万条角色曲线比国内慢很多，留足 3 小时
+    timeout-minutes: 180
     steps:
       - uses: actions/checkout@v4
 
@@ -33,7 +39,14 @@ jobs:
         env:
           RANK_OUT: public
           RANK_LOCAL: ''
-        run: python update.py
+          SKIP_CURVES: ${{ inputs.skip_curves }}
+        run: |
+          if [ "$SKIP_CURVES" = "true" ]; then
+            echo "快速模式：跳过角色成长曲线与帮派详情"
+            python update.py --no-hist --no-gd
+          else
+            python update.py
+          fi
 
       - name: 校验产物
         run: |
