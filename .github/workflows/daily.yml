@@ -1,0 +1,61 @@
+name: 每日同步功力榜
+
+on:
+  schedule:
+    # 05:00 UTC = 北京时间 13:00。GitHub 定时任务可能延迟 5~30 分钟，属正常。
+    - cron: '0 5 * * *'
+  workflow_dispatch:      # 也支持在网页上手动点一下立刻跑
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 生成页面模板（内联样式与脚本）
+        run: python build_template.py
+
+      - name: 抓取数据并重建榜单
+        env:
+          RANK_OUT: public
+          RANK_LOCAL: ''
+        run: python update.py
+
+      - name: 校验产物
+        run: |
+          test -f public/index.html || { echo "缺少 index.html"; exit 1; }
+          test -f public/data/servers.js || { echo "缺少 servers.js"; exit 1; }
+          test -f public/data/agg-all.js || { echo "缺少聚合数据"; exit 1; }
+          grep -o '"total":[0-9]*' public/data/servers.js | head -1
+          du -sh public
+          touch public/.nojekyll
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
