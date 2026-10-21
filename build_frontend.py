@@ -66,6 +66,11 @@ def main():
     tpl = open('template.html', encoding='utf-8').read().replace('__DATA_VER__', snap)
     with open(os.path.join(OUT, 'index.html'), 'w', encoding='utf-8') as f:
         f.write(tpl)
+    # 静态页：rank.html 与 index.html 内容相同（老链接兼容），home.html 为导航首页
+    import shutil
+    shutil.copyfile(os.path.join(OUT, 'index.html'), os.path.join(OUT, 'rank.html'))
+    if os.path.exists('home.html'):
+        shutil.copyfile('home.html', os.path.join(OUT, 'home.html'))
     print('前端重建完成，页面版本号 %s' % snap)
 
 
