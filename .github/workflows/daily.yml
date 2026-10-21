@@ -2,8 +2,8 @@ name: 每日同步功力榜
 
 on:
   schedule:
-    # 01:00 UTC = 北京时间 09:00。GitHub 定时任务可能延迟 5~30 分钟，属正常。
-    - cron: '0 1 * * *'
+    # 03:00 UTC = 北京时间 11:00。GitHub 定时任务可能延迟 5~30 分钟，属正常。
+    - cron: '0 3 * * *'
   workflow_dispatch:      # 也支持在网页上手动点一下立刻跑
     inputs:
       frontend_only:
