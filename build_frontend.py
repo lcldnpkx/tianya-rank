@@ -72,6 +72,12 @@ def main():
     if os.path.exists('home.html'):
         shutil.copyfile('home.html', os.path.join(OUT, 'index.html'))
         shutil.copyfile('home.html', os.path.join(OUT, 'home.html'))
+    # 工具页（染色计算器等）整目录搬过去
+    if os.path.isdir('tools'):
+        dst = os.path.join(OUT, 'tools')
+        if os.path.isdir(dst):
+            shutil.rmtree(dst)
+        shutil.copytree('tools', dst)
     print('前端重建完成，榜单 rank.html / 首页 index.html，版本号 %s' % snap)
 
 
