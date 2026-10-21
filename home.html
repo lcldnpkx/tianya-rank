@@ -166,6 +166,11 @@ body{
   background:rgba(107,83,32,.9);
   border:2px solid rgba(255,221,149,.55);
 }
+.gl-card__badge--wip{
+  color:#c9d8e8;
+  background:rgba(20,45,75,.9);
+  border-color:rgba(150,185,220,.45);
+}
 
 /* ---------- 页脚 ---------- */
 .gl-foot{
@@ -254,50 +259,64 @@ var CARDS = [
     title: '全服排行榜',
     sub: '全区全服 · 功力 · 帮派',
     img: ICON + '/uploads/20261002-212736c4e3413490.jpg',
-    href: './rank.html',            // 自己的榜单页
+    href: './rank.html',
     self: true
-  },
-  {
-    title: '衍心模拟器',
-    sub: '18 万一本能买我命了',
-    img: ICON + '/uploads/20261002-1d97c8eb5b627032.jpg',
-    href: 'https://www.qquu.chat/xinfa'
-  },
-  {
-    title: '天刀图鉴',
-    sub: '神兵 · 外观',
-    img: ICON + '/uploads/20261002-e68354894a5d04e8.jpg',
-    href: 'https://www.qquu.chat/archive'
-  },
-  {
-    title: '精彩活动（官方）',
-    sub: '腾讯官方活动页',
-    img: ICON + '/uploads/20261002-b0b83d56165ee291.jpg',
-    href: 'https://wuxia.qq.com/cp/a20230309_98549/index.html'
-  },
-  {
-    title: '文心鉴定模拟器',
-    sub: '文心玩法模拟',
-    img: ICON + '/uploads/20261002-dbc0f8024e8cbe97.jpg',
-    href: 'https://www.qquu.chat/wenxin'
-  },
-  {
-    title: '灵势消耗计算器',
-    sub: '灵势升级材料估算',
-    img: ICON + '/uploads/20261002-c0b4a1936c869616.jpg',
-    href: 'https://www.qquu.chat/lingshi'
   },
   {
     title: '染色档位计算器',
     sub: '可复制记录码 / 多端记录',
     img: ICON + '/uploads/20261002-3ca62d80b9e67497.jpg',
-    href: 'https://www.qquu.chat/dye/'
+    href: './tools/dye.html',
+    self: true,
+    ready: true
+  },
+  {
+    title: '衍心模拟器',
+    sub: '心法配置与衍心演算',
+    img: ICON + '/uploads/20261002-1d97c8eb5b627032.jpg',
+    href: './tools/soon.html?t=xinfa',
+    self: true,
+    building: true
+  },
+  {
+    title: '天刀图鉴',
+    sub: '神兵 · 外观',
+    img: ICON + '/uploads/20261002-e68354894a5d04e8.jpg',
+    href: './tools/soon.html?t=archive',
+    self: true,
+    building: true
+  },
+  {
+    title: '文心鉴定模拟器',
+    sub: '镇派武学鉴定',
+    img: ICON + '/uploads/20261002-dbc0f8024e8cbe97.jpg',
+    href: './tools/soon.html?t=wenxin',
+    self: true,
+    building: true
+  },
+  {
+    title: '灵势消耗计算器',
+    sub: '升级材料估算',
+    img: ICON + '/uploads/20261002-c0b4a1936c869616.jpg',
+    href: './tools/soon.html?t=lingshi',
+    self: true,
+    building: true
   },
   {
     title: '砭石宝箱模拟器',
     sub: '开箱概率模拟',
     img: ICON + '/uploads/20261021-e7854ff0d37893d9.png',
-    href: 'https://www.qquu.chat/stone'
+    href: './tools/soon.html?t=stone',
+    self: true,
+    building: true
+  },
+  {
+    title: '精彩活动（官方）',
+    sub: '腾讯官方活动页',
+    img: ICON + '/uploads/20261002-b0b83d56165ee291.jpg',
+    href: './tools/soon.html?t=official',
+    self: true,
+    building: true
   },
   {
     title: '超精彩活动模拟器',
@@ -339,6 +358,7 @@ function build() {
       (c.sub ? '<span class="gl-card__subtitle">' + esc(c.sub) + '</span>' : '') +
       '<span class="gl-card__title">' + esc(c.title) + '</span>' +
       (c.soon ? '<span class="gl-card__badge">待开放</span>' : '') +
+      (c.building ? '<span class="gl-card__badge gl-card__badge--wip">建设中</span>' : '') +
       '<img class="gl-card__layer gl-card__arrow" ' +
         'src="' + ICON + '/assets/icons/icon-arrow-right-white-2x.png" alt="" ' +
         'width="128" height="128" loading="lazy" decoding="async" />' +
