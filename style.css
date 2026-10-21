@@ -123,6 +123,33 @@ body::before {
   border-bottom: 1px solid var(--line);
 }
 
+/* 返回大厅 */
+.nav-hall {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  padding: 6px 10px 6px 6px;
+  margin-right: -4px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--slate);
+  font-size: 13px;
+  text-decoration: none;
+  transition: color 0.16s, border-color 0.16s, background 0.16s;
+}
+.nav-hall:hover {
+  color: var(--gold-bright);
+  border-color: rgba(227, 181, 86, 0.45);
+  background: rgba(227, 181, 86, 0.08);
+}
+.nav-hall:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+.nav-hall-text { letter-spacing: 0.02em; }
+
 .origin {
   display: inline-flex;
   align-items: center;
@@ -940,6 +967,8 @@ td.rank-cell { width: 74px; }
 /* ============ 响应式 ============ */
 @media (max-width: 860px) {
   .masthead { flex-wrap: wrap; gap: 10px; }
+  .nav-hall { padding: 6px 8px; }
+  .nav-hall-text { display: none; }
   .snapshot { width: 100%; margin: 0; order: 3; }
   .podium { grid-template-columns: 1fr; gap: 12px; }
   .pod[data-pos="1"] { order: -1; }
