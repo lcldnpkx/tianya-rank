@@ -3,7 +3,7 @@
 """
 从源文件构建 template.html
 ==========================
-把 index.html 的骨架 + style.css + app.js 合成一份「内联样式与逻辑、只留数据占位符」的模板，
+把 rank.html（榜单页骨架） + style.css + app.js 合成一份「内联样式与逻辑、只留数据占位符」的模板，
 供 update.py 每次填充最新数据使用。
 
 用法：python3 build_template.py
@@ -21,20 +21,20 @@ def read(name):
 
 
 def main():
-    html = read('index.html')
+    html = read('rank.html')
     css = read('style.css')
     app = read('app.js')
 
     # 1) CSS 内联
     link_tag = '<link rel="stylesheet" href="./style.css" />'
     if link_tag not in html:
-        raise SystemExit('index.html 中未找到 CSS 引用标签')
+        raise SystemExit('rank.html 中未找到 CSS 引用标签')
     html = html.replace(link_tag, '<style>\n' + css + '\n</style>')
 
     # 2) 数据脚本位 + app.js 内联
     m = re.search(r'<script src="\./data/servers\.js[^"]*"></script>\s*<script src="\./app\.js" defer></script>', html)
     if not m:
-        raise SystemExit('index.html 中未找到脚本引用标签')
+        raise SystemExit('rank.html 中未找到脚本引用标签')
     # servers.js 保持外链（数据清单，每日更新，带 ?v= 破缓存）；app.js 内联
     srv_tag = re.search(r'<script src="\./data/servers\.js[^"]*"></script>', html).group(0)
     new_scripts = srv_tag + '\n<script>\n' + app + '\n</script>'
