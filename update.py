@@ -7,7 +7,8 @@
 按服务器拆分为多个数据文件，供主页面按需加载。
 
 产物：
-  publish/index.html          主页面（骨架，不含数据）
+  publish/rank.html           榜单页（骨架，不含数据）
+  publish/index.html          导航首页（home.html 副本）
   publish/data/servers.js     服务器清单 + 全局日期表
   publish/data/s-<id>.js      各服务器数据
 
@@ -658,7 +659,14 @@ def main():
         tpl = open(TEMPLATE, encoding='utf-8').read()
         # 快照日期写进 data/*.js 的 ?v=，每天换 URL，避免浏览器/边缘缓存住旧榜单
         tpl = tpl.replace('__DATA_VER__', snapshot or str(int(time.time())))
-        write_file(os.path.join(PUBLISH_DIR, 'index.html'), tpl)
+        # 榜单页 -> rank.html
+        write_file(os.path.join(PUBLISH_DIR, 'rank.html'), tpl)
+        # 导航首页 -> index.html（根路径即大厅），同时保留 home.html 别名
+        import shutil as _shutil
+        _home = os.path.join(BASE, 'home.html')
+        if os.path.exists(_home):
+            _shutil.copyfile(_home, os.path.join(PUBLISH_DIR, 'index.html'))
+            _shutil.copyfile(_home, os.path.join(PUBLISH_DIR, 'home.html'))
         if OUT_LOCAL:
             write_file(OUT_LOCAL, tpl)
 
