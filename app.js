@@ -1611,7 +1611,7 @@
     if (rm) rm.textContent = (META.regions || 0) + ' 大区 ' + (META.servers || 0) + ' 服';
     var rc = $('riteCount');
     if (rc) rc.textContent = fmt(META.total || 0);
-    document.title = v.label + ' · 天刀全服功力榜 — 曼珠沙华数据库';
+    document.title = v.label + ' · 天刀全服功力榜 — CY';
     document.body.classList.toggle('view-agg', isAgg);
   }
 
