@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0a1b30" />
+<meta name="color-scheme" content="dark" />
+<title>染色消耗档位计算 · CY</title>
+<meta name="description" content="天涯明月刀 OL 染色道具消耗档位计算：填写累计消耗，自动算出当前档位与距离下一档的差额。" />
+<meta property="og:title" content="染色消耗档位计算 · CY" />
+<meta property="og:type" content="website" />
+<link rel="icon" href="../favicon.ico" sizes="any" />
+<style>
+:root{
+  --ink:#0a1b30;
+  --ink-2:#071322;
+  --panel:#0d2340;
+  --panel-2:#102a4a;
+  --line:#1d3d63;
+  --line-2:#23496f;
+  --gold:#ffdd95;
+  --gold-dim:#c9a961;
+  --fog:#f8fbff;
+  --mist:#bddaf1;
+  --dim:#7f9ab8;
+  --ok:#9fe6c2;
+  --sans:"PingFang SC","Microsoft YaHei",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  min-height:100vh;
+  color:var(--fog);
+  font-family:var(--sans);
+  background:
+    radial-gradient(120% 55% at 50% 0%, rgba(60,120,190,.16) 0%, transparent 60%),
+    linear-gradient(180deg,#071322 0%,#0a1b30 40%,#0c2137 100%);
+  background-attachment:fixed;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ---------- 顶栏 ---------- */
+.topbar{
+  position:sticky;top:0;z-index:30;
+  display:flex;align-items:center;gap:10px;
+  padding:10px clamp(12px,3vw,28px);
+  background:rgba(7,19,34,.9);
+  backdrop-filter:blur(14px);
+  border-bottom:2px solid var(--line);
+}
+.topbar a.home{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:6px 11px 6px 7px;
+  border:2px solid var(--line-2);
+  border-radius:999px;
+  color:var(--mist);font-size:13px;text-decoration:none;
+  transition:color .14s,border-color .14s,background .14s;
+  flex-shrink:0;
+}
+.topbar a.home:hover{color:var(--gold);border-color:rgba(255,221,149,.5);background:rgba(255,221,149,.07)}
+.topbar a.home:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.topbar__brand{
+  display:flex;align-items:baseline;gap:8px;
+  margin-left:2px;min-width:0;
+}
+.topbar__brand b{
+  font-size:14px;letter-spacing:.1em;color:var(--gold);
+  white-space:nowrap;
+}
+.topbar__brand span{
+  font-size:12px;color:var(--dim);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.topbar__right{
+  margin-left:auto;font-size:11px;letter-spacing:.16em;
+  color:var(--dim);white-space:nowrap;
+}
+
+/* ---------- 主体 ---------- */
+.shell{
+  width:min(1080px,100%);
+  margin:0 auto;
+  padding:clamp(20px,4vw,40px) clamp(12px,3vw,24px) 80px;
+}
+.head{margin-bottom:22px}
+.head h1{
+  margin:0 0 8px;
+  font-size:clamp(21px,3.4vw,30px);
+  letter-spacing:.03em;
+  font-weight:700;
+}
+.head p{
+  margin:0;
+  font-size:13px;line-height:1.8;color:var(--mist);
+}
+
+/* 记录码工具条 */
+.rec{
+  display:flex;flex-wrap:wrap;gap:8px;align-items:center;
+  margin-top:16px;padding:12px;
+  background:rgba(13,35,64,.62);
+  border:2px solid var(--line);
+}
+.rec input{
+  flex:1 1 220px;min-width:0;
+  padding:8px 10px;
+  font-family:var(--mono);font-size:12px;
+  color:var(--fog);background:var(--ink-2);
+  border:2px solid var(--line-2);
+}
+.rec input:focus{outline:2px solid var(--gold);outline-offset:1px}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;
+  padding:8px 15px;
+  font-family:inherit;font-size:13px;line-height:1;
+  color:var(--mist);background:#12304f;
+  border:2px solid var(--line-2);
+  cursor:pointer;
+  transition:background .14s,border-color .14s,color .14s,transform .1s;
+  white-space:nowrap;
+}
+.btn:hover{background:#17406a;color:var(--fog)}
+.btn:active{transform:translateY(1px)}
+.btn:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.btn--gold{color:var(--gold);background:rgba(107,83,32,.55);border-color:rgba(255,221,149,.5)}
+.btn--gold:hover{background:rgba(107,83,32,.85);color:var(--gold)}
+.btn--ghost{background:transparent}
+.rec__status{
+  flex-basis:100%;
+  font-size:12px;color:var(--ok);
+  min-height:16px;
+}
+.rec__status.is-err{color:#ffb3c1}
+
+/* 分类导航 */
+.catnav{
+  display:flex;flex-wrap:wrap;gap:6px;
+  margin:20px 0 18px;
+  position:sticky;top:52px;z-index:20;
+  padding:8px 0;
+  background:linear-gradient(180deg,rgba(8,20,34,.96) 60%,rgba(8,20,34,0));
+}
+.catnav button{
+  padding:6px 12px;
+  font-family:inherit;font-size:12.5px;
+  color:var(--dim);background:rgba(13,35,64,.7);
+  border:2px solid var(--line);
+  cursor:pointer;
+  transition:color .14s,border-color .14s,background .14s;
+}
+.catnav button:hover{color:var(--mist);border-color:var(--line-2)}
+.catnav button.is-on{
+  color:var(--gold);border-color:rgba(255,221,149,.55);
+  background:rgba(107,83,32,.5);
+}
+.catnav button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+/* 分类段落 */
+.sec{margin-bottom:30px;scroll-margin-top:110px}
+.sec__head{
+  display:flex;align-items:center;gap:10px;
+  margin-bottom:12px;
+}
+.sec__head h2{
+  margin:0;font-size:15px;letter-spacing:.06em;color:var(--gold);
+  font-weight:600;
+}
+.sec__head em{
+  font-style:normal;font-size:10.5px;letter-spacing:.14em;color:var(--dim);
+}
+.sec__head i{
+  flex:1;height:2px;
+  background:linear-gradient(90deg,var(--line-2),transparent);
+}
+
+/* 道具卡 */
+.item{
+  display:grid;
+  grid-template-columns:44px minmax(0,1fr) auto;
+  gap:12px 14px;
+  align-items:center;
+  padding:14px;
+  margin-bottom:10px;
+  background:rgba(13,35,64,.55);
+  border:2px solid var(--line);
+  transition:border-color .16s,background .16s;
+}
+.item:focus-within{border-color:var(--line-2);background:rgba(16,42,74,.7)}
+.item__mark{
+  display:grid;place-items:center;
+  width:44px;height:44px;
+  font-size:17px;font-weight:700;
+  color:#0a1b30;
+  background:linear-gradient(150deg,var(--gold),var(--gold-dim));
+  border:2px solid rgba(255,255,255,.22);
+}
+.item__name{
+  font-size:14.5px;font-weight:600;letter-spacing:.02em;
+  margin-bottom:3px;
+}
+.item__desc{
+  font-size:12px;line-height:1.6;color:var(--dim);
+}
+.item__input{
+  display:flex;align-items:center;gap:6px;
+}
+.item__input input{
+  width:104px;
+  padding:8px 10px;
+  font-family:var(--mono);font-size:14px;
+  text-align:right;
+  color:var(--gold);
+  background:var(--ink-2);
+  border:2px solid var(--line-2);
+}
+.item__input input::-webkit-outer-spin-button,
+.item__input input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.item__input input[type=number]{-moz-appearance:textfield;appearance:textfield}
+.item__input input:focus{outline:2px solid var(--gold);outline-offset:1px;color:var(--gold)}
+.item__unit{font-size:11px;color:var(--dim)}
+
+/* 结果行 */
+.item__result{
+  grid-column:1 / -1;
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  padding-top:10px;
+  border-top:1px solid var(--line);
+}
+.tier{
+  display:inline-flex;align-items:center;justify-content:center;gap:5px;
+  min-width:76px;
+  padding:3px 9px;
+  font-size:11.5px;letter-spacing:.04em;
+  color:var(--ink);
+  background:linear-gradient(150deg,var(--gold),var(--gold-dim));
+  border:1px solid rgba(255,255,255,.25);
+  white-space:nowrap;
+}
+.tier--max{background:linear-gradient(150deg,#9fe6c2,#4fae86);color:#062018}
+.tier--zero{background:rgba(255,255,255,.1);color:var(--mist);border-color:rgba(255,255,255,.14)}
+.bar{
+  position:relative;flex:1 1 160px;min-width:110px;
+  height:8px;
+  background:var(--ink-2);
+  border:1px solid var(--line-2);
+  overflow:hidden;
+}
+.bar i{
+  position:absolute;inset:0 auto 0 0;
+  width:0;
+  background:linear-gradient(90deg,#c9a961,#ffdd95);
+  transition:width .3s ease;
+}
+.bar i.is-max{background:linear-gradient(90deg,#4fae86,#9fe6c2)}
+.remain{
+  font-size:12px;color:var(--mist);
+  white-space:nowrap;
+}
+.remain b{color:var(--gold);font-family:var(--mono);font-size:13px}
+.remain--max{color:var(--ok)}
+
+/* 页脚 */
+.foot{
+  display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;
+  margin-top:34px;padding-top:18px;
+  border-top:2px solid var(--line);
+  font-size:12px;color:var(--dim);
+}
+.foot .tiny{line-height:1.8}
+.foot a{color:var(--mist);text-decoration:none;border-bottom:1px dashed rgba(189,218,241,.3)}
+.foot a:hover{color:var(--gold);border-bottom-color:var(--gold)}
+
+/* 提示条 */
+.toast{
+  position:fixed;left:50%;bottom:36px;
+  transform:translate(-50%,20px);
+  padding:10px 20px;font-size:13px;
+  color:var(--gold);background:#10294a;
+  border:2px solid var(--gold);
+  opacity:0;pointer-events:none;
+  transition:opacity .2s,transform .2s;
+  z-index:90;
+}
+.toast.is-on{opacity:1;transform:translate(-50%,0)}
+
+/* 空状态 */
+.loading{
+  padding:40px 0;text-align:center;color:var(--dim);font-size:13px;
+}
+
+@media(max-width:640px){
+  .topbar__right{display:none}
+  .item{grid-template-columns:40px minmax(0,1fr);gap:10px}
+  .item__mark{width:40px;height:40px;font-size:15px}
+  .item__input{grid-column:1 / -1;justify-content:flex-end}
+  .item__input input{width:120px}
+  .catnav{top:50px}
+  .head h1{font-size:20px}
+}
+@media(prefers-reduced-motion:reduce){
+  .bar i{transition:none}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="home" href="../index.html" title="返回大厅" aria-label="返回大厅">
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+    大厅
+  </a>
+  <div class="topbar__brand">
+    <b>DYE ARCHIVE</b>
+    <span>/ 天刀染色消耗档位计算</span>
+  </div>
+  <div class="topbar__right">CY · DYE CONSUMPTION</div>
+</header>
+
+<main class="shell">
+
+  <section class="head">
+    <h1>染色消耗档位计算</h1>
+    <p>填你当前的累计消耗数量，自动算出所处档位、离下一档还差多少。数值只存在你自己的浏览器里。</p>
+
+    <div class="rec">
+      <button class="btn btn--gold" id="btnGen" type="button">生成记录码</button>
+      <input id="recCode" type="text" autocomplete="off" spellcheck="false" maxlength="4000" placeholder="粘贴记录码后点「应用」" aria-label="记录码" />
+      <button class="btn" id="btnApply" type="button">应用</button>
+      <button class="btn btn--ghost" id="btnClear" type="button">清空</button>
+      <div class="rec__status" id="recStatus" role="status" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <nav class="catnav" id="catnav" aria-label="道具分类"></nav>
+
+  <div id="sections">
+    <div class="loading">正在读取道具数据…</div>
+  </div>
+
+  <footer class="foot">
+    <div class="tiny">
+      数据来自游戏内染色档位门槛，共 <b id="cntItems">—</b> 个道具。<br />
+      本页为本地计算工具，不上传任何数据。
+    </div>
+    <div><a href="../index.html">← 返回大厅</a></div>
+  </footer>
+
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  var LS_AMT = 'cy:dye:amounts:v1';
+  var ONCE = { t: 0 };   // 防止重复绑定
+
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function fmt(n) {
+    if (n == null || !isFinite(n)) return '—';
+    return Number(n).toLocaleString('en-US');
+  }
+
+  var toastEl = $('#toast'), toastTimer = null;
+  function toast(msg, isErr) {
+    toastEl.textContent = msg;
+    toastEl.style.borderColor = isErr ? '#ff8fa3' : '';
+    toastEl.style.color = isErr ? '#ffb3c1' : '';
+    toastEl.classList.add('is-on');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toastEl.classList.remove('is-on'); }, 2400);
+  }
+
+  // ---------- 档位计算 ----------
+  // tiers: [{t: 档位, n: 门槛}]，已按 n 升序
+  function calc(tiers, amount) {
+    var x = isFinite(amount) ? Math.max(0, Math.floor(amount)) : 0;
+    var list = tiers.filter(function (t) { return isFinite(t.n); });
+    if (!list.length) {
+      return { state: 'none', label: '未配置', progress: 0, remain: 0, next: null };
+    }
+    var first = list[0], last = list[list.length - 1];
+
+    if (x < first.n) {
+      return {
+        state: 'below',
+        label: '未达 1 档',
+        progress: first.n > 0 ? Math.min(1, x / first.n) : 0,
+        remain: first.n - x,
+        next: first
+      };
+    }
+    var cur = list[0];
+    for (var i = 0; i < list.length; i++) {
+      if (list[i].n <= x) cur = list[i]; else break;
+    }
+    if (cur.n >= last.n) {
+      return { state: 'max', label: '第 ' + cur.t + ' 档 · 已满', progress: 1, remain: 0, next: null };
+    }
+    var nxt = null;
+    for (var j = 0; j < list.length; j++) {
+      if (list[j].n > x) { nxt = list[j]; break; }
+    }
+    return {
+      state: 'mid',
+      label: '第 ' + cur.t + ' 档',
+      progress: nxt ? Math.min(1, x / nxt.n) : 1,
+      remain: nxt ? nxt.n - x : 0,
+      next: nxt
+    };
+  }
+
+  // ---------- 状态 ----------
+  var DATA = null;
+  var amounts = {};   // name -> number
+
+  function loadAmounts() {
+    try {
+      var raw = localStorage.getItem(LS_AMT);
+      if (raw) {
+        var o = JSON.parse(raw);
+        if (o && typeof o === 'object') amounts = o;
+      }
+    } catch (e) { /* 隐私模式忽略 */ }
+  }
+  function saveAmounts() {
+    try { localStorage.setItem(LS_AMT, JSON.stringify(amounts)); } catch (e) {}
+  }
+
+  // ---------- 渲染 ----------
+  function render() {
+    var cats = DATA.categories.slice().sort(function (a, b) { return a.sort - b.sort; });
+    var byCat = {};
+    DATA.items.forEach(function (it) {
+      (byCat[it.cat] = byCat[it.cat] || []).push(it);
+    });
+
+    // 分类导航
+    var nav = $('#catnav');
+    nav.innerHTML = cats.map(function (c) {
+      var n = (byCat[c.slug] || []).length;
+      return '<button type="button" data-cat="' + esc(c.slug) + '">' +
+        esc(c.name) + ' <span style="opacity:.6">' + n + '</span></button>';
+    }).join('');
+
+    // 段落
+    var html = cats.map(function (c) {
+      var list = byCat[c.slug] || [];
+      if (!list.length) return '';
+      return '<section class="sec" id="sec-' + esc(c.slug) + '" data-cat="' + esc(c.slug) + '">' +
+        '<div class="sec__head"><h2>' + esc(c.name) + '</h2>' +
+        '<em>' + esc(c.en || '') + '</em><i></i></div>' +
+        list.map(function (it) {
+          var mark = it.name.slice(0, 1);
+          return '<article class="item" data-name="' + esc(it.name) + '">' +
+            '<div class="item__mark" aria-hidden="true">' + esc(mark) + '</div>' +
+            '<div>' +
+              '<div class="item__name">' + esc(it.name) + '</div>' +
+              '<div class="item__desc">' + esc(it.desc || (it.tiers.length + ' 个档位')) + '</div>' +
+            '</div>' +
+            '<div class="item__input">' +
+              '<input type="number" min="0" step="1" inputmode="numeric" ' +
+                'id="in-' + esc(it.name) + '" data-name="' + esc(it.name) + '" ' +
+                'placeholder="0" aria-label="' + esc(it.name) + ' 累计消耗" />' +
+              '<span class="item__unit">个</span>' +
+            '</div>' +
+            '<div class="item__result">' +
+              '<span class="tier tier--zero" data-role="tier">未填写</span>' +
+              '<div class="bar"><i data-role="bar"></i></div>' +
+              '<span class="remain" data-role="remain">—</span>' +
+            '</div>' +
+          '</article>';
+        }).join('') +
+      '</section>';
+    }).join('');
+
+    $('#sections').innerHTML = html;
+    $('#cntItems').textContent = DATA.items.length;
+
+    // 绑定输入
+    $$('.item__input input').forEach(function (inp) {
+      var name = inp.getAttribute('data-name');
+      if (amounts[name] != null) inp.value = amounts[name];
+      inp.addEventListener('input', function () {
+        var v = inp.value === '' ? null : Math.max(0, Math.floor(Number(inp.value) || 0));
+        if (v == null) delete amounts[name]; else amounts[name] = v;
+        saveAmounts();
+        updateItem(name);
+      });
+      updateItem(name);
+    });
+
+    // 分类跳转
+    $$('#catnav button').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var slug = b.getAttribute('data-cat');
+        var sec = $('#sec-' + slug);
+        if (sec) sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+  }
+
+  function updateItem(name) {
+    var it = DATA.items.filter(function (x) { return x.name === name; })[0];
+    if (!it) return;
+    var card = $('.item[data-name="' + cssEsc(name) + '"]');
+    if (!card) return;
+    var inp = card.querySelector('input');
+    var hasVal = inp.value !== '' && amounts[name] != null;
+    var r = calc(it.tiers, hasVal ? amounts[name] : 0);
+
+    var tierEl = card.querySelector('[data-role=tier]');
+    var barEl = card.querySelector('[data-role=bar]');
+    var remEl = card.querySelector('[data-role=remain]');
+
+    if (!hasVal) {
+      tierEl.className = 'tier tier--zero';
+      tierEl.textContent = '未填写';
+      barEl.style.width = '0%';
+      barEl.className = '';
+      remEl.className = 'remain';
+      remEl.textContent = '填数量后自动算';
+      return;
+    }
+
+    tierEl.className = 'tier' + (r.state === 'max' ? ' tier--max' : (r.state === 'below' ? ' tier--zero' : ''));
+    tierEl.textContent = r.label;
+    barEl.style.width = Math.round(r.progress * 100) + '%';
+    barEl.className = r.state === 'max' ? 'is-max' : '';
+
+    if (r.state === 'max') {
+      remEl.className = 'remain remain--max';
+      remEl.textContent = '已达最高档';
+    } else {
+      remEl.className = 'remain';
+      remEl.innerHTML = '距 ' + (r.next ? ('第 ' + r.next.t + ' 档（' + fmt(r.next.n) + '）') : '下一档') +
+        ' 还差 <b>' + fmt(r.remain) + '</b>';
+    }
+  }
+
+  function cssEsc(s) {
+    return String(s).replace(/["\\]/g, '\\$&');
+  }
+
+  // ---------- 记录码 ----------
+  function b64encode(str) {
+    // 处理中文：先转 UTF-8 字节再 base64
+    var bytes = new TextEncoder().encode(str);
+    var bin = '';
+    for (var i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+    return btoa(bin);
+  }
+  function b64decode(b64) {
+    var bin = atob(b64.replace(/\s+/g, ''));
+    var bytes = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return new TextDecoder().decode(bytes);
+  }
+
+  $('#btnGen').addEventListener('click', function () {
+    var compact = {};
+    Object.keys(amounts).forEach(function (k) {
+      if (amounts[k] != null && amounts[k] > 0) compact[k] = amounts[k];
+    });
+    if (!Object.keys(compact).length) {
+      toast('还没填任何数量', true);
+      return;
+    }
+    var code = 'DYE1.' + b64encode(JSON.stringify(compact));
+    var inp = $('#recCode');
+    inp.value = code;
+    inp.select();
+    try {
+      navigator.clipboard.writeText(code).then(function () {
+        toast('记录码已复制');
+      }, function () {
+        toast('已生成，请手动复制');
+      });
+    } catch (e) {
+      toast('已生成，请手动复制');
+    }
+  });
+
+  $('#btnApply').addEventListener('click', function () {
+    var raw = $('#recCode').value.trim();
+    var st = $('#recStatus');
+    if (!raw) { st.className = 'rec__status is-err'; st.textContent = '先粘贴记录码'; return; }
+    try {
+      var body = raw.indexOf('DYE1.') === 0 ? raw.slice(5) : raw;
+      var obj = JSON.parse(b64decode(body));
+      if (!obj || typeof obj !== 'object') throw new Error('格式不对');
+      var n = 0;
+      Object.keys(obj).forEach(function (k) {
+        var v = Number(obj[k]);
+        if (isFinite(v) && v >= 0) { amounts[k] = Math.floor(v); n++; }
+      });
+      saveAmounts();
+      // 刷新所有输入框
+      $$('.item__input input').forEach(function (inp) {
+        var name = inp.getAttribute('data-name');
+        inp.value = amounts[name] != null ? amounts[name] : '';
+        updateItem(name);
+      });
+      st.className = 'rec__status';
+      st.textContent = '已应用 ' + n + ' 项记录';
+      toast('已应用 ' + n + ' 项');
+    } catch (e) {
+      st.className = 'rec__status is-err';
+      st.textContent = '记录码无效，请检查是否完整复制';
+    }
+  });
+
+  $('#btnClear').addEventListener('click', function () {
+    if (!confirm('清空所有已填数量和本机记录？')) return;
+    amounts = {};
+    saveAmounts();
+    $$('.item__input input').forEach(function (inp) {
+      inp.value = '';
+      updateItem(inp.getAttribute('data-name'));
+    });
+    $('#recCode').value = '';
+    var st = $('#recStatus');
+    st.className = 'rec__status';
+    st.textContent = '已清空';
+  });
+
+  // ---------- 启动 ----------
+  function boot() {
+    loadAmounts();
+    fetch('./data/dye.json', { cache: 'no-cache' })
+      .then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      })
+      .then(function (d) {
+        DATA = d;
+        render();
+      })
+      .catch(function (e) {
+        $('#sections').innerHTML =
+          '<div class="loading">道具数据加载失败：' + esc(e.message) +
+          '<br />请刷新页面重试</div>';
+      });
+  }
+
+  boot();
+})();
+</script>
+</body>
+</html>
