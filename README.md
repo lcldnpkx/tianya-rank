@@ -1,6 +1,6 @@
 # 天涯明月刀 OL · 全服功力榜（自动每日更新）
 
-用 GitHub Actions 每天北京时间 13:00 自动抓取排行榜数据，构建静态站点并部署到 GitHub Pages。
+用 GitHub Actions 每天北京时间 9:00 自动抓取排行榜数据，构建静态站点并部署到 GitHub Pages。
 地址固定为 `https://<你的用户名>.github.io/<仓库名>/`，永久有效、免费。
 
 数据源：`rank.qquu.chat`（抓自天刀官方名人堂）
@@ -57,7 +57,7 @@ git push -u origin main
 
 - 站点地址：`https://<你的用户名>.github.io/<仓库名>/`
   也可以在 Actions 的 deploy 步骤里点那个链接直接打开
-- 之后每天北京时间 13:00 自动执行，无需再管
+- 之后每天北京时间 9:00 自动执行，无需再管
 
 ## 五、改配置
 
@@ -65,7 +65,7 @@ git push -u origin main
 |---|---|
 | 排除某个大区 | `update.py` 顶部的 `EXCLUDE_REGIONS` |
 | 排除单个服务器 | `update.py` 顶部的 `EXCLUDE_SERVERS`（填服务器 id，如 `'2101'`） |
-| 改同步时间 | `.github/workflows/daily.yml` 里的 `cron`，注意是 **UTC**：北京时间 13:00 = `0 5 * * *` |
+| 改同步时间 | `.github/workflows/daily.yml` 里的 `cron`，注意是 **UTC**：北京时间 9:00 = `0 1 * * *` |
 | 换数据源 | `update.py` 顶部的 `API` |
 
 改完提交，下次运行自动生效；想立刻生效就在 Actions 里手动 Run 一次。
