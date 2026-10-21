@@ -447,7 +447,7 @@
       } else if (r.nh) {
         why = '该角色隐藏了角色名，且没有可锚定的签名，本表无法追踪它的历史。';
       } else {
-        why = '该角色暂无历史曲线：快照记录自 ' + esc(HD[0] || '—') +
+        why = '该角色暂无历史曲线：数据来源于 ' + esc(HD[0] || '—') +
               ' 开始，之后才上榜或改名重建的角色没有足够的数据点。';
       }
       return '<div class="dw-sec"><h4>功力成长曲线</h4><p class="dw-note">' + why + '</p></div>';
@@ -511,7 +511,7 @@
       '<h4>' + (hasPower ? '功力成长曲线' : '名次变化曲线') + '</h4>' +
       '<div class="dw-chart-meta">' +
         '<span>' + esc(f.date) + ' → ' + esc(l.date) + '</span>' +
-        '<span>' + pts.length + ' 次快照</span>' +
+        '<span>' + pts.length + ' 个数据点</span>' +
         metric +
       '</div>' +
       '<svg class="dw-chart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + (hasPower ? '功力成长曲线' : '名次变化曲线') + '">' +
@@ -558,7 +558,7 @@
       ? '<div class="dw-formers">' + r.fn.map(function (f) {
           return '<span class="fm">' + esc(f) + ' <i>推断</i></span>';
         }).join('') + '</div>'
-      : '<p class="dw-note">无推断出的曾用名记录。官方接口不提供改名履历，本站曾用名全部来自快照比对推断，仅供参考。</p>';
+      : '<p class="dw-note">无推断出的曾用名记录。官方接口不提供改名履历，本站曾用名全部来自历次数据比对推断，仅供参考。</p>';
 
     var sigHtml = r.sig
       ? '<p class="dw-sig">' + esc(r.sig) + '</p>'
@@ -575,7 +575,7 @@
         '<div class="dw-item"><dt>服务器</dt><dd>' + esc(r.sv || DB.server) +
           (DB.kind === 'agg' ? '' : '（' + esc(DB.region) + '）') + '</dd></div>' +
         '<div class="dw-item wide"><dt>帮派</dt><dd>' + (r.g ? esc(r.g) : (r.gh ? '帮派名已隐藏' : '无帮派')) + '</dd></div>' +
-        '<div class="dw-item"><dt>快照日期</dt><dd>' + esc(DB.snapshot) + '</dd></div>' +
+        '<div class="dw-item"><dt>数据来源于</dt><dd>' + esc(DB.snapshot) + '</dd></div>' +
       '</dl>' +
       (rankBars ? '<div class="dw-sec"><h4>名次水位</h4><div class="dw-rankbars">' + rankBars + '</div></div>' : '') +
       historyChart(r) +
@@ -1016,7 +1016,7 @@
       (d.he ? ' + 隐藏成员估算 <b>' + fmt(d.he) + '</b>' : '');
     out += '<div class="dw-sec"><h4>榜单收录构成</h4>' +
       '<dl class="gd-stats">' +
-      '<div class="gd-stat"><dt>本次快照收录成员</dt><dd><b>' + (d.tm || 0) + '</b> 人' +
+      '<div class="gd-stat"><dt>数据来源于·收录成员</dt><dd><b>' + (d.tm || 0) + '</b> 人' +
         (d.hpm ? '，其中 <b>' + d.hpm + '</b> 人隐藏了功力（计入人数，功力按名次区间中位值计入）' : '') + '</dd></div>' +
       '<div class="gd-stat"><dt>收录总功力</dt><dd class="mono">' + powerLine + '</dd></div>' +
       '<div class="gd-stat"><dt>前 80 之和（本站口径）</dt><dd class="mono">' + fmt(d.t80) +
@@ -1036,7 +1036,7 @@
       var dcls = delta > 0 ? 'up' : (delta < 0 ? 'down' : 'flat');
       out += '<div class="dw-sec"><h4>前 80 之和成长曲线</h4>' +
         '<div class="dw-chart-meta"><span>' + esc(hf[0][0]) + ' → ' + esc(hf[hf.length - 1][0]) + '</span>' +
-          '<span>' + hf.length + ' 次快照</span>' +
+          '<span>' + hf.length + ' 个数据点</span>' +
           '<b class="ch-delta ' + dcls + '">' + (delta >= 0 ? '+' : '') + fmt(delta) + '</b></div>' +
         lineSvg(pts) +
         '<p class="dw-chart-foot">当前前 80 之和 <b>' + fmt(hf[hf.length - 1][1]) + '</b>' +
@@ -1597,16 +1597,16 @@
     var snap = (DB && DB.snapshot) || META.snapshot || '—';
     var isAgg = v.kind === 'agg';
     var isCmp = !!v.cmp;
-    $('snapshotLine').innerHTML = '快照 <b>' + esc(snap) + '</b> · 全服 <b>' + fmt(META.total || 0) +
+    $('snapshotLine').innerHTML = '数据来源于 <b>' + esc(snap) + '</b> · 全服 <b>' + fmt(META.total || 0) +
       '</b> 名角色 · <b>' + (META.servers || 0) + '</b> 个服务器';
     $('heroEyebrow').textContent = (isCmp ? '多服对比'
       : (isAgg ? (v.id === 'all' ? '全区全服' : '大区榜') : v.region)) +
-      ' · ' + v.label + ' · ' + snap + ' 快照';
+      ' · ' + v.label + ' · ' + snap + ' 数据';
     $('btMain').textContent = isCmp ? '多服对比榜'
       : (isAgg ? (v.id === 'all' ? '全区全服功力榜' : v.label + '大区榜')
                : v.label + ' 功力榜');
     $('srvName').textContent = isCmp ? '对比' : v.short;
-    $('footSnap').textContent = '快照日期 ' + snap;
+    $('footSnap').textContent = '数据来源于 ' + snap;
     var rm = $('riteMeta');
     if (rm) rm.textContent = (META.regions || 0) + ' 大区 ' + (META.servers || 0) + ' 服';
     var rc = $('riteCount');
