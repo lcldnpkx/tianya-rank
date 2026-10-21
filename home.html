@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0a1b30" />
+<meta name="color-scheme" content="dark" />
+<title>大宋赛博监狱 · 天刀工具集</title>
+<meta name="description" content="天涯明月刀 OL 工具导航：全服功力榜、衍心模拟器、天刀图鉴、各类计算器与模拟器入口。" />
+<meta name="application-name" content="大宋赛博监狱" />
+<meta name="format-detection" content="telephone=no, address=no, email=no" />
+<meta property="og:title" content="大宋赛博监狱 · 天刀工具集" />
+<meta property="og:description" content="全服功力榜 · 衍心模拟器 · 天刀图鉴 · 各类计算器" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="大宋赛博监狱" />
+<link rel="icon" href="./favicon.ico" sizes="any" />
+<link rel="preconnect" href="https://link.qquu.chat" crossorigin />
+<style>
+:root{
+  --ink:#0a1b30;
+  --panel:#0d2340;
+  --line:#23496f;
+  --gold:#ffdd95;
+  --fog:#f8fbff;
+  --mist:#bddaf1;
+  --dim:#7f9ab8;
+  --sans:"PingFang SC","Microsoft YaHei",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  min-height:100vh;
+  color:var(--fog);
+  font-family:var(--sans);
+  background:var(--ink);
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+
+/* ---------- 背景：纯 CSS 模拟黄昏渐变，比 1.9MB 原图快得多 ---------- */
+.bg{
+  position:fixed;inset:0;z-index:-1;
+  background:
+    radial-gradient(120% 60% at 50% 100%, rgba(255,180,90,.16) 0%, transparent 62%),
+    radial-gradient(90% 45% at 50% 62%, rgba(90,160,220,.14) 0%, transparent 70%),
+    linear-gradient(180deg,#071322 0%,#0b2038 38%,#16395c 66%,#2b5478 84%,#4a6f8d 100%);
+}
+/* 细密星点 */
+.bg::after{
+  content:"";position:absolute;inset:0;
+  background-image:
+    radial-gradient(1px 1px at 12% 18%, rgba(255,255,255,.55) 50%, transparent 51%),
+    radial-gradient(1px 1px at 34% 9%, rgba(255,255,255,.4) 50%, transparent 51%),
+    radial-gradient(1px 1px at 58% 22%, rgba(255,255,255,.5) 50%, transparent 51%),
+    radial-gradient(1px 1px at 76% 12%, rgba(255,255,255,.35) 50%, transparent 51%),
+    radial-gradient(1px 1px at 88% 27%, rgba(255,255,255,.45) 50%, transparent 51%),
+    radial-gradient(1px 1px at 22% 33%, rgba(255,255,255,.3) 50%, transparent 51%),
+    radial-gradient(1px 1px at 66% 38%, rgba(255,255,255,.28) 50%, transparent 51%);
+  opacity:.7;
+}
+
+/* ---------- Hero ---------- */
+.gl-hero{
+  text-align:center;
+  padding:calc(10vh + env(safe-area-inset-top)) 16px 0;
+  min-height:290px;
+}
+.gl-hero__title{
+  margin:0 auto;
+  width:min(540px,74vw);
+  font-size:clamp(24px,3.4vw,54px);
+  line-height:1.15;
+  letter-spacing:.04em;
+  color:var(--fog);
+  text-shadow:0 4px 0 rgba(5,16,28,.55);
+  overflow-wrap:anywhere;
+}
+.gl-hero__tagline{
+  margin:22px auto 0;
+  width:min(465px,78vw);
+  font-size:clamp(11px,1.1vw,15px);
+  letter-spacing:.16em;
+  color:var(--mist);
+  text-transform:uppercase;
+}
+.gl-hero__divider{
+  display:block;margin:22px auto 0;
+  width:72px;height:6px;
+  image-rendering:pixelated;
+}
+
+/* ---------- 卡片网格 ---------- */
+.gl-cards{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:32px;
+  width:min(1512px,88vw);
+  margin:clamp(32px,5vh,56px) auto 0;
+  padding-bottom:calc(8vh + env(safe-area-inset-bottom));
+}
+
+.gl-card{
+  position:relative;
+  display:block;
+  aspect-ratio:12/5;
+  text-decoration:none;
+  color:inherit;
+  filter:drop-shadow(0 6px 0 rgba(5,16,28,.45));
+  transition:transform .16s ease, filter .16s ease;
+  -webkit-tap-highlight-color:transparent;
+  outline:none;
+}
+.gl-card__layer{position:absolute;pointer-events:none}
+.gl-card__scene{inset:0;width:100%;height:100%;object-fit:cover}
+.gl-card__shade{inset:0;width:100%;height:100%;image-rendering:pixelated}
+.gl-card__frame{inset:0;width:100%;height:100%;image-rendering:pixelated}
+.gl-card__arrow{
+  width:6.67%;height:auto;top:76%;left:87.5%;
+  image-rendering:pixelated;
+}
+/* 悬停高亮框 */
+.gl-card::after{
+  content:"";position:absolute;inset:0;
+  background:center/100% 100% no-repeat;
+  opacity:0;transition:opacity .16s;pointer-events:none;
+}
+.gl-card:hover{filter:brightness(1.07) drop-shadow(0 9px 0 rgba(5,16,28,.45));transform:translateY(-4px)}
+.gl-card:hover::after{opacity:1;background-image:url("https://link.qquu.chat/assets/ui/frame-card-hover-2x.png")}
+.gl-card:focus-visible::after{opacity:1;background-image:url("https://link.qquu.chat/assets/ui/frame-card-focus-2x.png")}
+.gl-card:focus-visible{outline:3px solid var(--gold);outline-offset:4px}
+
+.gl-card__title{
+  position:absolute;
+  top:75%;left:5.83%;
+  max-width:76%;
+  height:15%;
+  display:flex;align-items:center;
+  font-size:clamp(13px,1.35vw,22px);
+  line-height:1;
+  letter-spacing:.04em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  color:var(--fog);
+  text-shadow:0 3px 0 rgba(5,16,28,.6),2px 0 0 rgba(5,16,28,.5),-2px 0 0 rgba(5,16,28,.5);
+}
+.gl-card__subtitle{
+  position:absolute;
+  top:75%;left:5.83%;
+  max-width:82%;
+  transform:translateY(-120%);
+  font-size:clamp(9px,.88vw,13px);
+  color:#d7e6f5;
+  text-shadow:0 2px 0 rgba(5,16,28,.7);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+
+/* 待开放（不可点） */
+.gl-card--soon{cursor:default}
+.gl-card--soon:hover{transform:none;filter:drop-shadow(0 6px 0 rgba(5,16,28,.45))}
+.gl-card--soon:hover::after{opacity:0}
+.gl-card__badge{
+  position:absolute;top:8%;left:5.83%;
+  padding:3px 8px;
+  font-size:10px;letter-spacing:.08em;
+  color:var(--gold);
+  background:rgba(107,83,32,.9);
+  border:2px solid rgba(255,221,149,.55);
+}
+
+/* ---------- 页脚 ---------- */
+.gl-foot{
+  width:min(1512px,88vw);
+  margin:0 auto;
+  padding:0 0 calc(6vh + env(safe-area-inset-bottom));
+  text-align:center;
+  font-size:12px;
+  line-height:2;
+  color:var(--dim);
+}
+.gl-foot a{color:var(--mist);text-decoration:none;border-bottom:1px dashed rgba(189,218,241,.35)}
+.gl-foot a:hover{color:var(--gold);border-bottom-color:var(--gold)}
+
+/* ---------- 提示条 ---------- */
+.gl-toast{
+  position:fixed;left:50%;bottom:40px;
+  transform:translate(-50%,20px);
+  padding:10px 20px;
+  font-size:13px;
+  color:var(--gold);
+  background:#10294a;
+  border:2px solid var(--gold);
+  opacity:0;pointer-events:none;
+  transition:opacity .2s,transform .2s;
+  z-index:90;
+}
+.gl-toast.is-on{opacity:1;transform:translate(-50%,0)}
+
+/* ---------- 响应式 ---------- */
+@media(max-width:1100px){
+  .gl-cards{grid-template-columns:repeat(2,minmax(0,1fr));gap:22px}
+  .gl-card__title{font-size:19px}
+  .gl-card__subtitle{font-size:12px}
+}
+@media(max-width:640px){
+  .gl-hero{min-height:230px;padding-top:calc(7vh + env(safe-area-inset-top))}
+  .gl-hero__title{width:82vw;font-size:clamp(22px,7vw,32px)}
+  .gl-hero__tagline{width:86vw;letter-spacing:.1em}
+  .gl-cards{
+    grid-template-columns:1fr;
+    gap:16px;
+    width:calc(100% - 32px);
+    margin-top:26px;
+  }
+  .gl-card__title{font-size:16px}
+  .gl-card__subtitle{font-size:10px}
+  .gl-card:hover{transform:none}
+}
+@media(prefers-reduced-motion:reduce){
+  .gl-card{transition:none}
+  .gl-card:hover{transform:none}
+}
+</style>
+</head>
+<body>
+
+<div class="bg" aria-hidden="true"></div>
+
+<main class="gl-page">
+
+  <header class="gl-hero">
+    <h1 class="gl-hero__title">大宋赛博监狱</h1>
+    <p class="gl-hero__tagline">TIAN YA MING YUE DAO</p>
+    <img class="gl-hero__divider"
+         src="https://link.qquu.chat/assets/ui/divider-heading-white-2x.png"
+         alt="" width="144" height="12" aria-hidden="true" />
+  </header>
+
+  <div class="gl-cards" id="cards" aria-label="站点导航"></div>
+
+  <footer class="gl-foot">
+    <div>祝你玩一辈子天涯明月刀</div>
+    <div>本站为玩家自建数据整理站点，与腾讯及各页面作者无隶属关系</div>
+    <div><a href="./">返回首页</a></div>
+  </footer>
+
+</main>
+
+<div class="gl-toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* 卡片配置：改这里就能增删卡片 */
+var ICON = 'https://link.qquu.chat';
+var CARDS = [
+  {
+    title: '全服排行榜',
+    sub: '全区全服 · 功力 · 帮派',
+    img: ICON + '/uploads/20261002-212736c4e3413490.jpg',
+    href: './rank.html',            // 自己的榜单页
+    self: true
+  },
+  {
+    title: '衍心模拟器',
+    sub: '18 万一本能买我命了',
+    img: ICON + '/uploads/20261002-1d97c8eb5b627032.jpg',
+    href: 'https://www.qquu.chat/xinfa'
+  },
+  {
+    title: '天刀图鉴',
+    sub: '神兵 · 外观',
+    img: ICON + '/uploads/20261002-e68354894a5d04e8.jpg',
+    href: 'https://www.qquu.chat/archive'
+  },
+  {
+    title: '精彩活动（官方）',
+    sub: '腾讯官方活动页',
+    img: ICON + '/uploads/20261002-b0b83d56165ee291.jpg',
+    href: 'https://wuxia.qq.com/cp/a20230309_98549/index.html'
+  },
+  {
+    title: '文心鉴定模拟器',
+    sub: '文心玩法模拟',
+    img: ICON + '/uploads/20261002-dbc0f8024e8cbe97.jpg',
+    href: 'https://www.qquu.chat/wenxin'
+  },
+  {
+    title: '灵势消耗计算器',
+    sub: '灵势升级材料估算',
+    img: ICON + '/uploads/20261002-c0b4a1936c869616.jpg',
+    href: 'https://www.qquu.chat/lingshi'
+  },
+  {
+    title: '染色档位计算器',
+    sub: '可复制记录码 / 多端记录',
+    img: ICON + '/uploads/20261002-3ca62d80b9e67497.jpg',
+    href: 'https://www.qquu.chat/dye/'
+  },
+  {
+    title: '砭石宝箱模拟器',
+    sub: '开箱概率模拟',
+    img: ICON + '/uploads/20261021-e7854ff0d37893d9.png',
+    href: 'https://www.qquu.chat/stone'
+  },
+  {
+    title: '超精彩活动模拟器',
+    sub: '暂未开放',
+    img: ICON + '/uploads/20261020-190df44a91ad383b.jpg',
+    soon: true
+  }
+];
+
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+}
+
+var toastEl = document.getElementById('toast');
+var toastTimer = null;
+function toast(msg) {
+  toastEl.textContent = msg;
+  toastEl.classList.add('is-on');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function () { toastEl.classList.remove('is-on'); }, 2200);
+}
+
+function build() {
+  var box = document.getElementById('cards');
+  var html = CARDS.map(function (c, i) {
+    var tag = c.soon ? 'div' : 'a';
+    var attr = c.soon
+      ? ' role="link" aria-disabled="true" tabindex="0" data-soon="1"'
+      : ' href="' + esc(c.href) + '"' + (c.self ? '' : ' target="_blank" rel="noopener noreferrer"');
+    return '<' + tag + ' class="gl-card' + (c.soon ? ' gl-card--soon' : '') + '"' + attr +
+      ' data-i="' + i + '" aria-label="' + esc(c.title) + '">' +
+      '<img class="gl-card__layer gl-card__scene" src="' + esc(c.img) + '" alt="" ' +
+        'width="960" height="400" loading="' + (i < 3 ? 'eager' : 'lazy') + '" decoding="async" />' +
+      '<img class="gl-card__layer gl-card__shade" ' +
+        'src="' + ICON + '/assets/ui/overlay-card-bottom-shade-2x.png" alt="" ' +
+        'width="960" height="400" loading="lazy" decoding="async" />' +
+      (c.sub ? '<span class="gl-card__subtitle">' + esc(c.sub) + '</span>' : '') +
+      '<span class="gl-card__title">' + esc(c.title) + '</span>' +
+      (c.soon ? '<span class="gl-card__badge">待开放</span>' : '') +
+      '<img class="gl-card__layer gl-card__arrow" ' +
+        'src="' + ICON + '/assets/icons/icon-arrow-right-white-2x.png" alt="" ' +
+        'width="128" height="128" loading="lazy" decoding="async" />' +
+      '<img class="gl-card__layer gl-card__frame" ' +
+        'src="' + ICON + '/assets/ui/frame-card-default-2x.png" alt="" ' +
+        'width="960" height="400" loading="lazy" decoding="async" />' +
+      '</' + tag + '>';
+  }).join('');
+  box.innerHTML = html;
+
+  // 图片加载失败时给一个兜底底色，避免白块
+  box.querySelectorAll('.gl-card__scene').forEach(function (im) {
+    im.addEventListener('error', function () {
+      im.style.background = 'linear-gradient(135deg,#16375e,#0d2340)';
+      im.removeAttribute('src');
+    });
+  });
+
+  // 待开放卡片：点了给提示
+  box.querySelectorAll('.gl-card--soon').forEach(function (el) {
+    function warn(e) { e.preventDefault(); toast('这张卡还没做好，敬请期待'); }
+    el.addEventListener('click', warn);
+    el.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') warn(e);
+    });
+  });
+}
+
+build();
+</script>
+</body>
+</html>
