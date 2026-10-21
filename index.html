@@ -39,7 +39,7 @@
     <button type="button" class="board-btn" data-board="guild" aria-pressed="false">帮派榜</button>
   </nav>
 
-  <p class="snapshot" id="snapshotLine">正在读取快照…</p>
+  <p class="snapshot" id="snapshotLine">正在读取数据…</p>
 </header>
 
 <main class="scroll" id="top">
@@ -47,7 +47,7 @@
   <section class="hero" aria-labelledby="boardTitle">
     <div class="hero-glow" aria-hidden="true"></div>
     <div class="hero-inner">
-      <p class="eyebrow" id="heroEyebrow">天地之间 · 快照读取中</p>
+      <p class="eyebrow" id="heroEyebrow">天地之间 · 数据读取中</p>
       <h1 class="board-title" id="boardTitle">
         <span class="bt-main" id="btMain">全服功力榜</span>
         <span class="bt-sub">ALL-SERVER RANKING</span>
@@ -118,11 +118,11 @@
     <div class="rite-grid">
       <article>
         <h3>数据从哪来</h3>
-        <p>数据源自《天涯明月刀 OL》官方名人堂，由快照并集重建。官方名人堂每榜只公开前 500 名，本站按 <b>14 个门派子榜 × 各大区</b> 逐一抓取后取并集，同一角色只保留最高功力，最终覆盖 <b id="riteMeta">各大区共 16 服</b>、<b id="riteCount">26,000+</b> 名角色。官方给出的名次原样保留；只在门派子榜里出现的角色，名次按并集功力估算，数字前标 <span class="tilde">~</span>。</p>
+        <p>数据源自《天涯明月刀 OL》官方名人堂，由历次数据并集重建。官方名人堂每榜只公开前 500 名，本站按 <b>14 个门派子榜 × 各大区</b> 逐一抓取后取并集，同一角色只保留最高功力，最终覆盖 <b id="riteMeta">各大区共 16 服</b>、<b id="riteCount">26,000+</b> 名角色。官方给出的名次原样保留；只在门派子榜里出现的角色，名次按并集功力估算，数字前标 <span class="tilde">~</span>。</p>
       </article>
       <article>
         <h3>曾用名怎么判断</h3>
-        <p>官方接口不返回改名履历，本站的曾用名全部是<b>数据推断</b>，并不准确。判断逻辑：相邻两次快照之间，同一个服务器里有一个名字消失、又出现一个帮派相同、功力接近、名次位移很小的新名字，就记一笔改名并逐日累积。没有命中的人不会显示曾用名。</p>
+        <p>官方接口不返回改名履历，本站的曾用名全部是<b>数据推断</b>，并不准确。判断逻辑：相邻两次数据之间，同一个服务器里有一个名字消失、又出现一个帮派相同、功力接近、名次位移很小的新名字，就记一笔改名并逐日累积。没有命中的人不会显示曾用名。</p>
       </article>
       <article>
         <h3>隐藏的功力怎么补</h3>
@@ -130,7 +130,7 @@
       </article>
       <article>
         <h3>功力成长曲线从哪来</h3>
-        <p>数据源保留了每日快照，本站把每个角色的历史功力与名次一并取回，展开详情即可看到走势。中途上榜或改名重建的角色数据点较少，缺快照的那天在曲线上是断点、不做插值，也不拿 0 冒充。<b>隐藏了功力的角色，榜上只记录名次不记录功力，因此他们的走势改用「名次变化曲线」呈现</b>——名次越小越靠前，一眼能看出排位升降。</p>
+        <p>数据源保留了每日数据，本站把每个角色的历史功力与名次一并取回，展开详情即可看到走势。中途上榜或改名重建的角色数据点较少，缺数据的那天在曲线上是断点、不做插值，也不拿 0 冒充。<b>隐藏了功力的角色，榜上只记录名次不记录功力，因此他们的走势改用「名次变化曲线」呈现</b>——名次越小越靠前，一眼能看出排位升降。</p>
       </article>
       <article>
         <h3>三个层级的榜单</h3>
@@ -154,7 +154,7 @@
       </article>
       <article>
         <h3>口径与边界</h3>
-        <p>数字对应快照时间，不是打开页面的那一刻。门派、帮派内名次按本次快照并集重算，官方不提供。榜单仅作数据整理与检索用途，如官方要求可随时停止收录。</p>
+        <p>数字对应数据日期，不是打开页面的那一刻。门派、帮派内名次按本次数据并集重算，官方不提供。榜单仅作数据整理与检索用途，如官方要求可随时停止收录。</p>
       </article>
     </div>
   </section>
