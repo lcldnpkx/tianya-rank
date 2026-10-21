@@ -65,6 +65,8 @@ jobs:
       - name: 校验产物
         run: |
           test -f public/index.html || { echo "缺少 index.html"; exit 1; }
+          test -f public/home.html || { echo "缺少 home.html（导航首页）"; exit 1; }
+          test -f public/rank.html || { echo "缺少 rank.html"; exit 1; }
           test -f public/data/servers.js || { echo "缺少 servers.js"; exit 1; }
           test -f public/data/agg-all.js || { echo "缺少聚合数据"; exit 1; }
           grep -o '"total":[0-9]*' public/data/servers.js | head -1
