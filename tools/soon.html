@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0a1b30" />
+<meta name="color-scheme" content="dark" />
+<title>建设中 · CY</title>
+<meta name="robots" content="noindex" />
+<link rel="icon" href="../favicon.ico" sizes="any" />
+<style>
+:root{
+  --ink:#0a1b30;--ink-2:#071322;--panel:#0d2340;
+  --line:#1d3d63;--line-2:#23496f;
+  --gold:#ffdd95;--gold-dim:#c9a961;
+  --fog:#f8fbff;--mist:#bddaf1;--dim:#7f9ab8;
+  --sans:"PingFang SC","Microsoft YaHei",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  min-height:100vh;color:var(--fog);font-family:var(--sans);
+  background:
+    radial-gradient(120% 55% at 50% 0%, rgba(60,120,190,.16) 0%, transparent 60%),
+    linear-gradient(180deg,#071322 0%,#0a1b30 45%,#0c2137 100%);
+  background-attachment:fixed;
+  -webkit-font-smoothing:antialiased;
+  display:flex;align-items:center;justify-content:center;
+  padding:clamp(20px,5vw,60px) 16px;
+}
+.box{
+  width:min(560px,100%);
+  padding:clamp(24px,5vw,40px);
+  background:rgba(13,35,64,.62);
+  border:2px solid var(--line);
+  box-shadow:0 8px 0 rgba(5,16,28,.4);
+  text-align:center;
+}
+.mark{
+  display:grid;place-items:center;
+  width:56px;height:56px;margin:0 auto 20px;
+  font-size:22px;font-weight:700;color:var(--ink);
+  background:linear-gradient(150deg,var(--gold),var(--gold-dim));
+  border:2px solid rgba(255,255,255,.22);
+}
+h1{
+  margin:0 0 10px;
+  font-size:clamp(19px,4vw,24px);
+  letter-spacing:.03em;
+}
+.tag{
+  display:inline-block;
+  margin-bottom:18px;padding:3px 10px;
+  font-size:11px;letter-spacing:.1em;
+  color:var(--gold);
+  background:rgba(107,83,32,.55);
+  border:2px solid rgba(255,221,149,.45);
+}
+p{
+  margin:0 0 12px;
+  font-size:13.5px;line-height:1.9;color:var(--mist);
+}
+ol{
+  margin:0 0 22px;padding-left:1.35em;
+  text-align:left;
+  font-size:13px;line-height:2;color:var(--dim);
+}
+.actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;
+  padding:10px 20px;
+  font-family:inherit;font-size:13.5px;line-height:1;
+  color:var(--mist);background:#12304f;
+  border:2px solid var(--line-2);
+  text-decoration:none;
+  transition:background .14s,color .14s,border-color .14s;
+}
+.btn:hover{background:#17406a;color:var(--fog)}
+.btn--gold{color:var(--gold);background:rgba(107,83,32,.55);border-color:rgba(255,221,149,.5)}
+.btn--gold:hover{background:rgba(107,83,32,.85);color:var(--gold)}
+.btn:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.foot{
+  margin-top:24px;padding-top:16px;
+  border-top:1px solid var(--line);
+  font-size:11.5px;color:var(--dim);line-height:1.9;
+}
+</style>
+</head>
+<body>
+
+<div class="box">
+  <div class="mark" id="mark" aria-hidden="true">?</div>
+  <h1 id="title">该工具建设中</h1>
+  <div class="tag">COMING SOON</div>
+
+  <p id="desc">这个页面正在制作，先占了位置。</p>
+
+  <ol id="plan"></ol>
+
+  <div class="actions">
+    <a class="btn btn--gold" href="../index.html">← 返回大厅</a>
+    <a class="btn" id="backRank" href="../rank.html">看功力榜</a>
+  </div>
+
+  <div class="foot">
+    有想先做的，直接跟我说一声，我按你给的顺序做。
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var q = new URLSearchParams(location.search);
+  var key = q.get('t') || '';
+
+  var MAP = {
+    xinfa: {
+      name: '衍心模拟器',
+      mark: '衍',
+      desc: '心法配置与衍心消耗模拟，正在整理心法库数据。',
+      plan: [
+        '心法库：各心法基础属性、衍心层级',
+        '配置面板：主副心法槽位、词条选择',
+        '演算：算出衍心消耗材料与总成本',
+        '存档：本机保存多套配置，可导出记录码'
+      ]
+    },
+    archive: {
+      name: '天刀图鉴',
+      mark: '图',
+      desc: '神兵与外观图鉴，需要先解决图片资源量大的问题。',
+      plan: [
+        '外观分类：时装、武器、坐骑、挂件',
+        '神兵：各门派神兵形态与属性',
+        '图片按需加载，避免首屏拖慢',
+        '支持按名称搜索与筛选'
+      ]
+    },
+    wenxin: {
+      name: '文心鉴定模拟器',
+      mark: '文',
+      desc: '镇派武学鉴定模拟，需要鉴定奖励表与概率数据。',
+      plan: [
+        '鉴定：单次与批量',
+        '背包：记录已获得的书号位',
+        '奖励：累计鉴定次数对应的奖励',
+        '记录码：导出导入已鉴定记录'
+      ]
+    },
+    lingshi: {
+      name: '灵势消耗计算器',
+      mark: '势',
+      desc: '灵势升级材料估算，正在核对各级消耗表。',
+      plan: [
+        '输入当前等级与目标等级',
+        '算出所需材料数量与总成本',
+        '支持按市价折算',
+        '记录码保存方案'
+      ]
+    },
+    stone: {
+      name: '砭石宝箱模拟器',
+      mark: '石',
+      desc: '开箱概率模拟，单次 50 / 十连 500。',
+      plan: [
+        '单次与十连开箱',
+        '碎片累计与补充',
+        '抽取记录与统计（出率、平均消耗）',
+        '纯前端随机，不上传数据'
+      ]
+    },
+    official: {
+      name: '精彩活动（官方）',
+      mark: '活',
+      desc: '腾讯官方活动页，这个没法自己做，只能外链。',
+      plan: [
+        '官方活动页由腾讯维护，内容不在本站控制范围内',
+        '点下面的按钮会跳到腾讯官网',
+        '如果你想让本站也做一个活动日历，可以单独提'
+      ]
+    }
+  };
+
+  var cfg = MAP[key] || {
+    name: '该工具建设中',
+    mark: '?',
+    desc: '这个页面正在制作，先占了位置。',
+    plan: ['等待排期']
+  };
+
+  document.getElementById('mark').textContent = cfg.mark;
+  document.getElementById('title').textContent = cfg.name;
+  document.getElementById('desc').textContent = cfg.desc;
+  document.title = cfg.name + ' · 建设中 · CY';
+  document.getElementById('plan').innerHTML = cfg.plan.map(function (t) {
+    return '<li>' + t.replace(/[&<>]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c];
+    }) + '</li>';
+  }).join('');
+
+  if (key === 'official') {
+    var b = document.getElementById('backRank');
+    b.textContent = '去官方活动页';
+    b.href = 'https://wuxia.qq.com/cp/a20230309_98549/index.html';
+    b.target = '_blank';
+    b.rel = 'noopener noreferrer';
+  }
+})();
+</script>
+</body>
+</html>
