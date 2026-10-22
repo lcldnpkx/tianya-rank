@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0a1b30" />
+<meta name="color-scheme" content="dark" />
+<title>衍心模拟器 · CY</title>
+<meta name="description" content="天涯明月刀 OL 心法衍心模拟：勾选衍心节点，实时算出金币与材料总消耗。" />
+<meta property="og:title" content="衍心模拟器 · CY" />
+<meta property="og:type" content="website" />
+<link rel="icon" href="../favicon.ico" sizes="any" />
+<style>
+:root{
+  --ink:#0a1b30;--ink-2:#071322;
+  --panel:#0d2340;--panel-2:#102a4a;
+  --line:#1d3d63;--line-2:#23496f;
+  --gold:#ffdd95;--gold-dim:#c9a961;
+  --fog:#f8fbff;--mist:#bddaf1;--dim:#7f9ab8;
+  --ok:#9fe6c2;
+  --sans:"PingFang SC","Microsoft YaHei",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  min-height:100vh;color:var(--fog);font-family:var(--sans);
+  background:
+    radial-gradient(120% 55% at 50% 0%, rgba(60,120,190,.16) 0%, transparent 60%),
+    linear-gradient(180deg,#071322 0%,#0a1b30 40%,#0c2137 100%);
+  background-attachment:fixed;-webkit-font-smoothing:antialiased;
+}
+
+.topbar{
+  position:sticky;top:0;z-index:40;
+  display:flex;align-items:center;gap:10px;
+  padding:10px clamp(12px,3vw,28px);
+  background:rgba(7,19,34,.94);backdrop-filter:blur(14px);
+  border-bottom:2px solid var(--line);
+}
+.topbar a.home{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:6px 11px 6px 7px;border:2px solid var(--line-2);border-radius:999px;
+  color:var(--mist);font-size:13px;text-decoration:none;
+  transition:color .14s,border-color .14s,background .14s;flex-shrink:0;
+}
+.topbar a.home:hover{color:var(--gold);border-color:rgba(255,221,149,.5);background:rgba(255,221,149,.07)}
+.topbar a.home:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.topbar__brand{display:flex;align-items:baseline;gap:8px;margin-left:2px;min-width:0}
+.topbar__brand b{font-size:14px;letter-spacing:.1em;color:var(--gold);white-space:nowrap}
+.topbar__brand span{font-size:12px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topbar__right{margin-left:auto;font-size:11px;letter-spacing:.16em;color:var(--dim);white-space:nowrap}
+
+.wrap{width:min(1280px,100%);margin:0 auto;padding:clamp(14px,3vw,26px) clamp(10px,2.6vw,22px) 120px}
+.head{margin-bottom:14px}
+.head h1{margin:0 0 6px;font-size:clamp(20px,3.4vw,27px);letter-spacing:.03em}
+.head p{margin:0;font-size:12.5px;line-height:1.8;color:var(--mist)}
+
+.layout{display:grid;grid-template-columns:232px minmax(0,1fr);gap:14px;align-items:start}
+@media(max-width:860px){.layout{grid-template-columns:1fr}}
+
+/* 心法列表 */
+.books{
+  background:rgba(13,35,64,.5);border:2px solid var(--line);
+  position:sticky;top:64px;max-height:calc(100vh - 100px);
+  display:flex;flex-direction:column;
+}
+.books__head{padding:9px 11px;border-bottom:1px solid var(--line)}
+.books__head input{
+  width:100%;padding:7px 9px;font-family:inherit;font-size:12.5px;
+  color:var(--fog);background:var(--ink-2);border:2px solid var(--line-2);
+}
+.books__head input:focus{outline:2px solid var(--gold);outline-offset:1px}
+.books__list{overflow:auto;padding:6px}
+.book{
+  display:flex;align-items:center;gap:9px;
+  width:100%;padding:7px 8px;
+  background:transparent;border:2px solid transparent;
+  color:var(--mist);font-family:inherit;font-size:13px;text-align:left;
+  cursor:pointer;transition:background .14s,border-color .14s,color .14s;
+}
+.book:hover{background:rgba(16,42,74,.7);color:var(--fog)}
+.book.is-on{border-color:rgba(255,221,149,.5);background:rgba(107,83,32,.35);color:var(--gold)}
+.book:focus-visible{outline:2px solid var(--gold);outline-offset:-2px}
+.book img{width:26px;height:26px;object-fit:contain;flex-shrink:0}
+.book span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.book em{font-style:normal;font-size:10px;color:var(--dim);font-family:var(--mono)}
+
+/* 层 */
+.layers{display:flex;flex-direction:column;gap:10px}
+.layer{
+  background:rgba(13,35,64,.5);border:2px solid var(--line);
+}
+.layer__head{
+  display:flex;align-items:center;gap:10px;padding:9px 12px;
+  border-bottom:1px solid var(--line);flex-wrap:wrap;
+}
+.layer__head h3{margin:0;font-size:13px;color:var(--gold);letter-spacing:.05em;font-weight:600}
+.layer__meta{font-size:11px;color:var(--dim);font-family:var(--mono)}
+.layer__acts{margin-left:auto;display:flex;gap:6px}
+.mini{
+  padding:4px 9px;font-family:inherit;font-size:11.5px;
+  color:var(--dim);background:transparent;border:2px solid var(--line-2);
+  cursor:pointer;transition:color .14s,border-color .14s,background .14s;
+}
+.mini:hover{color:var(--gold);border-color:rgba(255,221,149,.5);background:rgba(107,83,32,.3)}
+.mini:focus-visible{outline:2px solid var(--gold);outline-offset:1px}
+
+.nodes{padding:10px 12px;display:flex;flex-wrap:wrap;gap:6px}
+.node{
+  display:flex;align-items:center;gap:6px;
+  padding:6px 9px;
+  background:rgba(9,24,42,.7);border:2px solid var(--line);
+  color:var(--mist);font-family:inherit;font-size:12px;
+  cursor:pointer;transition:border-color .14s,background .14s,color .14s;
+}
+.node:hover{border-color:var(--line-2);color:var(--fog)}
+.node.is-on{
+  border-color:rgba(255,221,149,.7);
+  background:linear-gradient(180deg,rgba(107,83,32,.6),rgba(60,45,15,.6));
+  color:var(--gold);
+}
+.node:focus-visible{outline:2px solid var(--gold);outline-offset:1px}
+.node__g{
+  display:grid;place-items:center;width:18px;height:18px;flex-shrink:0;
+  font-size:11px;font-weight:700;
+  background:rgba(255,255,255,.08);color:var(--mist);
+}
+.node.is-on .node__g{background:var(--gold-dim);color:var(--ink)}
+.node__n{white-space:nowrap}
+.node__c{font-family:var(--mono);font-size:10.5px;color:var(--dim)}
+.node.is-on .node__c{color:rgba(255,221,149,.75)}
+
+/* 汇总条 */
+.sum{
+  position:fixed;left:0;right:0;bottom:0;z-index:35;
+  background:rgba(7,19,34,.96);backdrop-filter:blur(14px);
+  border-top:2px solid var(--line-2);
+  padding:9px clamp(12px,3vw,24px);
+  padding-bottom:calc(9px + env(safe-area-inset-bottom));
+}
+.sum__in{
+  width:min(1280px,100%);margin:0 auto;
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+}
+.sum__item{display:flex;align-items:baseline;gap:5px;font-size:11.5px;color:var(--dim)}
+.sum__item b{font-family:var(--mono);font-size:15px;color:var(--gold)}
+.sum__item.acc b{color:var(--ok)}
+.sum__acts{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+
+.empty{padding:34px 0;text-align:center;font-size:13px;color:var(--dim)}
+.foot{
+  margin-top:22px;padding-top:14px;border-top:2px solid var(--line);
+  font-size:11.5px;color:var(--dim);line-height:1.9;
+}
+.foot a{color:var(--mist);text-decoration:none;border-bottom:1px dashed rgba(189,218,241,.3)}
+.foot a:hover{color:var(--gold);border-bottom-color:var(--gold)}
+
+.toast{
+  position:fixed;left:50%;bottom:88px;transform:translate(-50%,16px);
+  padding:9px 18px;font-size:12.5px;color:var(--gold);
+  background:#10294a;border:2px solid var(--gold);
+  opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:90;
+}
+.toast.is-on{opacity:1;transform:translate(-50%,0)}
+
+@media(max-width:860px){
+  .books{position:static;max-height:none}
+  .books__list{max-height:220px}
+  .topbar__right{display:none}
+  .sum__item b{font-size:13px}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="home" href="../index.html" title="返回大厅" aria-label="返回大厅">
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+    大厅
+  </a>
+  <div class="topbar__brand">
+    <b>XINFA</b>
+    <span>/ 衍心模拟器</span>
+  </div>
+  <div class="topbar__right">CY · XINFA PLANNER</div>
+</header>
+
+<div class="wrap">
+
+  <section class="head">
+    <h1>衍心模拟器</h1>
+    <p>选心法，勾你要点的衍心节点，下面实时算出金币和材料总消耗。勾选只存本机。</p>
+  </section>
+
+  <div class="layout">
+    <aside class="books">
+      <div class="books__head">
+        <input id="q" type="search" placeholder="搜心法名…" autocomplete="off" aria-label="搜索心法" />
+      </div>
+      <div class="books__list" id="books"></div>
+    </aside>
+
+    <main class="layers" id="layers">
+      <div class="empty">正在读取心法数据（约 220KB）…</div>
+    </main>
+  </div>
+
+  <footer class="foot">
+    共 <b id="cntBooks">—</b> 本心法 · <b id="cntNodes">—</b> 个衍心节点。<br />
+    消耗数据来自游戏内设定，勾选状态只保存在本机浏览器。
+  </footer>
+</div>
+
+<div class="sum">
+  <div class="sum__in">
+    <span class="sum__item">已选 <b id="sPick">0</b><span id="sTotal">/0</span></span>
+    <span class="sum__item">金币 <b id="sMoney">0</b></span>
+    <span class="sum__item" id="sMats"></span>
+    <span class="sum__acts">
+      <button class="mini" id="btnClear" type="button">清空本心法</button>
+      <button class="mini" id="btnAll" type="button">全选本心法</button>
+    </span>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  'use strict';
+  var LS = 'cy:xinfa:v1';
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+  var esc = function (s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  };
+  function fmt(n) { return (n == null || !isFinite(n)) ? '—' : Number(n).toLocaleString('en-US'); }
+
+  var toastEl = $('#toast'), toastTimer = null;
+  function toast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('is-on');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toastEl.classList.remove('is-on'); }, 2000);
+  }
+
+  var DATA = null;
+  var cur = null;          // 当前心法 id
+  var pick = {};           // "bookId:layer:idx" -> 1
+  var filter = '';
+
+  function load() {
+    try {
+      var raw = localStorage.getItem(LS);
+      if (raw) {
+        var o = JSON.parse(raw);
+        if (o && typeof o === 'object') pick = o;
+      }
+    } catch (e) {}
+  }
+  function save() {
+    try { localStorage.setItem(LS, JSON.stringify(pick)); } catch (e) {}
+  }
+
+  function kOf(layer, idx) { return cur + ':' + layer + ':' + idx; }
+
+  // ---------- 心法列表 ----------
+  function renderBooks() {
+    var k = filter.trim().toLowerCase();
+    var list = DATA.books.filter(function (b) {
+      return !k || b.name.toLowerCase().indexOf(k) >= 0;
+    });
+    var box = $('#books');
+    if (!list.length) {
+      box.innerHTML = '<div class="empty" style="padding:18px 0;font-size:12px">没有匹配的心法</div>';
+      return;
+    }
+    box.innerHTML = list.map(function (b) {
+      var n = countBook(b);
+      return '<button class="book' + (b.id === cur ? ' is-on' : '') + '" type="button" data-id="' + esc(b.id) + '">' +
+        '<img src="./img/xinfa/' + esc(b.icon) + '" alt="" width="26" height="26" loading="lazy" />' +
+        '<span>' + esc(b.name) + '</span>' +
+        (n ? '<em>' + n + '</em>' : '') +
+      '</button>';
+    }).join('');
+    $$('#books .book').forEach(function (el) {
+      el.addEventListener('click', function () {
+        cur = el.getAttribute('data-id');
+        renderBooks();
+        renderLayers();
+      });
+    });
+  }
+
+  function countBook(b) {
+    var n = 0;
+    for (var k in pick) {
+      if (k.indexOf(b.id + ':') === 0) n++;
+    }
+    return n;
+  }
+
+  // ---------- 层与节点 ----------
+  function renderLayers() {
+    var b = DATA.books.filter(function (x) { return x.id === cur; })[0];
+    if (!b) { $('#layers').innerHTML = '<div class="empty">选一本心法</div>'; return; }
+
+    $('#layers').innerHTML = b.L.map(function (nodes, li) {
+      var layer = li + 1;
+      var picked = nodes.filter(function (_, ni) { return pick[kOf(layer, ni)]; }).length;
+      var body = nodes.map(function (n, ni) {
+        var on = !!pick[kOf(layer, ni)];
+        var cost = fmt(n[3]);
+        return '<button class="node' + (on ? ' is-on' : '') + '" type="button" ' +
+          'data-l="' + layer + '" data-i="' + ni + '" ' +
+          'title="' + esc(n[2] + ' · ' + n[0]) + '">' +
+          '<span class="node__g">' + esc(n[1]) + '</span>' +
+          '<span class="node__n">' + esc(n[0]) + '</span>' +
+          '<span class="node__c">' + cost + '</span>' +
+        '</button>';
+      }).join('');
+
+      return '<section class="layer">' +
+        '<div class="layer__head">' +
+          '<h3>第 ' + layer + ' 层</h3>' +
+          '<span class="layer__meta">' + picked + ' / ' + nodes.length + '</span>' +
+          '<span class="layer__acts">' +
+            '<button class="mini" type="button" data-layer="' + layer + '" data-act="pick">全选本层</button>' +
+            '<button class="mini" type="button" data-layer="' + layer + '" data-act="clear">清除本层</button>' +
+          '</span>' +
+        '</div>' +
+        '<div class="nodes">' + body + '</div>' +
+      '</section>';
+    }).join('');
+
+    // 节点点击
+    $$('#layers .node').forEach(function (el) {
+      el.addEventListener('click', function () {
+        var l = Number(el.getAttribute('data-l')), i = Number(el.getAttribute('data-i'));
+        var k = kOf(l, i);
+        if (pick[k]) delete pick[k]; else pick[k] = 1;
+        save();
+        el.classList.toggle('is-on');
+        // 更新本层计数
+        var sec = el.closest('.layer');
+        var cont = sec.querySelectorAll('.node');
+        var on = sec.querySelectorAll('.node.is-on').length;
+        sec.querySelector('.layer__meta').textContent = on + ' / ' + cont.length;
+        renderSum();
+        renderBookCount();
+      });
+    });
+
+    // 层操作
+    $$('#layers .mini').forEach(function (b2) {
+      b2.addEventListener('click', function () {
+        var layer = Number(b2.getAttribute('data-layer'));
+        var act = b2.getAttribute('data-act');
+        b.L[layer - 1].forEach(function (_, ni) {
+          var k = kOf(layer, ni);
+          if (act === 'pick') pick[k] = 1; else delete pick[k];
+        });
+        save();
+        renderLayers();
+        renderSum();
+        renderBookCount();
+      });
+    });
+
+    renderSum();
+  }
+
+  function renderBookCount() {
+    $$('#books .book').forEach(function (el) {
+      var id = el.getAttribute('data-id');
+      var b = DATA.books.filter(function (x) { return x.id === id; })[0];
+      var n = b ? countBook(b) : 0;
+      var em = el.querySelector('em');
+      if (n) {
+        if (!em) { em = document.createElement('em'); el.appendChild(em); }
+        em.textContent = n;
+      } else if (em) {
+        em.remove();
+      }
+    });
+  }
+
+  // ---------- 汇总 ----------
+  function renderSum() {
+    var b = DATA.books.filter(function (x) { return x.id === cur; })[0];
+    var total = 0, money = 0, mats = {};
+    var all = 0;
+    if (b) {
+      b.L.forEach(function (nodes, li) {
+        all += nodes.length;
+        nodes.forEach(function (n, ni) {
+          if (!pick[kOf(li + 1, ni)]) return;
+          total++;
+          money += n[3] || 0;
+          (n[4] || []).forEach(function (m) {
+            mats[m[0]] = (mats[m[0]] || 0) + m[1];
+          });
+        });
+      });
+    }
+    $('#sPick').textContent = fmt(total);
+    $('#sTotal').textContent = '/' + fmt(all);
+    $('#sMoney').textContent = fmt(money);
+
+    var keys = Object.keys(mats);
+    $('#sMats').innerHTML = keys.length
+      ? keys.map(function (k) { return k + ' <b>' + fmt(mats[k]) + '</b>'; }).join('')
+      : '<span style="color:var(--dim)">材料 <b>0</b></span>';
+  }
+
+  // ---------- 事件 ----------
+  $('#q').addEventListener('input', function () {
+    filter = $('#q').value;
+    renderBooks();
+  });
+
+  $('#btnClear').addEventListener('click', function () {
+    if (!cur) return;
+    Object.keys(pick).forEach(function (k) {
+      if (k.indexOf(cur + ':') === 0) delete pick[k];
+    });
+    save(); renderLayers(); renderBookCount();
+    toast('已清空本心法');
+  });
+
+  $('#btnAll').addEventListener('click', function () {
+    if (!cur) return;
+    var b = DATA.books.filter(function (x) { return x.id === cur; })[0];
+    if (!b) return;
+    b.L.forEach(function (nodes, li) {
+      nodes.forEach(function (_, ni) { pick[kOf(li + 1, ni)] = 1; });
+    });
+    save(); renderLayers(); renderBookCount();
+    toast('已全选');
+  });
+
+  // ---------- 启动 ----------
+  function boot() {
+    load();
+    fetch('./data/xinfa.json', { cache: 'no-cache' })
+      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function (d) {
+        DATA = d;
+        var n = 0;
+        d.books.forEach(function (b) { b.L.forEach(function (nodes) { n += nodes.length; }); });
+        $('#cntBooks').textContent = d.books.length;
+        $('#cntNodes').textContent = fmt(n);
+        cur = d.books[0] ? d.books[0].id : null;
+        renderBooks();
+        renderLayers();
+      })
+      .catch(function (e) {
+        $('#layers').innerHTML = '<div class="empty">数据加载失败：' + esc(e.message) + '</div>';
+      });
+  }
+
+  boot();
+})();
+</script>
+</body>
+</html>

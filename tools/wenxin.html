@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0a1b30" />
+<meta name="color-scheme" content="dark" />
+<title>文心鉴定模拟器 · CY</title>
+<meta name="description" content="天涯明月刀 OL 镇派武学鉴定模拟：发放、鉴定、功力统计与奖励进度，纯本地运行。" />
+<meta property="og:title" content="文心鉴定模拟器 · CY" />
+<meta property="og:type" content="website" />
+<link rel="icon" href="../favicon.ico" sizes="any" />
+<style>
+:root{
+  --ink:#0a1b30;--ink-2:#071322;
+  --panel:#0d2340;--panel-2:#102a4a;
+  --line:#1d3d63;--line-2:#23496f;
+  --gold:#ffdd95;--gold-dim:#c9a961;
+  --orange:#ff9a3c;--purple:#b48cf2;
+  --fog:#f8fbff;--mist:#bddaf1;--dim:#7f9ab8;
+  --ok:#9fe6c2;
+  --sans:"PingFang SC","Microsoft YaHei",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  min-height:100vh;color:var(--fog);font-family:var(--sans);
+  background:
+    radial-gradient(120% 55% at 50% 0%, rgba(60,120,190,.16) 0%, transparent 60%),
+    linear-gradient(180deg,#071322 0%,#0a1b30 40%,#0c2137 100%);
+  background-attachment:fixed;-webkit-font-smoothing:antialiased;
+}
+
+.topbar{
+  position:sticky;top:0;z-index:30;
+  display:flex;align-items:center;gap:10px;
+  padding:10px clamp(12px,3vw,28px);
+  background:rgba(7,19,34,.92);backdrop-filter:blur(14px);
+  border-bottom:2px solid var(--line);
+}
+.topbar a.home{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:6px 11px 6px 7px;border:2px solid var(--line-2);border-radius:999px;
+  color:var(--mist);font-size:13px;text-decoration:none;
+  transition:color .14s,border-color .14s,background .14s;flex-shrink:0;
+}
+.topbar a.home:hover{color:var(--gold);border-color:rgba(255,221,149,.5);background:rgba(255,221,149,.07)}
+.topbar a.home:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.topbar__brand{display:flex;align-items:baseline;gap:8px;margin-left:2px;min-width:0}
+.topbar__brand b{font-size:14px;letter-spacing:.1em;color:var(--gold);white-space:nowrap}
+.topbar__brand span{font-size:12px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topbar__right{margin-left:auto;font-size:11px;letter-spacing:.16em;color:var(--dim);white-space:nowrap}
+
+.shell{width:min(1100px,100%);margin:0 auto;padding:clamp(16px,3.4vw,30px) clamp(12px,3vw,24px) 80px}
+.head{margin-bottom:16px}
+.head h1{margin:0 0 6px;font-size:clamp(21px,3.6vw,29px);letter-spacing:.03em}
+.head p{margin:0;font-size:13px;line-height:1.8;color:var(--mist)}
+
+.panel{background:rgba(13,35,64,.5);border:2px solid var(--line);margin-bottom:14px}
+.panel__head{
+  display:flex;align-items:center;gap:10px;padding:10px 14px;
+  border-bottom:1px solid var(--line);flex-wrap:wrap;
+}
+.panel__head h2{margin:0;font-size:13px;letter-spacing:.06em;color:var(--gold);font-weight:600}
+.panel__head i{flex:1;height:1px;background:linear-gradient(90deg,var(--line-2),transparent);min-width:20px}
+.panel__body{padding:14px}
+
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+@media(max-width:640px){.stats{grid-template-columns:repeat(2,1fr)}}
+.stat{padding:11px;text-align:center;background:rgba(9,24,42,.6);border:1px solid var(--line)}
+.stat dt{font-size:11px;color:var(--dim);margin-bottom:4px}
+.stat dd{margin:0;font-size:17px;font-family:var(--mono);color:var(--fog)}
+.stat dd.hl{color:var(--gold)}
+
+/* 发放 */
+.slots{display:flex;flex-wrap:wrap;gap:8px}
+.slot{
+  display:flex;flex-direction:column;align-items:center;gap:5px;
+  width:88px;padding:9px 4px 7px;
+  background:rgba(9,24,42,.6);border:2px solid var(--line);
+  cursor:pointer;transition:border-color .14s,background .14s,transform .1s;
+  font-family:inherit;
+}
+.slot:hover{border-color:rgba(255,221,149,.45);background:rgba(16,42,74,.8)}
+.slot:active{transform:translateY(1px)}
+.slot:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.slot img{width:40px;height:40px;object-fit:contain}
+.slot span{font-size:10.5px;color:var(--mist);line-height:1.3;text-align:center}
+
+/* 操作 */
+.tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:6px}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;
+  padding:9px 16px;font-family:inherit;font-size:13px;line-height:1;
+  color:var(--mist);background:#12304f;border:2px solid var(--line-2);
+  cursor:pointer;transition:background .14s,color .14s,border-color .14s;
+  white-space:nowrap;
+}
+.btn:hover:not(:disabled){background:#17406a;color:var(--fog)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.btn--gold{color:var(--gold);background:rgba(107,83,32,.55);border-color:rgba(255,221,149,.5)}
+.btn--gold:hover:not(:disabled){background:rgba(107,83,32,.85);color:var(--gold)}
+.btn--ghost{background:transparent}
+
+/* 背包 */
+.bagmeta{font-size:11.5px;color:var(--dim);font-family:var(--mono);margin-left:auto}
+.bag{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));
+  gap:6px;
+}
+.cell{
+  position:relative;aspect-ratio:1;
+  display:grid;place-items:center;
+  background:rgba(9,24,42,.55);
+  border:1px solid var(--line);
+  overflow:hidden;
+}
+.cell img{width:84%;height:84%;object-fit:contain;display:block}
+.cell--hit{
+  border-color:var(--gold);
+  background:linear-gradient(180deg,rgba(107,83,32,.55),rgba(38,28,8,.55));
+  box-shadow:inset 0 0 14px rgba(255,221,149,.22);
+}
+.cell__p{
+  position:absolute;bottom:1px;left:0;right:0;
+  text-align:center;font-family:var(--mono);font-size:9.5px;
+  color:var(--dim);line-height:1;
+  background:linear-gradient(0deg,rgba(3,9,18,.9),transparent);
+  padding-top:4px;
+}
+.cell--hit .cell__p{color:var(--gold);font-weight:700;font-size:10px}
+.cell--new{animation:flash .5s ease}
+@keyframes flash{0%{box-shadow:0 0 0 2px rgba(255,221,149,.9)}100%{box-shadow:none}}
+
+/* 奖励 */
+.rewards{display:flex;flex-direction:column;gap:10px}
+.rw{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.rw__n{font-size:12.5px;color:var(--mist);width:96px;flex-shrink:0}
+.rw__bar{
+  flex:1 1 160px;height:9px;background:var(--ink-2);
+  border:1px solid var(--line-2);position:relative;overflow:hidden;min-width:120px;
+}
+.rw__bar i{position:absolute;inset:0 auto 0 0;width:0;background:linear-gradient(90deg,#c9a961,#ffdd95);transition:width .35s ease}
+.rw__bar i.done{background:linear-gradient(90deg,#4fae86,#9fe6c2)}
+.rw__t{font-size:11.5px;color:var(--dim);font-family:var(--mono);white-space:nowrap;width:112px;text-align:right}
+.rw__t.done{color:var(--ok)}
+
+.note{font-size:11.5px;line-height:1.9;color:var(--dim);margin-top:12px}
+.note b{color:var(--mist)}
+
+.toast{
+  position:fixed;left:50%;bottom:36px;transform:translate(-50%,20px);
+  padding:10px 20px;font-size:13px;color:var(--gold);
+  background:#10294a;border:2px solid var(--gold);
+  opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:90;
+}
+.toast.is-on{opacity:1;transform:translate(-50%,0)}
+
+.foot{
+  margin-top:26px;padding-top:16px;border-top:2px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;
+  font-size:11.5px;color:var(--dim);line-height:1.9;
+}
+.foot a{color:var(--mist);text-decoration:none;border-bottom:1px dashed rgba(189,218,241,.3)}
+.foot a:hover{color:var(--gold);border-bottom-color:var(--gold)}
+
+@media(max-width:640px){
+  .topbar__right{display:none}
+  .slot{width:72px}
+  .slot img{width:34px;height:34px}
+  .bag{grid-template-columns:repeat(auto-fill,minmax(48px,1fr));gap:4px}
+  .rw__n{width:100%}
+  .rw__t{width:auto;text-align:left}
+}
+@media(prefers-reduced-motion:reduce){
+  .cell--new{animation:none}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="home" href="../index.html" title="返回大厅" aria-label="返回大厅">
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+    大厅
+  </a>
+  <div class="topbar__brand">
+    <b>WENXIN</b>
+    <span>/ 镇派武学鉴定</span>
+  </div>
+  <div class="topbar__right">CY · IDENTIFY SIMULATOR</div>
+</header>
+
+<main class="shell">
+
+  <section class="head">
+    <h1>文心鉴定模拟器</h1>
+    <p>发放镇派武学、鉴定出功力、记录达标次数与奖励进度。纯本地运行，数值模型为近似模拟。</p>
+  </section>
+
+  <section class="panel">
+    <div class="panel__head"><h2>统计</h2><i></i></div>
+    <div class="panel__body">
+      <dl class="stats">
+        <div class="stat"><dt>已鉴定</dt><dd id="sTotal">0</dd></div>
+        <div class="stat"><dt>达标（≥<span id="sThr">1200</span>）</dt><dd class="hl" id="sHit">0</dd></div>
+        <div class="stat"><dt>最佳功力</dt><dd class="hl" id="sBest">—</dd></div>
+        <div class="stat"><dt>达标率</dt><dd id="sRate">—</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel__head"><h2>发放镇派武学</h2><i></i></div>
+    <div class="panel__body">
+      <div class="slots" id="slots"></div>
+      <div class="tools" style="margin-top:12px">
+        <button class="btn btn--gold" id="btnAll" type="button">一键鉴定</button>
+        <button class="btn" id="btnGrant9" type="button">每样发一本</button>
+        <button class="btn btn--ghost" id="btnClear" type="button">清空背包</button>
+        <button class="btn btn--ghost" id="btnReset" type="button">重置全部</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel__head">
+      <h2>背包</h2><i></i>
+      <span class="bagmeta" id="bagMeta">0 / 120</span>
+    </div>
+    <div class="panel__body">
+      <div class="bag" id="bag"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel__head"><h2>鉴定奖励</h2><i></i></div>
+    <div class="panel__body">
+      <div class="rewards" id="rewards"></div>
+      <div class="note">
+        <b>说明：</b>奖励档位来自游戏内设定（累计鉴定次数达标可领），功力数值为近似模拟——真实算法未公开，此处按「整体比例 × 系数」生成，仅供体验。所有数据只存在本机浏览器。
+      </div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <div>
+      9 个书号位 · 背包 <b id="cntCap">120</b> 格 · 达标线 <b id="cntThr">1200</b> 功力
+    </div>
+    <div><a href="../index.html">← 返回大厅</a></div>
+  </footer>
+
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  'use strict';
+  var LS = 'cy:wenxin:v1';
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+  var esc = function (s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  };
+  function fmt(n) { return (n == null || !isFinite(n)) ? '—' : Number(n).toLocaleString('en-US'); }
+
+  var toastEl = $('#toast'), toastTimer = null;
+  function toast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('is-on');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toastEl.classList.remove('is-on'); }, 2200);
+  }
+
+  var DATA = null;
+  var st = { items: [], total: 0, hit: 0, best: 0 };
+
+  function load() {
+    try {
+      var raw = localStorage.getItem(LS);
+      if (raw) {
+        var o = JSON.parse(raw);
+        if (o && Array.isArray(o.items)) {
+          st.items = o.items.slice(0, 400);
+          st.total = Number(o.total) || 0;
+          st.hit = Number(o.hit) || 0;
+          st.best = Number(o.best) || 0;
+        }
+      }
+    } catch (e) {}
+  }
+  function save() {
+    try { localStorage.setItem(LS, JSON.stringify(st)); } catch (e) {}
+  }
+
+  // 功力生成：比例 60~99 偏下分布，功力 ≈ 比例 × 系数 ± 波动
+  function rollPower() {
+    var R = DATA.ratio;
+    var t = Math.pow(Math.random(), R.pow || 1.12);   // 略偏下，贴近实测分布
+    var ratio = R.min + t * (R.max - R.min);
+    var p = ratio * R.k + (Math.random() * 24 - 12);
+    return Math.max(1, Math.round(p));
+  }
+
+  function renderSlots() {
+    $('#slots').innerHTML = DATA.slots.map(function (s) {
+      return '<button class="slot" type="button" data-slot="' + s.i + '" title="发放：' + esc(s.n) + '">' +
+        '<img src="./img/wenxin/' + s.i + '-u.webp" alt="" width="40" height="40" loading="lazy" />' +
+        '<span>' + esc(s.n.replace('镇派武学', '')) + '</span>' +
+      '</button>';
+    }).join('');
+    $$('#slots .slot').forEach(function (b) {
+      b.addEventListener('click', function () { grant(Number(b.getAttribute('data-slot'))); });
+    });
+  }
+
+  function grant(slot) {
+    if (st.items.length >= DATA.capacity) { toast('背包满了（' + DATA.capacity + ' 格）'); return; }
+    st.items.push({ s: slot, p: null });
+    save();
+    renderBag(st.items.length - 1);
+  }
+
+  function identifyAll() {
+    var n = 0;
+    st.items.forEach(function (it) {
+      if (it.p == null) {
+        it.p = rollPower();
+        st.total++;
+        if (it.p >= DATA.threshold) st.hit++;
+        if (it.p > st.best) st.best = it.p;
+        n++;
+      }
+    });
+    if (!n) { toast('没有可鉴定的武学'); return; }
+    save();
+    renderAll();
+    toast('鉴定 ' + n + ' 本');
+  }
+
+  function renderBag(newIdx) {
+    var box = $('#bag');
+    var cap = DATA.capacity;
+    var html = '';
+    for (var i = 0; i < cap; i++) {
+      var it = st.items[i];
+      if (!it) {
+        html += '<div class="cell"></div>';
+        continue;
+      }
+      var hit = it.p != null && it.p >= DATA.threshold;
+      var icon = './img/wenxin/' + it.s + (it.p == null ? '-u' : '-i') + '.webp';
+      html += '<div class="cell' + (hit ? ' cell--hit' : '') + (i === newIdx ? ' cell--new' : '') + '" ' +
+        'title="' + esc(DATA.slots[it.s - 1].n) + (it.p != null ? ' · 功力 ' + it.p : ' · 未鉴定') + '">' +
+        '<img src="' + icon + '" alt="" loading="lazy" />' +
+        (it.p != null ? '<span class="cell__p">' + fmt(it.p) + '</span>' : '') +
+      '</div>';
+    }
+    box.innerHTML = html;
+    $('#bagMeta').textContent = st.items.length + ' / ' + cap;
+  }
+
+  function renderStats() {
+    $('#sTotal').textContent = fmt(st.total);
+    $('#sHit').textContent = fmt(st.hit);
+    $('#sBest').textContent = st.best ? fmt(st.best) : '—';
+    $('#sRate').textContent = st.total ? (st.hit / st.total * 100).toFixed(1) + '%' : '—';
+  }
+
+  function renderRewards() {
+    $('#rewards').innerHTML = DATA.rewards.map(function (r) {
+      var done = st.total >= r.n;
+      var pct = Math.min(100, st.total / r.n * 100);
+      return '<div class="rw">' +
+        '<span class="rw__n">累计 ' + r.n + ' 次</span>' +
+        '<span class="rw__bar"><i class="' + (done ? 'done' : '') + '" style="width:' + pct + '%"></i></span>' +
+        '<span class="rw__t' + (done ? ' done' : '') + '">' +
+          (done ? '已达标 · ' + r.band[0] + '-' + r.band[1] : st.total + ' / ' + r.n) +
+        '</span>' +
+      '</div>';
+    }).join('');
+  }
+
+  function renderAll() {
+    renderBag(-1);
+    renderStats();
+    renderRewards();
+  }
+
+  // ---------- 事件 ----------
+  $('#btnAll').addEventListener('click', identifyAll);
+
+  $('#btnGrant9').addEventListener('click', function () {
+    var n = 0;
+    for (var i = 1; i <= 9; i++) {
+      if (st.items.length >= DATA.capacity) break;
+      st.items.push({ s: i, p: null });
+      n++;
+    }
+    if (!n) { toast('背包满了'); return; }
+    save();
+    renderBag(st.items.length - n);
+    toast('发放 ' + n + ' 本');
+  });
+
+  $('#btnClear').addEventListener('click', function () {
+    if (!st.items.length) { toast('背包是空的'); return; }
+    if (!confirm('清空背包？已鉴定的统计不会清零。')) return;
+    st.items = [];
+    save();
+    renderBag(-1);
+  });
+
+  $('#btnReset').addEventListener('click', function () {
+    if (!confirm('重置背包、统计和奖励进度？')) return;
+    st = { items: [], total: 0, hit: 0, best: 0 };
+    save();
+    renderAll();
+    toast('已重置');
+  });
+
+  // ---------- 启动 ----------
+  function boot() {
+    load();
+    fetch('./data/wenxin.json', { cache: 'no-cache' })
+      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function (d) {
+        DATA = d;
+        $('#sThr').textContent = d.threshold;
+        $('#cntThr').textContent = d.threshold;
+        $('#cntCap').textContent = d.capacity;
+        renderSlots();
+        renderAll();
+      })
+      .catch(function (e) {
+        $('#slots').innerHTML = '<div style="color:#ffb3c1;font-size:12px">数据加载失败：' + esc(e.message) + '</div>';
+      });
+  }
+
+  boot();
+})();
+</script>
+</body>
+</html>

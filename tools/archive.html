@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0a1b30" />
+<meta name="color-scheme" content="dark" />
+<title>天刀图鉴 · CY</title>
+<meta name="description" content="天涯明月刀 OL 图鉴：神兵、砭石、琅纹、镇派条目与外观外观图鉴，支持搜索与颜色筛选。" />
+<meta property="og:title" content="天刀图鉴 · CY" />
+<meta property="og:type" content="website" />
+<link rel="icon" href="../favicon.ico" sizes="any" />
+<style>
+:root{
+  --ink:#0a1b30;--ink-2:#071322;
+  --panel:#0d2340;--panel-2:#102a4a;
+  --line:#1d3d63;--line-2:#23496f;
+  --gold:#ffdd95;--gold-dim:#c9a961;
+  --orange:#ff9a3c;
+  --fog:#f8fbff;--mist:#bddaf1;--dim:#7f9ab8;
+  --sans:"PingFang SC","Microsoft YaHei",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  min-height:100vh;color:var(--fog);font-family:var(--sans);
+  background:
+    radial-gradient(120% 55% at 50% 0%, rgba(60,120,190,.16) 0%, transparent 60%),
+    linear-gradient(180deg,#071322 0%,#0a1b30 40%,#0c2137 100%);
+  background-attachment:fixed;-webkit-font-smoothing:antialiased;
+}
+
+.topbar{
+  position:sticky;top:0;z-index:30;
+  display:flex;align-items:center;gap:10px;
+  padding:10px clamp(12px,3vw,28px);
+  background:rgba(7,19,34,.92);backdrop-filter:blur(14px);
+  border-bottom:2px solid var(--line);
+}
+.topbar a.home{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:6px 11px 6px 7px;border:2px solid var(--line-2);border-radius:999px;
+  color:var(--mist);font-size:13px;text-decoration:none;
+  transition:color .14s,border-color .14s,background .14s;flex-shrink:0;
+}
+.topbar a.home:hover{color:var(--gold);border-color:rgba(255,221,149,.5);background:rgba(255,221,149,.07)}
+.topbar a.home:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.topbar__brand{display:flex;align-items:baseline;gap:8px;margin-left:2px;min-width:0}
+.topbar__brand b{font-size:14px;letter-spacing:.1em;color:var(--gold);white-space:nowrap}
+.topbar__brand span{font-size:12px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topbar__right{margin-left:auto;font-size:11px;letter-spacing:.16em;color:var(--dim);white-space:nowrap}
+
+.shell{width:min(1240px,100%);margin:0 auto;padding:clamp(16px,3.4vw,30px) clamp(12px,3vw,24px) 80px}
+.head{margin-bottom:16px}
+.head h1{margin:0 0 6px;font-size:clamp(21px,3.6vw,29px);letter-spacing:.03em}
+.head p{margin:0;font-size:13px;line-height:1.8;color:var(--mist)}
+
+.searchbar{
+  display:flex;gap:8px;flex-wrap:wrap;align-items:center;
+  margin-bottom:14px;
+}
+.searchbar input{
+  flex:1 1 220px;min-width:0;
+  padding:10px 12px;font-family:inherit;font-size:13.5px;
+  color:var(--fog);background:var(--ink-2);
+  border:2px solid var(--line-2);
+}
+.searchbar input:focus{outline:2px solid var(--gold);outline-offset:1px}
+.count{font-size:11.5px;color:var(--dim);font-family:var(--mono);white-space:nowrap}
+
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;border-bottom:2px solid var(--line)}
+.tabs button{
+  padding:9px 16px;font-family:inherit;font-size:13px;
+  color:var(--dim);background:transparent;border:2px solid transparent;border-bottom:none;
+  cursor:pointer;position:relative;top:2px;transition:color .14s,background .14s,border-color .14s;
+}
+.tabs button:hover{color:var(--mist)}
+.tabs button.is-on{color:var(--gold);background:rgba(13,35,64,.7);border-color:var(--line);border-bottom-color:rgba(13,35,64,.7)}
+.tabs button:focus-visible{outline:2px solid var(--gold);outline-offset:-2px}
+.pane{display:none}
+.pane.is-on{display:block}
+
+/* 条目卡 */
+.items{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}
+.item{
+  background:rgba(13,35,64,.55);border:2px solid var(--line);
+  padding:14px;
+  transition:border-color .16s,background .16s;
+}
+.item:hover{border-color:var(--line-2);background:rgba(16,42,74,.7)}
+.item__top{display:flex;align-items:flex-start;gap:10px;margin-bottom:8px}
+.item__name{font-size:14.5px;font-weight:600;letter-spacing:.02em;flex:1;min-width:0}
+.item__rar{
+  font-size:10px;padding:2px 7px;flex-shrink:0;
+  color:var(--gold);border:1px solid rgba(255,221,149,.45);
+  background:rgba(107,83,32,.45);
+}
+.item__sub{font-size:11.5px;color:var(--dim);margin-bottom:8px}
+.item__desc{font-size:12px;line-height:1.7;color:var(--mist);margin-bottom:10px}
+.item__g{margin-bottom:10px}
+.item__g:last-child{margin-bottom:0}
+.item__g h4{
+  margin:0 0 6px;font-size:11.5px;letter-spacing:.06em;color:var(--gold-dim);font-weight:600;
+}
+.item__g dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:4px 10px;font-size:12px}
+.item__g dt{color:var(--dim);white-space:nowrap}
+.item__g dd{margin:0;color:var(--mist);text-align:left}
+.item__g dd.gold{color:var(--gold)}
+.item__g .body{grid-column:1/-1;color:var(--dim);line-height:1.7;margin-top:2px}
+
+/* 外观网格 */
+.filters{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.filters button{
+  padding:5px 11px;font-family:inherit;font-size:12px;
+  color:var(--dim);background:rgba(13,35,64,.7);
+  border:2px solid var(--line);cursor:pointer;
+  transition:color .14s,border-color .14s,background .14s;
+}
+.filters button:hover{color:var(--mist);border-color:var(--line-2)}
+.filters button.is-on{color:var(--gold);border-color:rgba(255,221,149,.55);background:rgba(107,83,32,.5)}
+.filters button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+.skins{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.skin{
+  background:rgba(13,35,64,.5);border:2px solid var(--line);
+  overflow:hidden;cursor:pointer;
+  transition:border-color .16s,transform .16s;
+}
+.skin:hover{border-color:rgba(255,221,149,.5);transform:translateY(-2px)}
+.skin:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.skin__pic{
+  position:relative;aspect-ratio:1;background:#08182b;
+  display:grid;place-items:center;overflow:hidden;
+}
+.skin__pic img{
+  width:100%;height:100%;object-fit:contain;display:block;
+}
+.skin__pic .ph{
+  position:absolute;inset:0;
+  display:grid;place-items:center;
+  font-size:11px;color:var(--dim);
+}
+.skin__lux{
+  position:absolute;top:6px;left:6px;
+  padding:2px 6px;font-size:9.5px;letter-spacing:.06em;
+  color:#3a2200;background:linear-gradient(150deg,#ffdd95,#c9a961);
+}
+.skin__body{padding:8px 9px 10px}
+.skin__name{font-size:12.5px;line-height:1.4;margin-bottom:3px;color:var(--fog)}
+.skin__meta{font-size:10.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.loadmore{display:flex;justify-content:center;margin-top:18px}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;
+  padding:10px 22px;font-family:inherit;font-size:13px;line-height:1;
+  color:var(--mist);background:#12304f;border:2px solid var(--line-2);
+  cursor:pointer;transition:background .14s,color .14s,border-color .14s;
+}
+.btn:hover{background:#17406a;color:var(--fog)}
+.btn:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.btn--gold{color:var(--gold);background:rgba(107,83,32,.55);border-color:rgba(255,221,149,.5)}
+
+/* 弹层 */
+.modal{
+  position:fixed;inset:0;z-index:80;
+  background:rgba(3,9,18,.86);
+  display:none;align-items:center;justify-content:center;
+  padding:20px;
+  overflow:auto;
+}
+.modal.is-on{display:flex}
+.modal__box{
+  position:relative;
+  width:min(560px,100%);
+  max-height:90vh;overflow:auto;
+  background:var(--panel);border:2px solid var(--line-2);
+  padding:18px;
+}
+.modal__close{
+  position:absolute;top:10px;right:10px;
+  width:30px;height:30px;
+  display:grid;place-items:center;
+  color:var(--mist);background:rgba(9,24,42,.8);
+  border:2px solid var(--line-2);cursor:pointer;font-size:15px;line-height:1;
+}
+.modal__close:hover{color:var(--gold);border-color:rgba(255,221,149,.5)}
+.modal__imgs{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 14px}
+.modal__imgs figure{margin:0;flex:1 1 150px;text-align:center}
+.modal__imgs img{width:100%;display:block;background:#08182b;border:2px solid var(--line)}
+.modal__imgs figcaption{font-size:11px;color:var(--dim);margin-top:5px}
+.modal h3{margin:0 0 4px;font-size:16px}
+.modal .meta{font-size:12px;color:var(--dim);line-height:1.9}
+.modal .desc{font-size:13px;color:var(--mist);line-height:1.8;margin-top:10px}
+.modal .tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:10px}
+.modal .tags span{font-size:10.5px;padding:2px 7px;border:1px solid var(--line-2);color:var(--dim)}
+
+.empty{padding:36px 0;text-align:center;font-size:13px;color:var(--dim)}
+.foot{
+  margin-top:26px;padding-top:16px;border-top:2px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;
+  font-size:11.5px;color:var(--dim);line-height:1.9;
+}
+.foot a{color:var(--mist);text-decoration:none;border-bottom:1px dashed rgba(189,218,241,.3)}
+.foot a:hover{color:var(--gold);border-bottom-color:var(--gold)}
+
+@media(max-width:640px){
+  .topbar__right{display:none}
+  .items{grid-template-columns:1fr}
+  .skins{grid-template-columns:repeat(2,1fr);gap:9px}
+  .skin__name{font-size:11.5px}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="home" href="../index.html" title="返回大厅" aria-label="返回大厅">
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+    大厅
+  </a>
+  <div class="topbar__brand">
+    <b>ARCHIVE</b>
+    <span>/ 天刀图鉴</span>
+  </div>
+  <div class="topbar__right">CY · TIANDAO ARCHIVE</div>
+</header>
+
+<main class="shell">
+
+  <section class="head">
+    <h1>天刀图鉴</h1>
+    <p>神兵、砭石、琅纹、镇派条目与外观图鉴。外观图片按需加载，第一次翻到会稍慢。</p>
+  </section>
+
+  <div class="searchbar">
+    <input id="q" type="search" placeholder="搜名称、副标题、获取方式…" autocomplete="off" />
+    <span class="count" id="count">—</span>
+  </div>
+
+  <nav class="tabs" id="tabs">
+    <button type="button" data-pane="gear" class="is-on">装备条目</button>
+    <button type="button" data-pane="skin">外观图鉴</button>
+  </nav>
+
+  <section class="pane is-on" id="pane-gear">
+    <div class="items" id="items"><div class="empty">正在读取…</div></div>
+  </section>
+
+  <section class="pane" id="pane-skin">
+    <div class="filters" id="cats"></div>
+    <div class="filters" id="colors"></div>
+    <div class="skins" id="skins"><div class="empty">正在读取…</div></div>
+    <div class="loadmore" id="more"></div>
+  </section>
+
+  <footer class="foot">
+    <div>
+      收录 <b id="cntGear">—</b> 个条目、<b id="cntSkin">—</b> 套外观。<br />
+      图片版权归游戏方所有，本站仅作整理检索。
+    </div>
+    <div><a href="../index.html">← 返回大厅</a></div>
+  </footer>
+
+</main>
+
+<div class="modal" id="modal" role="dialog" aria-modal="true" aria-label="外观详情">
+  <div class="modal__box">
+    <button class="modal__close" id="mClose" type="button" aria-label="关闭">×</button>
+    <div id="mBody"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var MEDIA = 'https://www.qquu.chat/archive/api/media/media%2F';
+  var PAGE = 60;   // 外观每次渲染 60 个
+
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+  var esc = function (s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  };
+  function fmt(n) { return (n == null || !isFinite(n)) ? '—' : Number(n).toLocaleString('en-US'); }
+
+  var GEAR = null;        // {cats, items}
+  var SKIN = null;        // {skins}
+  var skinLoaded = false;
+  var fCat = '';
+  var fColor = '';
+  var shown = PAGE;
+  var kw = '';
+
+  var COLOR_CN = {
+    gray: '灰', silver: '银', black: '黑', blue: '蓝', white: '白', gold: '金',
+    red: '红', cyan: '青', brown: '棕', orange: '橙', purple: '紫', pink: '粉',
+    green: '绿', yellow: '黄'
+  };
+
+  // ---------- 装备条目 ----------
+  function renderGear() {
+    var k = kw.trim().toLowerCase();
+    var list = GEAR.items.filter(function (it) {
+      if (!k) return true;
+      return (it.name + ' ' + it.sub + ' ' + it.desc).toLowerCase().indexOf(k) >= 0;
+    });
+    var box = $('#items');
+    if (!list.length) {
+      box.innerHTML = '<div class="empty">没有匹配的条目</div>';
+      $('#count').textContent = '0 / ' + GEAR.items.length;
+      return;
+    }
+    box.innerHTML = list.map(function (it) {
+      var g = (it.g || []).map(function (grp) {
+        var rows = (grp.f || []).map(function (f) {
+          return '<dt>' + esc(f[0]) + '</dt><dd class="' + (f[2] === 'gold' ? 'gold' : '') + '">' + esc(f[1]) + '</dd>';
+        }).join('');
+        var body = grp.b ? '<div class="body">' + esc(grp.b) + '</div>' : '';
+        if (!rows && !body) return '';
+        return '<div class="item__g"><h4>' + esc(grp.t) + '</h4>' +
+          (rows ? '<dl>' + rows + '</dl>' : '') + body + '</div>';
+      }).join('');
+      return '<article class="item">' +
+        '<div class="item__top">' +
+          '<div class="item__name">' + esc(it.name) + '</div>' +
+          (it.rar ? '<span class="item__rar">' + esc(it.rar) + '</span>' : '') +
+        '</div>' +
+        (it.sub ? '<div class="item__sub">' + esc(it.sub) + '</div>' : '') +
+        (it.desc ? '<div class="item__desc">' + esc(it.desc) + '</div>' : '') +
+        g +
+      '</article>';
+    }).join('');
+    $('#count').textContent = list.length + ' / ' + GEAR.items.length;
+  }
+
+  // ---------- 外观 ----------
+  function buildFilters() {
+    var cats = {};
+    SKIN.skins.forEach(function (s) { cats[s.c] = (cats[s.c] || 0) + 1; });
+    var catList = Object.keys(cats).sort(function (a, b) { return cats[b] - cats[a]; });
+    $('#cats').innerHTML = '<button type="button" data-cat="" class="is-on">全部 ' + SKIN.skins.length + '</button>' +
+      catList.map(function (c) {
+        return '<button type="button" data-cat="' + esc(c) + '">' + esc(c) + ' ' + cats[c] + '</button>';
+      }).join('');
+
+    var colors = {};
+    SKIN.skins.forEach(function (s) {
+      (s.ct || []).forEach(function (t) { colors[t] = (colors[t] || 0) + 1; });
+    });
+    var colList = Object.keys(colors).sort(function (a, b) { return colors[b] - colors[a]; });
+    $('#colors').innerHTML = '<button type="button" data-color="" class="is-on">全部颜色</button>' +
+      colList.map(function (c) {
+        return '<button type="button" data-color="' + esc(c) + '">' + esc(COLOR_CN[c] || c) + ' ' + colors[c] + '</button>';
+      }).join('');
+
+    $$('#cats button').forEach(function (b) {
+      b.addEventListener('click', function () {
+        $$('#cats button').forEach(function (x) { x.classList.remove('is-on'); });
+        b.classList.add('is-on');
+        fCat = b.getAttribute('data-cat');
+        shown = PAGE;
+        renderSkins();
+      });
+    });
+    $$('#colors button').forEach(function (b) {
+      b.addEventListener('click', function () {
+        $$('#colors button').forEach(function (x) { x.classList.remove('is-on'); });
+        b.classList.add('is-on');
+        fColor = b.getAttribute('data-color');
+        shown = PAGE;
+        renderSkins();
+      });
+    });
+  }
+
+  function matchSkin(s, k) {
+    if (fCat && s.c !== fCat) return false;
+    if (fColor && (s.ct || []).indexOf(fColor) < 0) return false;
+    if (!k) return true;
+    return (s.n + ' ' + s.c + ' ' + s.am + ' ' + s.d).toLowerCase().indexOf(k) >= 0;
+  }
+
+  function renderSkins() {
+    var k = kw.trim().toLowerCase();
+    var list = SKIN.skins.filter(function (s) { return matchSkin(s, k); });
+    var box = $('#skins');
+    if (!list.length) {
+      box.innerHTML = '<div class="empty">没有匹配的外观</div>';
+      $('#more').innerHTML = '';
+      $('#count').textContent = '0 / ' + SKIN.skins.length;
+      return;
+    }
+    var part = list.slice(0, shown);
+    box.innerHTML = part.map(function (s, i) {
+      var v = s.v[0];
+      var src = MEDIA + v[1];
+      return '<article class="skin" tabindex="0" role="button" data-i="' + SKIN.skins.indexOf(s) + '" ' +
+        'aria-label="' + esc(s.n) + '">' +
+        '<div class="skin__pic">' +
+          '<img src="' + esc(src) + '" alt="" loading="lazy" decoding="async" />' +
+          (s.lx ? '<span class="skin__lux">顶奢</span>' : '') +
+        '</div>' +
+        '<div class="skin__body">' +
+          '<div class="skin__name">' + esc(s.n) + '</div>' +
+          '<div class="skin__meta">' + esc(s.c) + (s.v.length > 1 ? ' · ' + s.v.length + ' 形态' : '') + '</div>' +
+        '</div>' +
+      '</article>';
+    }).join('');
+
+    $('#count').textContent = part.length + ' / ' + list.length;
+
+    $('#more').innerHTML = list.length > shown
+      ? '<button class="btn btn--gold" id="btnMore" type="button">再看 ' + Math.min(PAGE, list.length - shown) + ' 套（还有 ' + (list.length - shown) + '）</button>'
+      : '';
+
+    var bm = $('#btnMore');
+    if (bm) bm.addEventListener('click', function () { shown += PAGE; renderSkins(); });
+
+    // 点击看详情
+    $$('.skin', box).forEach(function (el) {
+      el.addEventListener('click', function () { openSkin(Number(el.getAttribute('data-i'))); });
+      el.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openSkin(Number(el.getAttribute('data-i'))); }
+      });
+    });
+  }
+
+  function openSkin(i) {
+    var s = SKIN.skins[i];
+    if (!s) return;
+    var imgs = s.v.map(function (v) {
+      return '<figure><img src="' + MEDIA + esc(v[1]) + '" alt="' + esc(s.n) + ' ' + esc(v[0]) + '" loading="lazy" />' +
+        '<figcaption>' + esc(v[0] || '默认') + '</figcaption></figure>';
+    }).join('');
+    var tags = (s.ct || []).map(function (t) {
+      return '<span>' + esc(COLOR_CN[t] || t) + '</span>';
+    }).join('');
+    $('#mBody').innerHTML =
+      '<h3>' + esc(s.n) + '</h3>' +
+      '<div class="meta">' + esc(s.c) +
+        (s.am ? ' · 获取：' + esc(s.am) : '') +
+        (s.ap ? '（' + esc(s.ap) + '）' : '') +
+      '</div>' +
+      '<div class="modal__imgs">' + imgs + '</div>' +
+      (s.d ? '<div class="desc">' + esc(s.d) + '</div>' : '') +
+      (tags ? '<div class="tags">' + tags + '</div>' : '');
+    $('#modal').classList.add('is-on');
+  }
+
+  // ---------- 数据 ----------
+  function loadGear() {
+    fetch('./data/archive.json', { cache: 'no-cache' })
+      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function (d) {
+        GEAR = d;
+        $('#cntGear').textContent = d.items.length;
+        renderGear();
+      })
+      .catch(function (e) {
+        $('#items').innerHTML = '<div class="empty">数据加载失败：' + esc(e.message) + '</div>';
+      });
+  }
+
+  function loadSkin() {
+    if (skinLoaded) return;
+    skinLoaded = true;
+    $('#skins').innerHTML = '<div class="empty">正在读取外观数据（约 270KB）…</div>';
+    fetch('./data/archive-skin.json', { cache: 'no-cache' })
+      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function (d) {
+        SKIN = d;
+        $('#cntSkin').textContent = d.skins.length;
+        buildFilters();
+        renderSkins();
+      })
+      .catch(function (e) {
+        skinLoaded = false;
+        $('#skins').innerHTML = '<div class="empty">外观数据加载失败：' + esc(e.message) + '</div>';
+      });
+  }
+
+  // ---------- 交互 ----------
+  var timer = null;
+  $('#q').addEventListener('input', function () {
+    clearTimeout(timer);
+    timer = setTimeout(function () {
+      kw = $('#q').value;
+      shown = PAGE;
+      var isSkin = $('#pane-skin').classList.contains('is-on');
+      if (isSkin) { loadSkin(); if (SKIN) renderSkins(); }
+      else if (GEAR) renderGear();
+    }, 180);
+  });
+
+  $$('#tabs button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      $$('#tabs button').forEach(function (x) { x.classList.remove('is-on'); });
+      b.classList.add('is-on');
+      $$('.pane').forEach(function (p) { p.classList.remove('is-on'); });
+      var name = b.getAttribute('data-pane');
+      $('#pane-' + name).classList.add('is-on');
+      if (name === 'skin') { loadSkin(); if (SKIN) renderSkins(); }
+      else if (GEAR) renderGear();
+    });
+  });
+
+  $('#mClose').addEventListener('click', function () { $('#modal').classList.remove('is-on'); });
+  $('#modal').addEventListener('click', function (e) {
+    if (e.target === $('#modal')) $('#modal').classList.remove('is-on');
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') $('#modal').classList.remove('is-on');
+  });
+
+  loadGear();
+})();
+</script>
+</body>
+</html>
