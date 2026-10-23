@@ -559,6 +559,16 @@ def main():
               file=sys.stderr)
     if not roles:
         raise SystemExit('抓取结果为空，放弃写入（避免清空页面）')
+
+    # 数据量兜底：源站偶尔会抓挂，只吐出几百人。这种残缺数据不该覆盖线上的完整榜单。
+    # 低于阈值直接失败退出，Actions 会标红、不部署，线上继续保留上一次的完整数据。
+    # 确实要强行写入时加 --force。
+    _floor = int(os.environ.get('MIN_ROLES') or 5000)
+    if len(roles) < _floor and '--force' not in sys.argv:
+        raise SystemExit(
+            '抓到的角色只有 %d 个，低于安全线 %d —— 源站这次大概抓挂了。\n'
+            '已放弃写入，线上保留上一次的数据。确认要强行更新请加 --force。'
+            % (len(roles), _floor))
     print('  [roles] 共 %d 个角色' % len(roles), file=sys.stderr)
     attach_power_estimate(roles)
 
@@ -667,6 +677,17 @@ def main():
         if os.path.exists(_home):
             _shutil.copyfile(_home, os.path.join(PUBLISH_DIR, 'index.html'))
             _shutil.copyfile(_home, os.path.join(PUBLISH_DIR, 'home.html'))
+        # 工具页（染色/砭石/衍心/图鉴/文心/灵势）整目录搬过去，缺了会整片 404
+        _tools = os.path.join(BASE, 'tools')
+        if os.path.isdir(_tools):
+            _dst = os.path.join(PUBLISH_DIR, 'tools')
+            if os.path.isdir(_dst):
+                _shutil.rmtree(_dst)
+            _shutil.copytree(_tools, _dst)
+            print('  [tools] 已复制 %d 个文件' % sum(len(f) for _, _, f in os.walk(_dst)),
+                  file=sys.stderr)
+        else:
+            print('  [tools] 警告：源目录不存在 %s' % _tools, file=sys.stderr)
         if OUT_LOCAL:
             write_file(OUT_LOCAL, tpl)
 
