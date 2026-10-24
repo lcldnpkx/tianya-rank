@@ -253,6 +253,32 @@ dialog::backdrop{background:rgba(4,10,18,.72)}
 .foot a{color:var(--mist);text-decoration:none;border-bottom:1px dashed rgba(189,218,241,.3)}
 .foot a:hover{color:var(--gold);border-bottom-color:var(--gold)}
 
+/* 累计获得 */
+.gains{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:8px}
+.gain{
+  position:relative;display:flex;align-items:center;gap:8px;
+  padding:8px;background:rgba(9,24,42,.6);border:1px solid var(--line);
+}
+.gain img,.gain .icon-svg{width:34px;height:34px;object-fit:contain;flex-shrink:0}
+.gain .icon-svg{display:flex;align-items:center;justify-content:center;color:var(--gold-dim)}
+.gain .icon-svg svg{width:28px;height:28px}
+.gain__txt{min-width:0;flex:1}
+.gain__name{font-size:11px;line-height:1.25;color:var(--mist);word-break:break-all;display:block}
+.gain__qty{font-size:12px;font-family:var(--mono);color:var(--gold);display:block}
+.gain--S{border-color:rgba(255,221,149,.5)}
+.gain--S .gain__qty{color:#fff0cf;font-weight:600}
+.gains-empty{padding:16px 0;text-align:center;font-size:12px;color:var(--dim)}
+.gainlog-wrap{margin-top:14px;padding-top:12px;border-top:1px dashed var(--line-2)}
+.gainlog-title{margin:0 0 8px;font-size:12px;color:var(--dim);letter-spacing:.08em;font-weight:400}
+.gainlog{max-height:220px;overflow:auto}
+.gainlog-row{
+  display:flex;gap:10px;padding:6px 0;font-size:11.5px;
+  border-bottom:1px solid rgba(29,61,99,.5);
+}
+.gainlog-row:last-child{border-bottom:none}
+.gainlog-row span:first-child{color:var(--dim);font-family:var(--mono);flex-shrink:0;width:58px}
+.gainlog-row span:last-child{color:var(--mist);line-height:1.6;min-width:0}
+
 @media(max-width:640px){
   .topbar__right{display:none}
   .slots{grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:8px}
@@ -324,6 +350,21 @@ dialog::backdrop{background:rgba(4,10,18,.72)}
     <div class="panel__head"><h2>里程碑奖励</h2><i></i><span style="font-size:11px;color:var(--dim)" id="mileSpent"></span></div>
     <div class="panel__body">
       <div class="miles" id="mileTrack"></div>
+    </div>
+  </section>
+
+  <section class="panel" id="gainsPanel">
+    <div class="panel__head">
+      <h2>累计获得</h2><i></i>
+      <span style="font-size:11px;color:var(--dim)" id="gainsSum"></span>
+      <button class="btn btn--ghost" id="gainsToggle" type="button" style="padding:4px 10px;font-size:11.5px">收起</button>
+    </div>
+    <div class="panel__body" id="gainsBody">
+      <div class="gains" id="gainsGrid"></div>
+      <div class="gainlog-wrap" id="gainLogWrap" hidden>
+        <h4 class="gainlog-title">逐次记录</h4>
+        <div class="gainlog" id="gainLog"></div>
+      </div>
     </div>
   </section>
 
@@ -400,9 +441,31 @@ dialog::backdrop{background:rgba(4,10,18,.72)}
       purchased: [0, 0, 0], gifted: [0, 0, 0],
       balance: [0, 0, 0],
       phase: 'select',       // select | locked | done
-      finished: false
+      finished: false,
+      // 累计获得：key -> { key, itemId, name, grade, round, qty, n, gift }
+      gains: {},
+      gainLog: []            // 逐次抽取记录（新在前）
     };
   }
+
+  // 数量解析：'50' -> 50；'× 50' 亦兼容
+  function qtyOf(str) {
+    var m = String(str == null ? '' : str).match(/(\d+)/);
+    return m ? Number(m[1]) : 1;
+  }
+  function addGain(row, round) {
+    if (!row || !row.name) return;   // 防御：异常行不入统计（如未定义奖位）
+    var key = row.itemId || ('name:' + row.name);
+    var g = state.gains[key];
+    if (!g) {
+      g = state.gains[key] = { key: key, itemId: row.itemId, name: row.name, grade: row.grade, round: round, qty: 0, n: 0, gift: 0 };
+    }
+    if (row.type === 'token') { g.gift += row.gift || 0; }
+    else { g.qty += qtyOf(row.quantity); }
+    g.n += 1;
+    g.round = Math.min(g.round, round);
+  }
+  function resetGains() { state.gains = {}; state.gainLog = []; }
 
   function save() {
     try { localStorage.setItem(LS, JSON.stringify(state)); } catch (e) {}
@@ -437,7 +500,8 @@ dialog::backdrop{background:rgba(4,10,18,.72)}
   function buildFixedSlots() {
     D.stages.forEach(function (s, i) {
       var arr = [{ type: 'treasure', itemId: D.fixed[s.treasure], grade: 'S', name: s.treasure, quantity: '1', id: 'fx-' + i + '-treasure' }];
-      if (s.tokenPack) {
+      // 仅前两轮有「下轮令牌礼包」；天峰为最终轮，无令牌礼包
+      if (s.tokenPack && D.fixed[s.tokenPack]) {
         arr.push({ type: 'token', itemId: D.fixed[s.tokenPack], grade: 'S', name: s.tokenPack, quantity: s.giftRange[0] + '~' + s.giftRange[1] + ' 张', id: 'fx-' + i + '-token' });
       }
       fixedSlots[i] = arr;
@@ -546,6 +610,7 @@ dialog::backdrop{background:rgba(4,10,18,.72)}
       : [];
     var awarded = [];
     [winner].concat(bonus).forEach(function (x) {
+      if (!x || !x.name) { console.warn('奖位异常，已跳过', x); return; }
       state.obtained.push(x.id);
       var row = { id: x.id, type: x.type, itemId: x.itemId, grade: x.grade, name: x.name, bonus: x.id !== winner.id };
       if (x.type === 'token') {
@@ -555,11 +620,19 @@ dialog::backdrop{background:rgba(4,10,18,.72)}
         state.gifted[round + 1] += row.gift;
         state.balance[round + 1] += row.gift;
       } else {
-        row.quantity = '× ' + x.quantity;
+        row.quantity = '× ' + (qtyOf(x.quantity) || 1);
       }
+      addGain(row, round);
       awarded.push(row);
     });
-
+    state.gainLog.unshift({
+      r: round, o: state.ordinal,
+      names: awarded.map(function (x) {
+        return x.type === 'token' ? x.name + ' ×' + x.gift + '张' : x.name + ' ×' + (qtyOf(x.quantity) || 1);
+      }),
+      cost: cost
+    });
+    if (state.gainLog.length > 80) state.gainLog.length = 80;
     state.nextRate = winner.type === 'token' ? 0 : (Math.random() < 0.55 ? [0.3, 0.5, 0.8, 0.9][rnd(4)] : 1);
     var roundDone = state.obtained.length === state.pool.length;
     if (roundDone) {
@@ -570,6 +643,16 @@ dialog::backdrop{background:rgba(4,10,18,.72)}
         state.phase = 'select'; activeGrade = 'A';
       } else {
         state.finished = true; state.phase = 'done';
+        // 通关奖励一并计入累计
+        var fin = [
+          { itemId: 'completion-tianfeng-gift', name: '天峰遗珍', grade: 'S', quantity: '× 1', type: 'item' },
+          { itemId: 'title-wending-tianfeng', name: '问鼎天峰（头顶边框装饰 · 30天）', grade: 'S', quantity: '× 1', type: 'title' }
+        ];
+        fin.forEach(function (x) { addGain(x, 2); });
+        state.gainLog.unshift({
+          r: 2, o: state.ordinal, cost: 0, tag: '通关',
+          names: ['天峰遗珍 ×1', '问鼎天峰 ×1']
+        });
       }
     }
     save();
@@ -647,6 +730,7 @@ dialog::backdrop{background:rgba(4,10,18,.72)}
     label.textContent = state.finished ? '已完成' : (state.phase === 'select' ? '选择本轮奖励' : '抽取一次');
 
     renderMiles();
+    renderGains();
     renderAcct();
     $('#selectPanel').hidden = state.phase !== 'select';
   }
@@ -661,6 +745,34 @@ dialog::backdrop{background:rgba(4,10,18,.72)}
     $('#mileTrack').innerHTML = D.thresholds.map(function (n, i) {
       return '<div class="mile' + (spent >= n ? ' done' : '') + '"><b>' + fmt(n) + ' 张</b><span>' + esc(D.milestones[i]) + '</span></div>';
     }).join('');
+  }
+
+  function renderGains() {
+    var list = Object.keys(state.gains || {}).map(function (k) { return state.gains[k]; });
+    var totalN = list.reduce(function (a, b) { return a + b.n; }, 0);
+    $('#gainsSum').textContent = list.length ? '共 ' + list.length + ' 种 / ' + totalN + ' 件' : '';
+    if (!list.length) {
+      $('#gainsGrid').innerHTML = '<div class="gains-empty" style="grid-column:1/-1">还没有获得奖励</div>';
+    } else {
+      var order = { 'S': 0, 'A': 1, 'B': 2, 'C': 3, 'D': 4 };
+      list.sort(function (a, b) {
+        var d = (order[a.grade] == null ? 9 : order[a.grade]) - (order[b.grade] == null ? 9 : order[b.grade]);
+        return d !== 0 ? d : b.qty - a.qty;
+      });
+      $('#gainsGrid').innerHTML = list.map(function (g) {
+        var q = g.gift ? '× ' + fmt(g.gift) + ' 张' : '× ' + fmt(g.qty);
+        if (g.n > 1 && !g.gift) q += ' <span style="color:var(--dim);font-size:10px">(' + g.n + ')</span>';
+        return '<div class="gain' + (g.grade === 'S' ? ' gain--S' : '') + '">' +
+          iconHtml(g.itemId) +
+          '<div class="gain__txt"><span class="gain__name">' + esc(g.name) + '</span>' +
+          '<span class="gain__qty">' + q + '</span></div></div>';
+      }).join('');
+    }
+    var log = state.gainLog || [];
+    $('#gainLog').innerHTML = log.length ? log.map(function (x) {
+      var tag = x.tag ? x.tag : (D.stages[x.r].name + ' · ' + x.o);
+      return '<div class="gainlog-row"><span>' + esc(tag) + '</span><span>' + esc(x.names.join('、')) + '</span></div>';
+    }).join('') : '<div class="gains-empty">还没有记录</div>';
   }
 
   function renderAcct() {
@@ -744,12 +856,18 @@ dialog::backdrop{background:rgba(4,10,18,.72)}
     var winner = rollSlot(state.round, state.ordinal + 1);
     if (!winner) return;
     var r = settle(winner);
-    render();
-    showResult(r);
+    showResult(r);   // 先弹结果，关闭时再统一刷新面板
   });
+  $('#gainsToggle').addEventListener('click', function () {
+    var w = $('#gainLogWrap');
+    w.hidden = !w.hidden;
+    this.textContent = w.hidden ? '逐次记录' : '收起';
+  });
+
   $('#resetBtn').addEventListener('click', function () {
     if (!confirm('清空当前进度，重新开始？')) return;
     state = freshState();
+    resetGains();
     save();
     render();
   });
@@ -762,6 +880,8 @@ dialog::backdrop{background:rgba(4,10,18,.72)}
       d.items.forEach(function (it) { catalog[it.id] = it; });
       buildFixedSlots();
       if (!load()) state = freshState();
+      if (!state.gains) state.gains = {};
+      if (!state.gainLog) state.gainLog = [];
       if (state.phase === 'select') {
         var q = d.stages[state.round].quota;
         if (!q[activeGrade]) activeGrade = Object.keys(q)[0];
