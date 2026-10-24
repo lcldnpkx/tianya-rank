@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0a1b30" />
+<meta name="color-scheme" content="dark" />
+<title>灵势聚灵台 · CY</title>
+<meta name="description" content="天涯明月刀 OL 灵势合成模拟：选两枚灵势倒推合成概率、投灵运币调概率、看达标曲线与最优投币点。" />
+<meta property="og:title" content="灵势聚灵台 · CY" />
+<meta property="og:type" content="website" />
+<link rel="icon" href="../favicon.ico" sizes="any" />
+<style>
+:root{
+  --ink:#0a1b30;--ink-2:#071322;
+  --panel:#0d2340;--panel-2:#102a4a;
+  --line:#1d3d63;--line-2:#23496f;
+  --gold:#ffdd95;--gold-dim:#c9a961;
+  --fog:#f8fbff;--mist:#bddaf1;--dim:#7f9ab8;
+  --orange:#ff9a3c;--red:#ff5a3c;--ok:#9fe6c2;
+  --sans:"PingFang SC","Microsoft YaHei",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  min-height:100vh;color:var(--fog);font-family:var(--sans);
+  background:
+    radial-gradient(120% 55% at 50% 0%, rgba(60,120,190,.16) 0%, transparent 60%),
+    linear-gradient(180deg,#071322 0%,#0a1b30 40%,#0c2137 100%);
+  background-attachment:fixed;-webkit-font-smoothing:antialiased;
+}
+.topbar{
+  position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:10px;
+  padding:10px clamp(12px,3vw,28px);
+  background:rgba(7,19,34,.94);backdrop-filter:blur(14px);
+  border-bottom:2px solid var(--line);
+}
+.topbar a.home{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:6px 11px 6px 7px;border:2px solid var(--line-2);border-radius:999px;
+  color:var(--mist);font-size:13px;text-decoration:none;flex-shrink:0;
+}
+.topbar a.home:hover{color:var(--gold);border-color:rgba(255,221,149,.5);background:rgba(255,221,149,.07)}
+.topbar__brand{display:flex;align-items:baseline;gap:8px;min-width:0}
+.topbar__brand b{font-size:14px;letter-spacing:.1em;color:var(--gold);white-space:nowrap}
+.topbar__brand span{font-size:12px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topbar__right{margin-left:auto;font-size:11px;letter-spacing:.16em;color:var(--dim);white-space:nowrap}
+
+.shell{width:min(1180px,100%);margin:0 auto;padding:clamp(16px,3vw,26px) clamp(12px,3vw,22px) 90px}
+.head{text-align:center;margin-bottom:clamp(14px,2.6vw,22px)}
+.head .eyebrow{margin:0 0 8px;font-size:11px;letter-spacing:.22em;color:var(--dim);display:flex;align-items:center;justify-content:center;gap:12px}
+.head .eyebrow i{width:34px;height:2px;background:var(--line-2);display:inline-block}
+.head h1{margin:0 0 8px;font-size:clamp(21px,4.4vw,32px);letter-spacing:.04em}
+.head .sub{margin:0;font-size:12.5px;color:var(--dim)}
+
+.tabs{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.tab{
+  padding:7px 15px;font-family:inherit;font-size:12.5px;letter-spacing:.05em;cursor:pointer;
+  color:var(--mist);background:rgba(13,35,64,.7);border:2px solid var(--line);
+}
+.tab:hover{border-color:var(--line-2);color:var(--fog)}
+.tab.is-on{color:var(--gold);border-color:rgba(255,221,149,.6);background:rgba(255,221,149,.07)}
+.tab:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.pane{display:none}
+.pane.is-on{display:block}
+
+.panel{background:rgba(13,35,64,.5);border:2px solid var(--line);margin-bottom:14px}
+.panel__head{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line)}
+.panel__head h2{margin:0;font-size:13px;letter-spacing:.06em;color:var(--gold);font-weight:600}
+.panel__head i{flex:1;height:1px;background:linear-gradient(90deg,var(--line-2),transparent)}
+.panel__body{padding:14px}
+
+/* ---------- 合成台：A + B 可视化 ---------- */
+.workbench{display:grid;grid-template-columns:1fr 72px 1fr;gap:0;align-items:stretch;
+  background:rgba(9,24,42,.55);border:2px solid var(--line);margin-bottom:14px}
+.slotbox{padding:18px 14px;text-align:center;cursor:pointer;transition:background .16s;position:relative}
+.slotbox:hover{background:rgba(255,221,149,.05)}
+.slotbox:focus-visible{outline:2px solid var(--gold);outline-offset:-4px}
+.slotbox__label{font-size:11px;letter-spacing:.16em;color:var(--dim);margin-bottom:10px}
+.slotbox__gems{display:flex;justify-content:center;gap:3px;min-height:42px;align-items:center}
+.slotbox__name{margin-top:8px;font-size:15px;color:var(--gold);letter-spacing:.04em;font-weight:600}
+.slotbox__hint{margin-top:3px;font-size:11px;color:var(--dim)}
+.slotbox--empty .slotbox__name{color:var(--dim);font-weight:400}
+.plus{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
+.plus__c{
+  width:46px;height:46px;display:grid;place-items:center;
+  border:2px solid var(--line-2);border-radius:50%;
+  color:var(--gold-dim);font-size:24px;line-height:1;
+}
+.plus__swap{
+  background:transparent;border:2px solid var(--line-2);color:var(--dim);
+  width:32px;height:32px;display:grid;place-items:center;cursor:pointer;font-family:inherit;
+}
+.plus__swap:hover{color:var(--gold);border-color:rgba(255,221,149,.5)}
+
+/* 宝石图标 */
+.gem{
+  width:26px;height:26px;display:block;flex-shrink:0;
+  clip-path:polygon(50% 0%,100% 38%,78% 100%,22% 100%,0% 38%);
+  box-shadow:inset 0 -4px 8px rgba(0,0,0,.35);
+}
+.gem--o{background:linear-gradient(160deg,#ff9a3c,#ff5a3c 55%,#c33218)}
+.gem--g{background:linear-gradient(160deg,#ffe9a8,#ffce4a 55%,#d69a1e)}
+.gem--empty{background:rgba(255,255,255,.09);box-shadow:none}
+.gem--lg{width:34px;height:34px}
+.gem--sm{width:20px;height:20px}
+
+/* 选择器弹层 */
+dialog{
+  width:min(720px,94vw);max-height:86vh;padding:0;border:2px solid rgba(255,221,149,.45);
+  background:linear-gradient(180deg,#102a4a,#0b1e35);color:var(--fog);
+}
+dialog::backdrop{background:rgba(4,10,18,.75)}
+.picker__head{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line);
+  position:sticky;top:0;background:#102a4a;z-index:2}
+.picker__head h3{margin:0;font-size:14px;color:var(--gold);letter-spacing:.06em}
+.picker__close{margin-left:auto;background:transparent;border:2px solid var(--line-2);color:var(--mist);
+  width:28px;height:28px;cursor:pointer;font-size:15px;line-height:1;font-family:inherit}
+.picker__close:hover{color:var(--gold);border-color:rgba(255,221,149,.5)}
+.picker__body{padding:12px 16px 18px;overflow:auto;max-height:calc(86vh - 54px)}
+.pick-group{margin-bottom:14px}
+.pick-group h4{margin:0 0 8px;font-size:11px;letter-spacing:.16em;color:var(--dim);font-weight:400;display:flex;align-items:center;gap:8px}
+.pick-group h4 em{font-style:normal;color:var(--line-2)}
+.pick-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:8px}
+.pick{
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+  padding:10px 6px;cursor:pointer;font-family:inherit;
+  background:rgba(9,24,42,.8);border:2px solid var(--line);color:var(--mist);
+}
+.pick:hover{border-color:rgba(255,221,149,.45);background:rgba(255,221,149,.06)}
+.pick.is-on{border-color:var(--gold);background:rgba(255,221,149,.1);color:var(--gold)}
+.pick__gems{display:flex;gap:2px;height:22px;align-items:center}
+.pick__name{font-size:12px}
+
+/* 投币 */
+.coin-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.coin-head h3{margin:0;font-size:13px;color:var(--gold);letter-spacing:.05em;font-weight:600}
+.coin-input{margin-left:auto;display:flex;align-items:center;gap:6px}
+.coin-input input{
+  width:88px;padding:7px 9px;font-family:var(--mono);font-size:14px;text-align:right;
+  color:var(--gold);background:var(--ink-2);border:2px solid var(--line-2);
+}
+.coin-input input:focus{outline:2px solid var(--gold);outline-offset:1px}
+.coin-input span{font-size:12px;color:var(--dim)}
+input[type=range]{
+  -webkit-appearance:none;appearance:none;width:100%;height:6px;
+  background:linear-gradient(90deg,var(--red) var(--fill,0%),rgba(255,255,255,.12) var(--fill,0%));
+  outline:none;margin:10px 0 4px;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:20px;height:20px;border-radius:50%;
+  background:linear-gradient(180deg,#fff6dc,#ffce4a);border:2px solid #8a6a1a;cursor:pointer;
+}
+input[type=range]::-moz-range-thumb{
+  width:18px;height:18px;border-radius:50%;background:#ffce4a;border:2px solid #8a6a1a;cursor:pointer;
+}
+.coin-quick{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.chip{
+  padding:6px 12px;font-family:inherit;font-size:11.5px;cursor:pointer;
+  color:var(--mist);background:#12304f;border:2px solid var(--line-2);
+}
+.chip:hover{color:var(--gold);border-color:rgba(255,221,149,.5)}
+.chip.is-on{color:var(--gold);border-color:var(--gold);background:rgba(255,221,149,.12)}
+.coin-note{margin:10px 0 0;font-size:11.5px;line-height:1.85;color:var(--dim)}
+
+/* 结果卡 */
+.results{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+.rcard{
+  padding:14px;background:rgba(9,24,42,.75);border:2px solid var(--line);
+  position:relative;transition:border-color .16s,box-shadow .16s;
+}
+.rcard--top{
+  border-color:rgba(255,221,149,.65);
+  background:linear-gradient(180deg,rgba(107,83,32,.4),rgba(9,24,42,.85));
+  box-shadow:0 0 0 1px rgba(255,221,149,.12),inset 0 0 24px rgba(255,221,149,.07);
+}
+.rcard__tag{
+  position:absolute;top:8px;right:10px;font-size:10px;letter-spacing:.1em;
+  color:var(--dim);border:1px solid var(--line-2);padding:1px 6px;
+}
+.rcard--top .rcard__tag{color:#3a2200;background:var(--gold);border-color:var(--gold);font-weight:700}
+.rcard__gems{display:flex;gap:3px;height:24px;align-items:center;margin-bottom:4px}
+.rcard__pct{font-size:26px;font-family:var(--mono);color:var(--fog);letter-spacing:.01em;line-height:1.15}
+.rcard--top .rcard__pct{color:#fff3cf}
+.rcard__pct small{font-size:14px;color:var(--dim);margin-left:2px}
+.rcard__name{font-size:13px;color:var(--mist);margin-top:2px}
+.rcard__bar{height:5px;background:rgba(255,255,255,.08);margin:9px 0 8px;overflow:hidden}
+.rcard__bar i{display:block;height:100%;background:linear-gradient(90deg,#ff7a4a,#ffce4a)}
+.rcard--top .rcard__bar i{background:linear-gradient(90deg,#ffd98a,#fff3cf)}
+.rcard__meta{font-size:11px;color:var(--dim);font-family:var(--mono);display:flex;gap:10px;flex-wrap:wrap}
+
+/* 曲线 */
+.chart-wrap{position:relative;margin-top:4px}
+.chart-wrap svg{display:block;width:100%;height:auto;overflow:visible}
+.legend{display:flex;gap:14px;flex-wrap:wrap;justify-content:flex-end;margin-bottom:6px}
+.legend span{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--mist)}
+.legend i{width:16px;height:2px;display:block}
+.chart-tip{
+  position:absolute;pointer-events:none;padding:5px 9px;font-size:11px;font-family:var(--mono);
+  background:rgba(7,19,34,.96);border:1px solid var(--line-2);color:var(--fog);
+  white-space:nowrap;opacity:0;transition:opacity .12s;transform:translate(-50%,-130%);
+}
+
+.empty{padding:26px 0;text-align:center;font-size:12.5px;color:var(--dim)}
+.hint{margin-top:10px;font-size:11.5px;line-height:1.85;color:var(--dim)}
+.hint b{color:var(--gold);font-family:var(--mono)}
+
+/* 词条 */
+.affix-box{margin-bottom:16px}
+.affix-box h3{margin:0 0 8px;font-size:12.5px;color:var(--gold);letter-spacing:.06em;font-weight:600}
+.affix-box ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:6px}
+.affix-box li{
+  padding:7px 10px;font-size:11.5px;color:var(--mist);
+  background:rgba(9,24,42,.6);border:1px solid var(--line);
+}
+.affix-box li.o{color:#ffc38a;border-color:rgba(255,154,60,.4);background:rgba(255,154,60,.07)}
+.affix-tier{display:inline-block;margin-right:6px;font-size:10px;padding:0 5px;color:var(--dim);border:1px solid var(--line-2)}
+
+.foot{margin-top:22px;padding-top:14px;border-top:2px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;
+  font-size:11.5px;color:var(--dim);line-height:1.9}
+.foot a{color:var(--mist);text-decoration:none;border-bottom:1px dashed rgba(189,218,241,.3)}
+.foot a:hover{color:var(--gold);border-bottom-color:var(--gold)}
+
+@media(max-width:760px){
+  .topbar__right{display:none}
+  .workbench{grid-template-columns:1fr;}
+  .plus{flex-direction:row;padding:6px 0}
+  .plus__c{width:38px;height:38px;font-size:20px}
+  .slotbox{padding:14px 10px}
+  .rcard__pct{font-size:22px}
+  .coin-input{margin-left:0}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="home" href="../index.html" title="返回大厅" aria-label="返回大厅">
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+    大厅
+  </a>
+  <div class="topbar__brand">
+    <b>LINGSHI</b>
+    <span>/ 灵势聚灵台</span>
+  </div>
+  <div class="topbar__right">CY · FUSION WORKBENCH</div>
+</header>
+
+<main class="shell">
+
+  <section class="head">
+    <p class="eyebrow"><i></i>两颗石头的事<i></i></p>
+    <h1>灵势聚灵台</h1>
+    <p class="sub">点宝石选灵势 · 拖滑块投灵运币 · 实时看概率与最优档位</p>
+  </section>
+
+  <nav class="tabs" id="tabs">
+    <button type="button" class="tab is-on" data-pane="fuse">聚灵合成</button>
+    <button type="button" class="tab" data-pane="affix">词条一览</button>
+  </nav>
+
+  <!-- ============ 合成 ============ -->
+  <section class="pane is-on" id="pane-fuse">
+
+    <div class="workbench">
+      <div class="slotbox" id="slotA" tabindex="0" role="button" aria-label="选择灵势 A">
+        <div class="slotbox__label">灵势 A</div>
+        <div class="slotbox__gems" id="gemsA"></div>
+        <div class="slotbox__name" id="nameA">点击选择</div>
+        <div class="slotbox__hint">点击更换</div>
+      </div>
+      <div class="plus">
+        <div class="plus__c" aria-hidden="true">+</div>
+        <button class="plus__swap" id="btnSwap" type="button" title="交换 A / B" aria-label="交换 A 和 B">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 16V4m0 0L3 8m4-4 4 4M17 8v12m0 0 4-4m-4 4-4-4"/></svg>
+        </button>
+      </div>
+      <div class="slotbox" id="slotB" tabindex="0" role="button" aria-label="选择灵势 B">
+        <div class="slotbox__label">灵势 B</div>
+        <div class="slotbox__gems" id="gemsB"></div>
+        <div class="slotbox__name" id="nameB">点击选择</div>
+        <div class="slotbox__hint">点击更换</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel__body">
+        <div class="coin-head">
+          <h3>投入灵运币</h3>
+          <div class="coin-input">
+            <button class="chip" id="btnMinus" type="button" aria-label="减少">−</button>
+            <input type="number" id="coins" min="0" step="1" value="0" aria-label="投入灵运币数量" />
+            <span>枚</span>
+            <button class="chip" id="btnPlus" type="button" aria-label="增加">+</button>
+          </div>
+        </div>
+        <input type="range" id="coinRange" min="0" max="40" value="0" aria-label="投币滑块" />
+        <div class="coin-quick" id="quick"></div>
+        <p class="coin-note" id="coinNote">灵运币每投满一档，最高概率结果的概率上升、低档结果挤压消失，直到 <b>100%</b> 出最高档。</p>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel__head">
+        <h2>合成可能结果</h2><i></i>
+        <span style="font-size:11px;color:var(--dim)" id="resMeta"></span>
+      </div>
+      <div class="panel__body">
+        <div class="results" id="results"><div class="empty">先选两枚灵势</div></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel__head">
+        <h2>概率曲线</h2><i></i>
+        <div class="legend" id="legend"></div>
+      </div>
+      <div class="panel__body">
+        <div class="chart-wrap">
+          <div class="chart-tip" id="tip"></div>
+          <svg id="chart" viewBox="0 0 760 300" role="img" aria-label="各结果概率随投币量变化曲线"></svg>
+        </div>
+        <div class="hint" id="chartHint"></div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ============ 词条 ============ -->
+  <section class="pane" id="pane-affix">
+    <div class="panel">
+      <div class="panel__head"><h2>词条一览</h2><i></i></div>
+      <div class="panel__body">
+        <div id="affixOut"></div>
+        <div class="hint">橙色为高阶词条，数值随灵势等级变化，此处为满级参考值。</div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <div>
+      收录 <b id="cntStates">—</b> 种灵势、<b id="cntFusion">—</b> 种合成组合。<br />
+      概率与投币曲线按游戏内已验证规则还原，纯本地计算。
+    </div>
+    <div><a href="../index.html">← 返回大厅</a></div>
+  </footer>
+
+</main>
+
+<dialog id="picker">
+  <div class="picker__head">
+    <h3 id="pickerTitle">选择灵势</h3>
+    <button class="picker__close" id="pickerClose" type="button" aria-label="关闭">×</button>
+  </div>
+  <div class="picker__body" id="pickerBody"></div>
+</dialog>
+
+<script>
+(function () {
+  'use strict';
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+  var esc = function (s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  };
+  var fmt = function (n) { return (n == null || !isFinite(n)) ? '—' : Number(n).toLocaleString('en-US'); };
+
+  var D = null, ST = {}, A = 'G1', B = 'G1', coins = 0, editing = 'A';
+
+  function stateOf(id) { return ST[id]; }
+  function keyOf(a, b) { return a + '|' + b; }
+  function fus() { return D && D.fusion[keyOf(A, B)]; }
+
+  // 宝石图标：o 橙数 + g 金数
+  function gemsHtml(st, cls) {
+    if (!st) return '<span class="gem gem--empty ' + (cls || '') + '"></span>';
+    var h = '', i;
+    for (i = 0; i < st.o; i++) h += '<span class="gem gem--o ' + (cls || '') + '"></span>';
+    for (i = 0; i < st.g; i++) h += '<span class="gem gem--g ' + (cls || '') + '"></span>';
+    return h || '<span class="gem gem--empty ' + (cls || '') + '"></span>';
+  }
+
+  // ---------- 选择器 ----------
+  var GROUPS = [
+    { t: '金 色', sub: '仅金色灵势', list: ['G1', 'G2', 'G3', 'G4', 'G5'] },
+    { t: '一 橙', sub: '一橙灵势', list: ['O1G1', 'O1G2', 'O1G3', 'O1G4'] },
+    { t: '双 橙', sub: '两橙灵势', list: ['O2G0', 'O2G1', 'O2G2', 'O2G3'] },
+    { t: '三 橙', sub: '三橙灵势', list: ['O3G0', 'O3G1', 'O3G2'] }
+  ];
+
+  function openPicker(side) {
+    editing = side;
+    $('#pickerTitle').textContent = '选择灵势 ' + side;
+    var cur = side === 'A' ? A : B;
+    $('#pickerBody').innerHTML = GROUPS.map(function (g) {
+      var items = g.list.filter(function (id) { return ST[id]; }).map(function (id) {
+        var st = ST[id];
+        return '<button class="pick' + (id === cur ? ' is-on' : '') + '" type="button" data-id="' + esc(id) + '">' +
+          '<span class="pick__gems">' + gemsHtml(st, 'gem--sm') + '</span>' +
+          '<span class="pick__name">' + esc(st.name) + '</span></button>';
+      }).join('');
+      if (!items) return '';
+      return '<div class="pick-group"><h4>' + esc(g.t) + '<em>' + esc(g.sub) + '</em></h4>' +
+        '<div class="pick-grid">' + items + '</div></div>';
+    }).join('');
+    var dlg = $('#picker');
+    if (!dlg.open) dlg.showModal();
+  }
+
+  $('#picker').addEventListener('click', function (e) {
+    var b = e.target.closest('.pick');
+    if (b) {
+      if (editing === 'A') A = b.dataset.id; else B = b.dataset.id;
+      coins = 0;
+      $('#picker').close();
+      renderAll();
+      return;
+    }
+    if (e.target === this) this.close();
+  });
+  $('#pickerClose').addEventListener('click', function () { $('#picker').close(); });
+  $('#slotA').addEventListener('click', function () { openPicker('A'); });
+  $('#slotB').addEventListener('click', function () { openPicker('B'); });
+  $('#slotA').addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPicker('A'); } });
+  $('#slotB').addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPicker('B'); } });
+  $('#btnSwap').addEventListener('click', function () { var t = A; A = B; B = t; coins = 0; renderAll(); });
+
+  // ---------- 投币 ----------
+  function setCoins(n) {
+    var f = fus();
+    var max = f ? f.max : 0;
+    coins = Math.max(0, Math.min(max, Math.round(Number(n) || 0)));
+    $('#coins').value = coins;
+    $('#coinRange').value = coins;
+    var pct = max ? (coins / max * 100) : 0;
+    $('#coinRange').style.setProperty('--fill', pct + '%');
+    renderResults();
+    renderChart();
+    renderQuickState();
+  }
+  $('#coinRange').addEventListener('input', function () { setCoins(this.value); });
+  $('#coins').addEventListener('change', function () { setCoins(this.value); });
+  $('#btnMinus').addEventListener('click', function () { setCoins(coins - 1); });
+  $('#btnPlus').addEventListener('click', function () { setCoins(coins + 1); });
+
+  function renderQuick() {
+    var f = fus();
+    $('#quick').innerHTML = '';
+    if (!f) return;
+    var top = bestOf(f);
+    var html = '<button class="chip" type="button" data-c="0">不添加</button>';
+    if (top && top.best > 0) {
+      html += '<button class="chip" type="button" data-c="' + top.best + '">达标所需 ' + fmt(top.best) + '</button>';
+    }
+    html += '<button class="chip" type="button" data-c="' + f.max + '">拉满 ' + fmt(f.max) + '</button>';
+    $('#quick').innerHTML = html;
+  }
+  function renderQuickState() {
+    var f = fus();
+    if (!f) return;
+    var top = bestOf(f);
+    $$('#quick .chip').forEach(function (b) {
+      var c = Number(b.dataset.c);
+      b.classList.toggle('is-on', c === coins);
+    });
+    var note = '灵运币每投满一档，最高概率结果的概率上升，直到 <b>100%</b> 出最高档。';
+    if (top) {
+      note += ' 本组合最高档为 <b>' + esc(ST[top.id].name) + '</b>，' +
+        (top.best > 0 ? '投 <b>' + fmt(top.best) + '</b> 枚即可达标，' : '不投币即可达标，') +
+        '拉满需 <b>' + fmt(f.max) + '</b> 枚。';
+    }
+    $('#coinNote').innerHTML = note;
+  }
+  $('#quick').addEventListener('click', function (e) {
+    var b = e.target.closest('.chip');
+    if (b) setCoins(b.dataset.c);
+  });
+
+  // ---------- 结果 ----------
+  function rankOf(id) { var s = ST[id]; return s ? s.o * 100 + s.g : 0; }
+  function bestOf(f) {
+    if (!f || !f.all.length) return null;
+    return f.all.slice().sort(function (x, y) { return rankOf(y.id) - rankOf(x.id); })[0];
+  }
+  function probAt(f, id) {
+    // 曲线第 coins 档的概率
+    var c = D.curve[keyOf(A, B)];
+    if (!c) return null;
+    var ser = c.series[id];
+    if (!ser) return 0;
+    return ser[Math.min(coins, ser.length - 1)];
+  }
+
+  function renderResults() {
+    var f = fus();
+    var box = $('#results');
+    if (!f) {
+      box.innerHTML = '<div class="empty">这个组合没有记录（非法搭配）</div>';
+      $('#resMeta').textContent = '';
+      return;
+    }
+    var top = bestOf(f);
+    var rows = f.all.slice().sort(function (x, y) { return rankOf(y.id) - rankOf(x.id); });
+    box.innerHTML = rows.map(function (o) {
+      var st = ST[o.id] || { name: o.id, o: 0, g: 0 };
+      var p = probAt(f, o.id);
+      if (p == null) p = o.p;
+      var isTop = top && o.id === top.id;
+      // 期望：1/p 次
+      var exp = p > 0 ? (1 / (p / 100)) : null;
+      var cost = exp != null ? exp * coins : null;
+      return '<div class="rcard' + (isTop ? ' rcard--top' : '') + '">' +
+        '<span class="rcard__tag">' + (isTop ? '最高档' : (p > 0 ? '可达' : '已归零')) + '</span>' +
+        '<div class="rcard__gems">' + gemsHtml(st, 'gem--sm') + '</div>' +
+        '<div class="rcard__pct">' + (p % 1 === 0 ? p : p.toFixed(2)) + '<small>%</small></div>' +
+        '<div class="rcard__name">' + esc(st.name) + '</div>' +
+        '<div class="rcard__bar"><i style="width:' + Math.min(100, p) + '%"></i></div>' +
+        '<div class="rcard__meta">' +
+          '<span>期望 ' + (exp != null ? exp.toFixed(1) : '—') + ' 次</span>' +
+          (cost ? '<span>约 ' + fmt(Math.round(cost)) + ' 币</span>' : '') +
+          (o.best ? '<span>达标 ' + fmt(o.best) + ' 币</span>' : '') +
+        '</div>' +
+      '</div>';
+    }).join('');
+    $('#resMeta').textContent = '规则计算 · 投 ' + fmt(coins) + ' / ' + fmt(f.max) + ' 枚';
+  }
+
+  // ---------- 曲线 ----------
+  var CH = ['#ffce4a', '#ff7a4a', '#8fd8ff', '#c9a0ff', '#9fe6c2'];
+  function renderChart() {
+    var f = fus(), c = D.curve[keyOf(A, B)];
+    var svg = $('#chart'), tip = $('#tip');
+    if (!f || !c) {
+      svg.innerHTML = '';
+      $('#legend').innerHTML = '';
+      $('#chartHint').textContent = '';
+      return;
+    }
+    var W = 760, H = 300, PL = 46, PR = 16, PT = 14, PB = 34;
+    var iw = W - PL - PR, ih = H - PT - PB;
+    var maxC = c.max || 1;
+    var x = function (v) { return PL + iw * (v / maxC); };
+    var y = function (p) { return PT + ih * (1 - p / 100); };
+
+    // 阶梯概率：曲线在 max 处会直接跳变到 100%，插一个 max-ε 点让末端竖直接上
+    function seriesPts(ser) {
+      var pts = ser.map(function (p, k) { return [k, p]; });
+      if (pts.length > 1 && ser[ser.length - 1] !== ser[ser.length - 2]) {
+        pts.push([maxC - 0.001, ser[ser.length - 2]]);
+        pts.push([maxC, ser[ser.length - 1]]);
+      } else if (pts.length > 1) {
+        pts.push([maxC, ser[ser.length - 1]]);
+      }
+      return pts;
+    }
+    function ptsToD(pts) {
+      return pts.map(function (q, i) { return (i ? 'L' : 'M') + x(q[0]).toFixed(2) + ' ' + y(q[1]).toFixed(2); }).join(' ');
+    }
+
+    // 只画概率会 >0 的结果线，避免一堆零线
+    var ids = Object.keys(c.series).filter(function (id) {
+      return c.series[id].some(function (p) { return p > 0.0001; });
+    }).sort(function (a, b) { return rankOf(b) - rankOf(a); });
+
+    var g = '';
+    // 网格
+    [0, 25, 50, 75, 100].forEach(function (p) {
+      g += '<line x1="' + PL + '" y1="' + y(p) + '" x2="' + (W - PR) + '" y2="' + y(p) + '" stroke="rgba(255,255,255,.08)" stroke-width="1"/>';
+      g += '<text x="' + (PL - 8) + '" y="' + (y(p) + 4) + '" text-anchor="end" font-size="10" fill="#7f9ab8" font-family="monospace">' + p + '%</text>';
+    });
+    var stepC = maxC <= 50 ? 5 : Math.ceil(maxC / 8 / 5) * 5;
+    for (var cc = 0; cc <= maxC; cc += stepC) {
+      g += '<line x1="' + x(cc) + '" y1="' + PT + '" x2="' + x(cc) + '" y2="' + (H - PB) + '" stroke="rgba(255,255,255,.05)" stroke-width="1"/>';
+      g += '<text x="' + x(cc) + '" y="' + (H - PB + 16) + '" text-anchor="middle" font-size="10" fill="#7f9ab8" font-family="monospace">' + cc + '</text>';
+    }
+    // 线
+    ids.forEach(function (id, i) {
+      var col = CH[i % CH.length];
+      g += '<path d="' + ptsToD(seriesPts(c.series[id])) + '" fill="none" stroke="' + col + '" stroke-width="2" stroke-linejoin="round"/>';
+    });
+    // 当前投币竖线
+    g += '<line x1="' + x(coins) + '" y1="' + PT + '" x2="' + x(coins) + '" y2="' + (H - PB) + '" stroke="rgba(255,255,255,.55)" stroke-width="1.5" stroke-dasharray="4 4"/>';
+    ids.forEach(function (id, i) {
+      var p = c.series[id][Math.min(coins, c.series[id].length - 1)];
+      if (p == null) return;
+      g += '<circle cx="' + x(coins) + '" cy="' + y(p) + '" r="3.6" fill="' + CH[i % CH.length] + '" stroke="#071322" stroke-width="1.6"/>';
+    });
+    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+    svg.innerHTML = g;
+
+    $('#legend').innerHTML = ids.map(function (id, i) {
+      return '<span><i style="background:' + CH[i % CH.length] + '"></i>' + esc((ST[id] || {}).name || id) + '</span>';
+    }).join('');
+
+    $('#chartHint').innerHTML = '竖线为当前投币档（<b>' + fmt(coins) + '</b> 枚）。曲线为各结果在每一投币档的<b>出现概率</b>。';
+
+    // 悬停
+    var rect = svg.getBoundingClientRect();
+    svg.onmousemove = function (ev) {
+      var vb = svg.viewBox.baseVal;
+      var px = (ev.clientX - rect.left) / rect.width * vb.width;
+      if (px < PL || px > W - PR) { tip.style.opacity = 0; return; }
+      var v = Math.round((px - PL) / iw * maxC);
+      v = Math.max(0, Math.min(maxC, v));
+      var lines = [v + ' 枚'];
+      ids.slice(0, 4).forEach(function (id) {
+        var p = c.series[id][Math.min(v, c.series[id].length - 1)];
+        lines.push(((ST[id] || {}).name || id) + ' ' + (p % 1 === 0 ? p : p.toFixed(1)) + '%');
+      });
+      tip.textContent = lines.join(' · ');
+      tip.style.left = (ev.clientX - rect.left) + 'px';
+      tip.style.top = (ev.clientY - rect.top - 14) + 'px';
+      tip.style.opacity = 1;
+    };
+    svg.onmouseleave = function () { tip.style.opacity = 0; };
+    svg.onclick = function (ev) {
+      var vb = svg.viewBox.baseVal;
+      var px = (ev.clientX - rect.left) / rect.width * vb.width;
+      if (px < PL || px > W - PR) return;
+      var v = Math.round((px - PL) / iw * maxC);
+      setCoins(v);
+    };
+  }
+
+  // ---------- 词条 ----------
+  function renderAffix() {
+    var labels = { atk: '攻击向', def: '防御向' };
+    var tiers = { orange: '橙', gold: '金', purple: '紫' };
+    var html = '';
+    Object.keys(D.affix).forEach(function (side) {
+      var g = D.affix[side];
+      html += '<div class="affix-box"><h3>' + esc(labels[side] || side) + '</h3><ul>';
+      Object.keys(g).forEach(function (tier) {
+        (g[tier] || []).forEach(function (txt) {
+          html += '<li class="' + (tier === 'orange' ? 'o' : '') + '">' +
+            '<span class="affix-tier">' + (tiers[tier] || tier) + '</span>' + esc(txt) + '</li>';
+        });
+      });
+      html += '</ul></div>';
+    });
+    $('#affixOut').innerHTML = html || '<div class="empty">暂无词条数据</div>';
+  }
+
+  // ---------- 渲染 ----------
+  function renderSlots() {
+    var a = ST[A], b = ST[B];
+    $('#gemsA').innerHTML = gemsHtml(a, 'gem--lg');
+    $('#nameA').textContent = a ? a.name : '点击选择';
+    $('#slotA').classList.toggle('slotbox--empty', !a);
+    $('#gemsB').innerHTML = gemsHtml(b, 'gem--lg');
+    $('#nameB').textContent = b ? b.name : '点击选择';
+    $('#slotB').classList.toggle('slotbox--empty', !b);
+  }
+
+  function renderAll() {
+    renderSlots();
+    var f = fus();
+    var max = f ? f.max : 0;
+    $('#coinRange').max = max;
+    $('#coins').max = max;
+    if (coins > max) coins = max;
+    renderQuick();
+    setCoins(coins);
+  }
+
+  // 标签页
+  $$('#tabs .tab').forEach(function (b) {
+    b.addEventListener('click', function () {
+      $$('#tabs .tab').forEach(function (x) { x.classList.remove('is-on'); });
+      b.classList.add('is-on');
+      $$('.pane').forEach(function (p) { p.classList.remove('is-on'); });
+      var pane = $('#pane-' + b.dataset.pane);
+      if (pane) pane.classList.add('is-on');
+      if (b.dataset.pane === 'fuse') renderChart();
+    });
+  });
+
+  // ---------- 启动 ----------
+  fetch('./data/lingshi2.json', { cache: 'no-cache' })
+    .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function (d) {
+      D = d;
+      d.states.forEach(function (s) { ST[s.id] = s; });
+      $('#cntStates').textContent = d.states.length;
+      $('#cntFusion').textContent = Object.keys(d.fusion).length;
+      renderAffix();
+      renderAll();
+      window.addEventListener('resize', function () { renderChart(); });
+    })
+    .catch(function (e) {
+      $('#results').innerHTML = '<div class="empty">数据加载失败：' + esc(e.message) + '</div>';
+    });
+})();
+</script>
+</body>
+</html>

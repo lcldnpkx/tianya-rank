@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0a1b30" />
+<meta name="color-scheme" content="dark" />
+<title>衍心模拟器 · CY</title>
+<meta name="description" content="天涯明月刀 OL 心法衍心模拟：星图点选研习孔位算消耗，亦可模拟衍心抽卡（凝心/承武、保底阈值、里程碑）。" />
+<meta property="og:title" content="衍心模拟器 · CY" />
+<meta property="og:type" content="website" />
+<link rel="icon" href="../favicon.ico" sizes="any" />
+<style>
+:root{
+  --ink:#0a1b30;--ink-2:#071322;
+  --panel:#0d2340;--panel-2:#102a4a;
+  --line:#1d3d63;--line-2:#23496f;
+  --gold:#ffdd95;--gold-dim:#c9a961;
+  --fog:#f8fbff;--mist:#bddaf1;--dim:#7f9ab8;
+  --ok:#9fe6c2;--orange:#ff9a3c;
+  --t0:#98a4b4;--t1:#2e92f8;--t2:#d057c3;--t3:#ffea00;--t4:#ff9900;
+  --sans:"PingFang SC","Microsoft YaHei",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  min-height:100vh;color:var(--fog);font-family:var(--sans);
+  background:
+    radial-gradient(120% 55% at 50% 0%, rgba(60,120,190,.16) 0%, transparent 60%),
+    linear-gradient(180deg,#071322 0%,#0a1b30 40%,#0c2137 100%);
+  background-attachment:fixed;-webkit-font-smoothing:antialiased;
+}
+.topbar{
+  position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:10px;
+  padding:10px clamp(12px,3vw,28px);
+  background:rgba(7,19,34,.94);backdrop-filter:blur(14px);
+  border-bottom:2px solid var(--line);
+}
+.topbar a.home{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:6px 11px 6px 7px;border:2px solid var(--line-2);border-radius:999px;
+  color:var(--mist);font-size:13px;text-decoration:none;flex-shrink:0;
+}
+.topbar a.home:hover{color:var(--gold);border-color:rgba(255,221,149,.5);background:rgba(255,221,149,.07)}
+.topbar__brand{display:flex;align-items:baseline;gap:8px;min-width:0}
+.topbar__brand b{font-size:14px;letter-spacing:.1em;color:var(--gold);white-space:nowrap}
+.topbar__brand span{font-size:12px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topbar__right{margin-left:auto;font-size:11px;letter-spacing:.16em;color:var(--dim);white-space:nowrap}
+
+.shell{width:min(1320px,100%);margin:0 auto;padding:clamp(14px,2.6vw,22px) clamp(10px,2.4vw,20px) 90px}
+
+.tabs{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
+.tab{
+  padding:8px 16px;font-family:inherit;font-size:13px;letter-spacing:.05em;cursor:pointer;
+  color:var(--mist);background:rgba(13,35,64,.7);border:2px solid var(--line);
+}
+.tab:hover{border-color:var(--line-2);color:var(--fog)}
+.tab.is-on{color:var(--gold);border-color:rgba(255,221,149,.6);background:rgba(255,221,149,.09)}
+.tab .badge{
+  display:inline-block;margin-left:6px;padding:0 5px;font-size:10px;
+  background:var(--gold-dim);color:var(--ink);font-family:var(--mono);
+}
+.tabs__right{margin-left:auto;font-size:11px;color:var(--dim);letter-spacing:.1em}
+.pane{display:none}
+.pane.is-on{display:block}
+
+.panel{background:rgba(13,35,64,.5);border:2px solid var(--line);margin-bottom:14px}
+.panel__head{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.panel__head h2{margin:0;font-size:13px;letter-spacing:.06em;color:var(--gold);font-weight:600}
+.panel__head i{flex:1;height:1px;background:linear-gradient(90deg,var(--line-2),transparent)}
+.panel__body{padding:14px}
+
+/* ========== 星图 ========== */
+.star-layout{display:grid;grid-template-columns:224px minmax(0,1fr) 300px;gap:12px;align-items:start}
+@media(max-width:1080px){.star-layout{grid-template-columns:1fr}}
+@media(min-width:1081px) and (max-width:1240px){.star-layout{grid-template-columns:200px minmax(0,1fr) 260px}}
+
+.booklist{background:rgba(13,35,64,.5);border:2px solid var(--line);max-height:calc(100vh - 130px);display:flex;flex-direction:column;position:sticky;top:64px}
+.booklist--short{max-height:600px}
+.booklist__head{padding:8px 10px;border-bottom:1px solid var(--line)}
+.booklist__head input{
+  width:100%;padding:7px 9px;font-family:inherit;font-size:12.5px;
+  color:var(--fog);background:var(--ink-2);border:2px solid var(--line-2);
+}
+.booklist__head input:focus{outline:2px solid var(--gold);outline-offset:1px}
+.booklist__body{overflow:auto;padding:6px}
+.bk{
+  display:flex;align-items:center;gap:9px;width:100%;padding:6px 8px;
+  background:transparent;border:2px solid transparent;color:var(--mist);
+  font-family:inherit;font-size:13px;text-align:left;cursor:pointer;
+}
+.bk:hover{background:rgba(16,42,74,.7);color:var(--fog)}
+.bk.is-on{border-color:rgba(255,221,149,.5);background:rgba(107,83,32,.35);color:var(--gold)}
+.bk img{width:24px;height:24px;object-fit:contain;flex-shrink:0}
+.bk span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bk em{font-style:normal;font-size:10px;font-family:var(--mono);color:var(--dim)}
+.bk__q{font-size:9px;padding:0 4px;border:1px solid var(--line-2);color:var(--dim);flex-shrink:0}
+.bk__q.p{color:var(--orange);border-color:rgba(255,154,60,.5)}
+
+.stage{background:rgba(9,24,42,.6);border:2px solid var(--line);position:relative;overflow:hidden}
+.stage__head{display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.stage__head h2{margin:0;font-size:14px;color:var(--gold);letter-spacing:.06em}
+.stage__sub{font-size:11.5px;color:var(--dim)}
+.stage__right{margin-left:auto;display:flex;gap:6px;align-items:center}
+.stage__nav{display:flex;gap:5px;align-items:center}
+.stage__nav button{
+  width:26px;height:26px;display:grid;place-items:center;cursor:pointer;font-family:inherit;
+  background:#12304f;border:2px solid var(--line-2);color:var(--mist);
+}
+.stage__nav button:hover{color:var(--gold);border-color:rgba(255,221,149,.5)}
+.stage__nav button:disabled{opacity:.35;cursor:not-allowed}
+.stage__nav b{font-family:var(--mono);font-size:12px;color:var(--gold);min-width:52px;text-align:center}
+
+.mapwrap{position:relative;padding:6px}
+#map{display:block;width:100%;height:auto;overflow:visible}
+.node{cursor:pointer}
+.node circle.hit{fill:transparent}
+.node .ring{transition:stroke .16s,filter .16s}
+.node:hover .ring{stroke:#ffdd95}
+.node .glow{opacity:0}
+.node.is-on .glow{opacity:1}
+.node text{pointer-events:none;font-family:var(--mono)}
+.rowband{font-size:11px;fill:var(--dim);font-family:var(--sans);letter-spacing:.3em}
+
+.tip{
+  position:absolute;z-index:8;pointer-events:none;opacity:0;transition:opacity .12s;
+  padding:8px 11px;font-size:11.5px;line-height:1.7;
+  background:rgba(7,19,34,.97);border:1px solid var(--line-2);color:var(--mist);
+  max-width:230px;box-shadow:0 6px 20px rgba(0,0,0,.5);
+}
+.tip b{color:var(--gold);display:block;margin-bottom:3px;font-size:12.5px}
+.tip .tt{color:var(--dim);font-family:var(--mono)}
+
+/* 右侧结果 */
+.side{display:flex;flex-direction:column;gap:12px}
+.sidecard{background:rgba(13,35,64,.5);border:2px solid var(--line)}
+.sidecard__head{padding:9px 12px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
+.sidecard__head h3{margin:0;font-size:12.5px;color:var(--gold);letter-spacing:.06em;font-weight:600}
+.sidecard__head span{margin-left:auto;font-size:10.5px;color:var(--dim)}
+.sidecard__body{padding:12px}
+.power{text-align:center;margin-bottom:12px}
+.power__label{font-size:11px;color:var(--dim);letter-spacing:.1em}
+.power__val{font-size:30px;font-family:var(--mono);color:var(--gold);line-height:1.2}
+.power__val small{font-size:14px;color:var(--dim)}
+.power__delta{font-size:11.5px;color:var(--ok);font-family:var(--mono)}
+.kv{display:flex;justify-content:space-between;gap:8px;padding:5px 0;font-size:11.5px;border-bottom:1px solid rgba(29,61,99,.45)}
+.kv:last-child{border-bottom:none}
+.kv span{color:var(--dim)}
+.kv b{font-family:var(--mono);color:var(--fog);font-weight:400}
+.kv b.hl{color:var(--gold)}
+
+/* 抽卡 */
+.draw-stage{padding:22px 14px;text-align:center;position:relative;min-height:200px;display:flex;flex-direction:column;justify-content:center}
+.draw-stage__title{font-size:12px;letter-spacing:.2em;color:var(--dim);margin-bottom:18px}
+.slots-show{display:flex;gap:28px;justify-content:center;flex-wrap:wrap}
+.slotbox2{width:150px;text-align:center;cursor:pointer;position:relative}
+.slotbox2:focus-visible{outline:2px solid var(--gold);outline-offset:4px}
+.slotbox2__orb{
+  width:92px;height:92px;margin:0 auto 8px;border-radius:50%;
+  display:grid;place-items:center;font-size:31px;font-weight:700;
+  border:2px dashed var(--line-2);color:var(--dim);
+  background:radial-gradient(circle at 50% 35%, rgba(255,255,255,.07), transparent 70%);
+  transition:border-color .2s,box-shadow .2s,color .2s;
+}
+.slotbox2.has .slotbox2__orb{
+  border-style:solid;color:var(--ink);font-weight:700;
+  box-shadow:0 0 0 3px rgba(255,255,255,.08),inset 0 -8px 18px rgba(0,0,0,.25);
+}
+.slotbox2__name{font-size:12.5px;color:var(--mist)}
+.slotbox2__hint{font-size:10.5px;color:var(--dim);margin-top:2px}
+.slotbox2__plus{
+  position:absolute;right:-6px;bottom:34px;width:22px;height:22px;border-radius:50%;
+  background:var(--gold-dim);color:var(--ink);display:grid;place-items:center;font-size:15px;font-weight:700;
+}
+.connector{display:flex;align-items:center;justify-content:center;color:var(--line-2);font-size:20px}
+
+.draw-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:20px}
+.dbtn{
+  min-width:140px;padding:11px 22px;font-family:inherit;font-size:13.5px;cursor:pointer;
+  color:var(--fog);background:linear-gradient(180deg,#1a3a5e,#102a4a);border:2px solid var(--line-2);
+}
+.dbtn:hover:not(:disabled){border-color:rgba(255,221,149,.55);background:linear-gradient(180deg,#20456e,#123050)}
+.dbtn:disabled{opacity:.45;cursor:not-allowed}
+.dbtn--gold{background:linear-gradient(180deg,#6b5320,#4a3714);border-color:rgba(255,221,149,.6);color:#fff3cf}
+.dbtn--gold:hover:not(:disabled){background:linear-gradient(180deg,#7d6126,#553f17);border-color:var(--gold)}
+.draw-note{margin-top:12px;font-size:11.5px;color:var(--dim);line-height:1.8}
+
+.drawlog{max-height:260px;overflow:auto}
+.dlrow{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(29,61,99,.5);font-size:11.5px}
+.dlrow:last-child{border-bottom:none}
+.dlrow__no{font-family:var(--mono);color:var(--dim);width:38px;flex-shrink:0}
+.dlrow__tags{display:flex;gap:4px;flex-wrap:wrap;flex:1;min-width:0}
+.pill{
+  display:inline-block;padding:1px 6px;font-size:10.5px;border:1px solid var(--line-2);color:var(--mist);
+}
+.pill--t3{border-color:rgba(255,234,0,.55);color:var(--t3)}
+.pill--t4{border-color:rgba(255,153,0,.6);color:var(--t4)}
+.pill--t2{border-color:rgba(208,87,195,.55);color:var(--t2)}
+.pill--t1{border-color:rgba(46,146,248,.55);color:var(--t1)}
+.pill--none{color:var(--dim)}
+.pill--forced{color:var(--ok);border-color:rgba(159,230,194,.5)}
+
+.mile{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.mile__bar{flex:1;height:8px;background:rgba(255,255,255,.08);position:relative;overflow:hidden}
+.mile__bar i{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,#ffce4a,#fff3cf)}
+.mile__txt{font-size:11px;font-family:var(--mono);color:var(--mist);width:92px;text-align:right;flex-shrink:0}
+
+dialog{
+  width:min(620px,94vw);padding:0;border:2px solid rgba(255,221,149,.45);
+  background:linear-gradient(180deg,#102a4a,#0b1e35);color:var(--fog);
+}
+dialog::backdrop{background:rgba(4,10,18,.76)}
+.dlg__head{display:flex;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line)}
+.dlg__head h3{margin:0;font-size:14px;color:var(--gold);letter-spacing:.06em}
+.dlg__x{margin-left:auto;background:transparent;border:2px solid var(--line-2);color:var(--mist);
+  width:28px;height:28px;cursor:pointer;font-family:inherit;font-size:15px;line-height:1}
+.dlg__x:hover{color:var(--gold);border-color:rgba(255,221,149,.5)}
+.dlg__body{padding:14px 16px 18px;max-height:76vh;overflow:auto}
+.cand-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.cand{
+  padding:10px;text-align:left;cursor:pointer;font-family:inherit;
+  background:rgba(9,24,42,.8);border:2px solid var(--line);color:var(--mist);font-size:12px;
+}
+.cand:hover{border-color:rgba(255,221,149,.5);color:var(--gold)}
+.cand b{display:block;color:var(--fog);margin-bottom:2px;font-size:12.5px}
+.cand span{color:var(--dim);font-family:var(--mono);font-size:11px}
+.cand.is-on{border-color:var(--gold);background:rgba(255,221,149,.1)}
+
+.empty{padding:26px 0;text-align:center;font-size:12.5px;color:var(--dim)}
+.foot{margin-top:20px;padding-top:14px;border-top:2px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;
+  font-size:11.5px;color:var(--dim);line-height:1.9}
+.foot a{color:var(--mist);text-decoration:none;border-bottom:1px dashed rgba(189,218,241,.3)}
+.foot a:hover{color:var(--gold);border-bottom-color:var(--gold)}
+
+.toast{
+  position:fixed;left:50%;bottom:22px;transform:translate(-50%,10px);
+  padding:6px 14px;font-size:12px;color:var(--gold);
+  background:rgba(16,41,74,.94);border:2px solid var(--gold);
+  opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:90;
+}
+.toast.is-on{opacity:1;transform:translate(-50%,0)}
+
+@media(max-width:640px){
+  .topbar__right{display:none}
+  .booklist{position:static;max-height:none}
+  .booklist__body{max-height:200px}
+  .slotbox2{width:124px}
+  .slotbox2__orb{width:76px;height:76px;font-size:26px}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="home" href="../index.html" title="返回大厅" aria-label="返回大厅">
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+    大厅
+  </a>
+  <div class="topbar__brand">
+    <b>XINFA</b>
+    <span>/ 衍心模拟器</span>
+  </div>
+  <div class="topbar__right">CY · XINFA SIMULATOR</div>
+</header>
+
+<main class="shell">
+
+  <nav class="tabs" id="tabs">
+    <button type="button" class="tab is-on" data-pane="map">研习星图</button>
+    <button type="button" class="tab" data-pane="draw">衍心模拟 <span class="badge" id="drawCount">0</span></button>
+    <div class="tabs__right" id="saveState">进度已保存</div>
+  </nav>
+
+  <!-- ================= 研习星图 ================= -->
+  <section class="pane is-on" id="pane-map">
+    <div class="star-layout">
+
+      <aside class="booklist">
+        <div class="booklist__head">
+          <input id="q" type="search" placeholder="搜心法名…" autocomplete="off" aria-label="搜索心法" />
+        </div>
+        <div class="booklist__body" id="books"></div>
+      </aside>
+
+      <div class="stage">
+        <div class="stage__head">
+          <h2 id="bookName">—</h2>
+          <span class="stage__sub" id="bookSub"></span>
+          <div class="stage__right">
+            <div class="stage__nav">
+              <button id="prevL" type="button" aria-label="上一层">‹</button>
+              <b id="layerNo">1 / 9</b>
+              <button id="nextL" type="button" aria-label="下一层">›</button>
+            </div>
+          </div>
+        </div>
+        <div class="mapwrap">
+          <svg id="map" viewBox="0 0 600 500" role="img" aria-label="衍心研习星图"></svg>
+          <div class="tip" id="mapTip"></div>
+        </div>
+      </div>
+
+      <div class="side">
+        <div class="sidecard">
+          <div class="sidecard__head"><h3>消耗汇总</h3><span id="pickMeta">0 孔</span></div>
+          <div class="sidecard__body">
+            <div class="power">
+              <div class="power__label">研习功力（估算）</div>
+              <div class="power__val" id="powerVal">0</div>
+              <div class="power__delta" id="powerDelta"></div>
+            </div>
+            <div class="kv"><span>金币</span><b class="hl" id="sumMoney">0</b></div>
+            <div id="sumItems"></div>
+          </div>
+        </div>
+        <div class="sidecard">
+          <div class="sidecard__head"><h3>本层进度</h3><span id="layerMeta">0 / 17</span></div>
+          <div class="sidecard__body">
+            <div class="mile">
+              <div class="mile__bar"><i id="layerBar" style="width:0"></i></div>
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <button class="dbtn" id="btnLayerAll" type="button" style="min-width:0;padding:7px 12px;font-size:12px">全选本层</button>
+              <button class="dbtn" id="btnLayerClear" type="button" style="min-width:0;padding:7px 12px;font-size:12px">清除本层</button>
+              <button class="dbtn" id="btnBookClear" type="button" style="min-width:0;padding:7px 12px;font-size:12px">清空本心法</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ================= 衍心模拟 ================= -->
+  <section class="pane" id="pane-draw">
+    <div class="star-layout">
+      <aside class="booklist booklist--short">
+        <div class="booklist__head" style="font-size:11.5px;color:var(--dim);letter-spacing:.1em">选择要衍心的心法</div>
+        <div class="booklist__body" id="books2"></div>
+      </aside>
+
+      <div class="stage">
+        <div class="stage__head">
+          <h2 id="dBookName">—</h2>
+          <span class="stage__sub" id="dBookSub"></span>
+          <div class="stage__right">
+            <button class="dbtn" id="btnResetDraw" type="button" style="min-width:0;padding:6px 12px;font-size:12px">重置模拟</button>
+          </div>
+        </div>
+        <div class="draw-stage">
+          <p class="draw-stage__title" id="drawTitle">选择心法开始衍心</p>
+          <div class="slots-show">
+            <div class="slotbox2" id="slotNing" tabindex="0" role="button" aria-label="凝心结果">
+              <div class="slotbox2__orb" id="orbNing">？</div>
+              <div class="slotbox2__name" id="nameNing">凝心</div>
+              <div class="slotbox2__hint">点击查看词条</div>
+            </div>
+            <div class="connector" aria-hidden="true">›</div>
+            <div class="slotbox2" id="slotCheng" tabindex="0" role="button" aria-label="承武结果">
+              <div class="slotbox2__orb" id="orbCheng">？</div>
+              <div class="slotbox2__name" id="nameCheng">承武</div>
+              <div class="slotbox2__hint">点击查看来源</div>
+            </div>
+          </div>
+          <div class="draw-btns">
+            <button class="dbtn" id="btnDraw1" type="button">衍心一次</button>
+            <button class="dbtn dbtn--gold" id="btnDraw5" type="button">衍心五次</button>
+          </div>
+          <p class="draw-note" id="drawNote">凝心与承武各自独立判定；硬保底到期时把「未领悟」提升到保底档。</p>
+        </div>
+      </div>
+
+      <div class="side">
+        <div class="sidecard">
+          <div class="sidecard__head"><h3>保底进度</h3><span id="pityQ">绝品</span></div>
+          <div class="sidecard__body" id="pityBody"></div>
+        </div>
+        <div class="sidecard">
+          <div class="sidecard__head"><h3>里程碑</h3><span id="mileQ">—</span></div>
+          <div class="sidecard__body" id="mileBody"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:14px">
+      <div class="panel__head"><h2>衍心记录</h2><i></i><span style="font-size:11px;color:var(--dim)" id="logMeta"></span></div>
+      <div class="panel__body">
+        <div class="drawlog" id="drawLog"><div class="empty">还没有记录</div></div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <div>
+      共 <b id="cntBooks">—</b> 本心法 · <b id="cntNodes">—</b> 个研习孔位。<br />
+      研习消耗与孔位坐标来自游戏数据；衍心概率与保底按公示规则还原，纯本地计算。
+    </div>
+    <div><a href="../index.html">← 返回大厅</a></div>
+  </footer>
+
+</main>
+
+<dialog id="dlg">
+  <div class="dlg__head">
+    <h3 id="dlgTitle">详情</h3>
+    <button class="dlg__x" id="dlgX" type="button" aria-label="关闭">×</button>
+  </div>
+  <div class="dlg__body" id="dlgBody"></div>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  var LS_MAP = 'cy:xinfa2:map';
+  var LS_DRAW = 'cy:xinfa2:draw';
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+  var esc = function (s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  };
+  var fmt = function (n) { return (n == null || !isFinite(n)) ? '—' : Number(n).toLocaleString('en-US'); };
+  function wan(n) {
+    if (n >= 1e8) return (n / 1e8).toFixed(2) + ' 亿';
+    if (n >= 1e4) return (n / 1e4).toFixed(n >= 1e6 ? 0 : 1) + ' 万';
+    return String(n);
+  }
+
+  var toastEl = $('#toast'), toastTimer = null;
+  function toast(m) {
+    toastEl.textContent = m; toastEl.classList.add('is-on');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toastEl.classList.remove('is-on'); }, 1800);
+  }
+
+  // ===== 规则常量（与游戏公示一致）=====
+  var TIERS = ['未领悟', '初', '进', '深', '镇'];
+  var TCOL = ['#98a4b4', '#2e92f8', '#d057c3', '#ffea00', '#ff9900'];
+  var THRESHOLDS = { 1: { 2: 80, 3: 500 }, 2: { 2: 25, 3: 200, 4: 1000 } };
+  var PROB = {
+    1: { ning: [.64, .2605, .0797, .0198], cheng: [.8929, .0854, .0191, .0026] },
+    2: { ning: [.5, .3407, .1197, .0298, .0098], cheng: [.73, .1995, .062, .0073, .0012] }
+  };
+  var RATES = {
+    1: { ning: { 1: [.3458, .26, 25], 2: [.0106, .08, 25], 3: [.0036, .02, 25] },
+         cheng: { 1: [.09715, .0855, 40], 2: [.00284, .0125, 40], 3: [.00001, .002, 250] } },
+    2: { ning: { 1: [.468, .34, 25], 2: [.02753, .12, 25], 3: [.00413, .03, 25], 4: [.00034, .01, 25] },
+         cheng: { 1: [.24688, .20, 15], 2: [.00303, .04, 15], 3: [.00006, .005, 100], 4: [.00003, .001, 500] } }
+  };
+  var MATS = { 151301: '研习·观', 151302: '研习·明', 151303: '研习·彻' };
+  var MILESTONE = { 1: 1500, 2: 500 };
+  var POWER_TOTAL = { 1: 6303, 2: 9313 };   // 公示总功力
+  var NODE_TOTAL = 153;
+
+  var D = null, BOOKS = {}, training = {};
+  var curBook = null, curLayer = 1, drawBook = null;
+  var pickMap = {};        // "bookId:layer:idx" -> 1
+  var drawState = null;
+
+  // ===== 存取 =====
+  function loadMap() {
+    try { var o = JSON.parse(localStorage.getItem(LS_MAP) || '{}'); if (o && typeof o === 'object') pickMap = o; } catch (e) {}
+  }
+  function saveMap() { try { localStorage.setItem(LS_MAP, JSON.stringify(pickMap)); } catch (e) {} }
+  function loadDraw() {
+    var base = freshDraw(), o = null;
+    try { o = JSON.parse(localStorage.getItem(LS_DRAW) || 'null'); } catch (e) { o = null; }
+    if (o && typeof o === 'object') {
+      base.book = o.book || null;
+      base.last = o.last || null;
+      base.log = Array.isArray(o.log) ? o.log.slice(0, 120) : [];
+      if (o.groups && typeof o.groups === 'object') {
+        [1, 2].forEach(function (q) {
+          var src = o.groups[q] || o.groups[String(q)] || {}, dst = base.groups[q];
+          dst.total = Number(src.total) || 0;
+          dst.claimed = Number(src.claimed) || 0;
+          if (src.pity && typeof src.pity === 'object') {
+            Object.keys(dst.pity).forEach(function (t) { dst.pity[t] = Number(src.pity[t]) || 0; });
+          }
+        });
+      }
+    }
+    drawState = base;
+  }
+  function saveDraw() { try { localStorage.setItem(LS_DRAW, JSON.stringify(drawState)); } catch (e) {} }
+
+  function freshDraw() {
+    return {
+      book: null,
+      groups: { 1: { total: 0, pity: { 2: 0, 3: 0 }, claimed: 0 },
+                2: { total: 0, pity: { 2: 0, 3: 0, 4: 0 }, claimed: 0 } },
+      last: null, log: []
+    };
+  }
+
+  // ===== 研习星图 =====
+  function nodesOf(bookId, layer) {
+    var t = training[bookId];
+    return t ? (t[String(layer)] || []) : [];
+  }
+  function kOf(layer, idx) { return curBook + ':' + layer + ':' + idx; }
+
+  function renderBooks(target, activeId, onClick) {
+    var k = ($('#q').value || '').trim().toLowerCase();
+    var list = D.books.filter(function (b) { return !k || b.name.toLowerCase().indexOf(k) >= 0; });
+    var box = $(target);
+    if (!list.length) { box.innerHTML = '<div class="empty" style="padding:16px 0;font-size:12px">没有匹配的心法</div>'; return; }
+    box.innerHTML = list.map(function (b) {
+      return '<button class="bk' + (b.id === activeId ? ' is-on' : '') + '" type="button" data-id="' + b.id + '">' +
+        '<img src="./img/xinfa/' + esc(b.icon) + '" alt="" width="24" height="24" loading="lazy" onerror="this.style.visibility=\'hidden\'" />' +
+        '<span>' + esc(b.name) + '</span>' +
+        '<i class="bk__q' + (b.q === 2 ? ' p' : '') + '">' + (b.q === 2 ? '镇' : '绝') + '</i>' +
+      '</button>';
+    }).join('');
+    $$(target + ' .bk').forEach(function (el) {
+      el.addEventListener('click', function () { onClick(el.dataset.id); });
+    });
+  }
+
+  // 星图绘制
+  var VBW = 600, VBH = 500;
+  function renderMap() {
+    var nodes = nodesOf(curBook, curLayer);
+    var svg = $('#map');
+    if (!nodes.length) { svg.innerHTML = '<text x="300" y="250" text-anchor="middle" fill="#7f9ab8" font-size="13">这层没有孔位数据</text>'; return; }
+
+    // 原始坐标范围 x 155~445, y 115~390 → 映射到画布
+    var x0 = 130, x1 = 470, y0 = 90, y1 = 420;
+    var mx = function (x) { return (x - x0) / (x1 - x0) * (VBW - 130) + 65; };
+    var my = function (y) { return (y - y0) / (y1 - y0) * (VBH - 120) + 70; };
+
+    var parts = [];
+    // 三区背景带
+    var rows = [0, 1, 2], rowNames = ['立身', '应势', '见微'];
+    rows.forEach(function (r) {
+      var ys = nodes.filter(function (n) { return n[1] === r; }).map(function (n) { return my(n[7]); });
+      if (!ys.length) return;
+      var top = Math.min.apply(null, ys) - 34, bot = Math.max.apply(null, ys) + 30;
+      parts.push('<rect x="20" y="' + top + '" width="' + (VBW - 40) + '" height="' + (bot - top) +
+        '" fill="rgba(255,255,255,0.018)" stroke="rgba(29,61,99,.5)" stroke-width="1"/>');
+      parts.push('<text class="rowband" x="32" y="' + (top + 18) + '">' + rowNames[r] + '</text>');
+    });
+
+    // 连线：同区相邻孔位
+    var byRow = { 0: [], 1: [], 2: [] };
+    nodes.forEach(function (n) { (byRow[n[1]] = byRow[n[1]] || []).push(n); });
+    Object.keys(byRow).forEach(function (r) {
+      var arr = byRow[r].slice().sort(function (a, b) { return a[6] - b[6]; });
+      for (var i = 0; i < arr.length - 1; i++) {
+        parts.push('<line x1="' + mx(arr[i][6]) + '" y1="' + my(arr[i][7]) + '" x2="' + mx(arr[i + 1][6]) + '" y2="' + my(arr[i + 1][7]) +
+          '" stroke="rgba(35,73,111,.85)" stroke-width="1.6"/>');
+      }
+    });
+
+    // 中心环
+    parts.push('<circle cx="' + (VBW / 2) + '" cy="' + (VBH / 2) + '" r="150" fill="none" stroke="rgba(255,221,149,.07)" stroke-width="1"/>');
+    parts.push('<circle cx="' + (VBW / 2) + '" cy="' + (VBH / 2) + '" r="96" fill="none" stroke="rgba(255,221,149,.05)" stroke-width="1"/>');
+
+    // 节点
+    nodes.forEach(function (n) {
+      var idx = n[0], on = !!pickMap[kOf(curLayer, idx)];
+      var cx = mx(n[6]), cy = my(n[7]);
+      var col = on ? '#ffdd95' : '#23496f';
+      parts.push('<g class="node' + (on ? ' is-on' : '') + '" data-i="' + idx + '" tabindex="0" role="button" aria-label="' + esc(n[3]) + '">');
+      if (on) parts.push('<circle class="glow" cx="' + cx + '" cy="' + cy + '" r="26" fill="rgba(255,221,149,.13)"/>');
+      parts.push('<circle class="ring" cx="' + cx + '" cy="' + cy + '" r="20" fill="' + (on ? 'rgba(107,83,32,.85)' : 'rgba(9,24,42,.92)') +
+        '" stroke="' + col + '" stroke-width="2"/>');
+      parts.push('<text x="' + cx + '" y="' + (cy + 5) + '" text-anchor="middle" font-size="13" fill="' +
+        (on ? '#ffdd95' : '#bddaf1') + '" font-weight="' + (on ? 700 : 400) + '">' + esc(n[2]) + '</text>');
+      parts.push('<circle class="hit" cx="' + cx + '" cy="' + cy + '" r="24"/>');
+      parts.push('</g>');
+    });
+
+    svg.innerHTML = parts.join('');
+
+    // 交互
+    $$('#map .node').forEach(function (g) {
+      var idx = Number(g.dataset.i);
+      g.addEventListener('click', function () { toggleNode(idx); });
+      g.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleNode(idx); } });
+      g.addEventListener('mouseenter', function (e) { showNodeTip(idx, e); });
+      g.addEventListener('mousemove', function (e) { moveTip(e); });
+      g.addEventListener('mouseleave', hideTip);
+    });
+
+    $('#layerNo').textContent = curLayer + ' / 9';
+    $('#prevL').disabled = curLayer <= 1;
+    $('#nextL').disabled = curLayer >= 9;
+    updateSide();
+  }
+
+  function nodeByIndex(idx) {
+    return nodesOf(curBook, curLayer).filter(function (n) { return n[0] === idx; })[0];
+  }
+
+  function toggleNode(idx) {
+    var k = kOf(curLayer, idx);
+    if (pickMap[k]) delete pickMap[k]; else pickMap[k] = 1;
+    saveMap();
+    renderMap();
+    flashSaved();
+  }
+
+  var tipEl = $('#mapTip');
+  function showNodeTip(idx, ev) {
+    var n = nodeByIndex(idx); if (!n) return;
+    var items = n[5].map(function (p) { return (MATS[p[0]] || p[0]) + ' ×' + p[1]; }).join('<br>');
+    tipEl.innerHTML = '<b>' + esc(n[3]) + '</b>' +
+      '<div class="tt">第 ' + curLayer + ' 层 · ' + ['立身', '应势', '见微'][n[1]] + '</div>' +
+      '<div style="margin-top:5px">金币 ' + wan(n[4]) + '</div>' +
+      (items ? '<div style="margin-top:2px">' + items + '</div>' : '') +
+      '<div class="tt" style="margin-top:5px">' + (pickMap[kOf(curLayer, idx)] ? '已选 · 点击取消' : '点击选中') + '</div>';
+    tipEl.style.opacity = 1;
+    moveTip(ev);
+  }
+  function moveTip(ev) {
+    var wrap = $('.mapwrap').getBoundingClientRect();
+    var x = ev.clientX - wrap.left + 14, y = ev.clientY - wrap.top + 14;
+    if (x + 240 > wrap.width) x = ev.clientX - wrap.left - 246;
+    tipEl.style.left = x + 'px';
+    tipEl.style.top = y + 'px';
+  }
+  function hideTip() { tipEl.style.opacity = 0; }
+
+  function updateSide() {
+    var b = BOOKS[curBook];
+    $('#bookName').textContent = b ? b.name : '—';
+    var nodes = nodesOf(curBook, curLayer);
+    $('#bookSub').textContent = (b ? (b.q === 2 ? '镇派' : '绝品') : '') + ' · 第 ' + curLayer + ' 层 · ' + nodes.length + ' 孔';
+
+    // 本心法全部已选
+    var cnt = 0, money = 0, mats = {};
+    for (var L = 1; L <= 9; L++) {
+      nodesOf(curBook, L).forEach(function (n) {
+        if (!pickMap[kOf(L, n[0])]) return;
+        cnt++; money += n[4];
+        n[5].forEach(function (p) { mats[p[0]] = (mats[p[0]] || 0) + p[1]; });
+      });
+    }
+    var lcnt = nodes.filter(function (n) { return pickMap[kOf(curLayer, n[0])]; }).length;
+
+    $('#pickMeta').textContent = cnt + ' 孔';
+    $('#sumMoney').textContent = wan(money);
+    $('#sumItems').innerHTML = Object.keys(mats).length
+      ? Object.keys(mats).map(function (m) {
+          return '<div class="kv"><span>' + esc(MATS[m] || m) + '</span><b>' + fmt(mats[m]) + '</b></div>';
+        }).join('')
+      : '<div class="kv"><span>研习材料</span><b>—</b></div>';
+
+    // 功力估算：总功力 / 总孔数 * 已选孔数
+    var totalPower = (b && POWER_TOTAL[b.q]) || 0;
+    var est = Math.round(totalPower / NODE_TOTAL * cnt);
+    $('#powerVal').innerHTML = fmt(est) + '<small> / ' + fmt(totalPower) + '</small>';
+    $('#powerDelta').textContent = cnt ? '已研习 ' + cnt + ' / ' + NODE_TOTAL + ' 孔' : '';
+
+    $('#layerMeta').textContent = lcnt + ' / ' + nodes.length;
+    $('#layerBar').style.width = nodes.length ? (lcnt / nodes.length * 100) + '%' : '0';
+  }
+
+  var savedTimer = null;
+  function flashSaved() {
+    $('#saveState').textContent = '已保存';
+    clearTimeout(savedTimer);
+    savedTimer = setTimeout(function () { $('#saveState').textContent = '进度已保存'; }, 1200);
+  }
+
+  // ===== 衍心抽卡 =====
+  function tierRate(q, kind, tier, step) {
+    var r = RATES[q][kind][tier];
+    if (!r) return 0;
+    if (step >= r[2]) return r[1];
+    var span = Math.max(1, r[2] - 1);
+    return r[0] + (r[1] - r[0]) * (Math.max(0, step - 1) / span);
+  }
+  function sampleTier(q, kind, step) {
+    var roll = Math.random(), acc = 0;
+    var top = q === 1 ? 3 : 4;
+    for (var t = 1; t <= top; t++) {
+      acc += tierRate(q, kind, t, step);
+      if (roll < acc) return t;
+    }
+    return 0;
+  }
+  function rollOrdinary(q) {
+    var g = drawState.groups[q], pity = g.pity;
+    Object.keys(pity).forEach(function (t) { pity[t]++; });
+    var step = g.total + 1;
+    var ning = sampleTier(q, 'ning', step);
+    var rawCheng = sampleTier(q, 'cheng', step);
+    var cheng = rawCheng, forced = false, target = 0;
+    Object.keys(pity).forEach(function (t) {
+      var tt = Number(t);
+      if (pity[t] >= THRESHOLDS[q][t] && tt > target) target = tt;
+    });
+    if (target && cheng === 0) { cheng = target; forced = true; }
+    if (pity[cheng] !== undefined) pity[cheng] = 0;
+    g.total++;
+    return { ning: ning, cheng: cheng, rawCheng: rawCheng, forced: forced };
+  }
+
+  function poolFor(q, tier) {
+    if (!tier) return [];
+    var k = q === 1 ? '3302' : '3402';
+    return (D.pools[k] && D.pools[k][String(tier)]) || [];
+  }
+  function shuffleTake(list, n) {
+    var a = list.slice(), i, j, t;
+    for (i = 0; i < n && i < a.length; i++) {
+      j = i + Math.floor(Math.random() * (a.length - i));
+      t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a.slice(0, n);
+  }
+
+  function doDraw(count) {
+    if (!drawBook) { toast('先选一本心法'); return; }
+    var b = BOOKS[drawBook], q = b.q;
+    var g = drawState.groups[q];
+    var out = [];
+    for (var i = 0; i < count; i++) {
+      var r = rollOrdinary(q);
+      var pool = poolFor(q, r.ning);
+      var cands = r.ning ? shuffleTake(pool, 5).map(function (a) { return [a[0], a[2]]; }) : [];
+      var item = { ning: r.ning, cheng: r.cheng, forced: r.forced, cands: cands, no: g.total };
+      out.push(item);
+      drawState.log.unshift(item);
+    }
+    if (drawState.log.length > 120) drawState.log.length = 120;
+    drawState.last = out[out.length - 1];
+    drawState.book = drawBook;
+    saveDraw();
+    renderDraw();
+    toast(count === 5 ? '五次衍心完成' : '衍心完成');
+  }
+
+  function tierPill(t, prefix) {
+    if (!t) return '<span class="pill pill--none">' + prefix + ' 未领悟</span>';
+    return '<span class="pill pill--t' + t + '">' + prefix + ' ' + TIERS[t] + '</span>';
+  }
+
+  function renderDraw() {
+    var b = drawBook ? BOOKS[drawBook] : null;
+    $('#dBookName').textContent = b ? b.name : '—';
+    $('#dBookSub').textContent = b ? (b.q === 2 ? '镇派' : '绝品') : '';
+    $('#drawCount').textContent = drawState ? drawState.log.length : 0;
+    $('#pityQ').textContent = b ? (b.q === 2 ? '镇派' : '绝品') : '—';
+
+    var last = drawState ? drawState.last : null;
+    var q = b ? b.q : 1;
+
+    // 两个球
+    if (last) {
+      var n = last.ning, c = last.cheng;
+      var orbN = $('#orbNing');
+      orbN.textContent = n ? TIERS[n] : '无';
+      orbN.style.color = n ? TCOL[n] : '#98a4b4';
+      orbN.style.borderColor = n ? TCOL[n] : '#23496f';
+      orbN.style.background = n
+        ? 'radial-gradient(circle at 50% 32%, rgba(255,255,255,.28), ' + TCOL[n] + ' 78%)'
+        : 'radial-gradient(circle at 50% 35%, rgba(255,255,255,.07), transparent 70%)';
+      $('#nameNing').textContent = n ? '凝心 · ' + TIERS[n] + '档' : '凝心 · 未领悟';
+      $('#slotNing').classList.toggle('has', !!n);
+
+      var orbC = $('#orbCheng');
+      orbC.textContent = c ? TIERS[c] : '无';
+      orbC.style.color = c ? TCOL[c] : '#98a4b4';
+      orbC.style.borderColor = c ? TCOL[c] : '#23496f';
+      orbC.style.background = c
+        ? 'radial-gradient(circle at 50% 32%, rgba(255,255,255,.28), ' + TCOL[c] + ' 78%)'
+        : 'radial-gradient(circle at 50% 35%, rgba(255,255,255,.07), transparent 70%)';
+      $('#nameCheng').textContent = c ? '承武 · ' + TIERS[c] + '档' : '承武 · 未领悟';
+      $('#slotCheng').classList.toggle('has', !!c);
+      $('#drawTitle').textContent = '第 ' + last.no + ' 次 · ' + (b ? b.name : '');
+    } else {
+      ['#orbNing', '#orbCheng'].forEach(function (sel) {
+        var el = $(sel);
+        el.textContent = '？';
+        el.style.color = '#7f9ab8'; el.style.borderColor = '#23496f'; el.style.background = '';
+      });
+      $('#nameNing').textContent = '凝心';
+      $('#nameCheng').textContent = '承武';
+      $('#drawTitle').textContent = b ? '点击下方按钮衍心' : '选择心法开始衍心';
+    }
+
+    // 保底
+    if (drawState && b) {
+      var gg = drawState.groups[q];
+      var th = THRESHOLDS[q];
+      $('#pityBody').innerHTML = Object.keys(th).map(function (t) {
+        var cur = gg.pity[t], lim = th[t];
+        var pct = Math.min(100, cur / lim * 100);
+        return '<div style="margin-bottom:9px">' +
+          '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--dim);margin-bottom:3px">' +
+            '<span>' + TIERS[t] + '档保底</span><span style="font-family:var(--mono);color:#bddaf1">' + cur + ' / ' + lim + '</span>' +
+          '</div>' +
+          '<div class="mile__bar" style="height:6px"><i style="width:' + pct + '%;background:linear-gradient(90deg,' + TCOL[t] + ',#ffdd95)"></i></div>' +
+        '</div>';
+      }).join('') + '<div class="kv"><span>累计衍心（本品质）</span><b>' + fmt(gg.total) + '</b></div>';
+    } else {
+      $('#pityBody').innerHTML = '<div class="empty">选一本心法</div>';
+    }
+
+    // 里程碑
+    if (drawState && b) {
+      var g3 = drawState.groups[q], need = MILESTONE[q];
+      var got = Math.floor(g3.total / need), claimed = g3.claimed;
+      var into = g3.total % need;
+      $('#mileQ').textContent = '每 ' + need + ' 次得 1 卷';
+      $('#mileBody').innerHTML =
+        '<div class="kv"><span>已获衍心卷</span><b class="hl">' + got + ' 卷</b></div>' +
+        '<div class="kv"><span>当前进度</span><b>' + into + ' / ' + need + '</b></div>' +
+        '<div class="mile" style="margin-top:8px"><div class="mile__bar"><i style="width:' + (into / need * 100) + '%"></i></div></div>' +
+        '<div class="kv"><span>距下一卷</span><b>' + (need - into) + ' 次</b></div>';
+    } else {
+      $('#mileBody').innerHTML = '<div class="empty">—</div>';
+    }
+
+    // 日志
+    var log = drawState ? drawState.log : [];
+    if (!log.length) {
+      $('#drawLog').innerHTML = '<div class="empty">还没有记录</div>';
+      $('#logMeta').textContent = '';
+    } else {
+      $('#drawLog').innerHTML = log.map(function (x) {
+        return '<div class="dlrow">' +
+          '<span class="dlrow__no">#' + x.no + '</span>' +
+          '<span class="dlrow__tags">' + tierPill(x.ning, '凝心') + tierPill(x.cheng, '承武') +
+            (x.forced ? '<span class="pill pill--forced">保底触发</span>' : '') +
+          '</span>' +
+        '</div>';
+      }).join('');
+      $('#logMeta').textContent = '共 ' + log.length + ' 次';
+    }
+    renderBooks('#books2', drawBook, function (id) { drawBook = id; saveDraw(); renderDraw(); });
+  }
+
+  // 凝心候选弹窗
+  function showNing() {
+    var last = drawState && drawState.last;
+    if (!last || !last.ning) { toast('这次没有凝心结果'); return; }
+    var txts = last.cands.map(function (c) {
+      return '<li>' + esc(c[1]) + '</li>';
+    }).join('');
+    openDlg('凝心词条 · ' + TIERS[last.ning] + '档（5 选 1）', '<ul style="margin:0;padding-left:18px;line-height:2;font-size:12.5px;color:var(--mist)">' + txts + '</ul>');
+  }
+  function showCheng() {
+    var last = drawState && drawState.last;
+    if (!last || !last.cheng) { toast('这次没有承武结果'); return; }
+    openDlg('承武 · ' + TIERS[last.cheng] + '档', '<p style="font-size:12.5px;line-height:1.9;color:var(--mist);margin:0">' +
+      '可获得一个低于当前品级的来源心法技能，技能等级为 <b style="color:var(--gold)">' + TIERS[last.cheng] + '</b> 档。' +
+      (last.forced ? '<br><span style="color:#9fe6c2">本次由硬保底触发。</span>' : '') + '</p>');
+  }
+  function openDlg(title, html) {
+    $('#dlgTitle').textContent = title;
+    $('#dlgBody').innerHTML = html;
+    var d = $('#dlg');
+    if (!d.open) d.showModal();
+  }
+  $('#dlgX').addEventListener('click', function () { $('#dlg').close(); });
+  $('#dlg').addEventListener('click', function (e) { if (e.target === this) this.close(); });
+
+  // ===== 事件 =====
+  $('#q').addEventListener('input', function () {
+    renderBooks('#books', curBook, function (id) { curBook = id; curLayer = 1; renderBooks('#books', curBook, arguments.callee); renderMap(); });
+    renderBooks('#books', curBook, selectBook);
+  });
+  function selectBook(id) {
+    curBook = id; curLayer = 1;
+    renderBooks('#books', curBook, selectBook);
+    renderMap();
+  }
+  $('#prevL').addEventListener('click', function () { if (curLayer > 1) { curLayer--; renderMap(); } });
+  $('#nextL').addEventListener('click', function () { if (curLayer < 9) { curLayer++; renderMap(); } });
+  $('#btnLayerAll').addEventListener('click', function () {
+    nodesOf(curBook, curLayer).forEach(function (n) { pickMap[kOf(curLayer, n[0])] = 1; });
+    saveMap(); renderMap(); flashSaved(); toast('已全选本层');
+  });
+  $('#btnLayerClear').addEventListener('click', function () {
+    nodesOf(curBook, curLayer).forEach(function (n) { delete pickMap[kOf(curLayer, n[0])]; });
+    saveMap(); renderMap(); flashSaved(); toast('已清除本层');
+  });
+  $('#btnBookClear').addEventListener('click', function () {
+    for (var L = 1; L <= 9; L++) nodesOf(curBook, L).forEach(function (n) { delete pickMap[kOf(L, n[0])]; });
+    saveMap(); renderMap(); flashSaved(); toast('已清空本心法');
+  });
+
+  $('#btnDraw1').addEventListener('click', function () { doDraw(1); });
+  $('#btnDraw5').addEventListener('click', function () { doDraw(5); });
+  $('#btnResetDraw').addEventListener('click', function () {
+    if (!confirm('清空衍心记录与保底进度？')) return;
+    var bk = drawBook;
+    drawState = freshDraw();
+    drawBook = bk;
+    saveDraw();
+    renderDraw();
+    toast('已重置');
+  });
+  $('#slotNing').addEventListener('click', showNing);
+  $('#slotCheng').addEventListener('click', showCheng);
+  $('#slotNing').addEventListener('keydown', function (e) { if (e.key === 'Enter') showNing(); });
+  $('#slotCheng').addEventListener('keydown', function (e) { if (e.key === 'Enter') showCheng(); });
+
+  // 标签页
+  $$('#tabs .tab').forEach(function (b) {
+    b.addEventListener('click', function () {
+      $$('#tabs .tab').forEach(function (x) { x.classList.remove('is-on'); });
+      b.classList.add('is-on');
+      $$('.pane').forEach(function (p) { p.classList.remove('is-on'); });
+      var pane = $('#pane-' + b.dataset.pane);
+      if (pane) pane.classList.add('is-on');
+      if (b.dataset.pane === 'map') renderMap();
+      if (b.dataset.pane === 'draw') renderDraw();
+    });
+  });
+
+  // ===== 启动 =====
+  fetch('./data/xinfa2.json', { cache: 'no-cache' })
+    .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function (d) {
+      D = d;
+      training = d.training;
+      var n = 0;
+      d.books.forEach(function (b) {
+        BOOKS[b.id] = b;
+        var t = training[b.id];
+        if (t) Object.keys(t).forEach(function (L) { n += t[L].length; });
+      });
+      $('#cntBooks').textContent = d.books.length;
+      $('#cntNodes').textContent = fmt(n);
+
+      loadMap(); loadDraw();
+      if (!drawState) drawState = freshDraw();
+
+      curBook = d.books[0].id;
+      drawBook = drawState.book && BOOKS[drawState.book] ? drawState.book : d.books[0].id;
+
+      renderBooks('#books', curBook, selectBook);
+      renderMap();
+      renderDraw();
+    })
+    .catch(function (e) {
+      $('#map').innerHTML = '<text x="300" y="250" text-anchor="middle" fill="#7f9ab8" font-size="13">数据加载失败：' + esc(e.message) + '</text>';
+    });
+})();
+</script>
+</body>
+</html>
