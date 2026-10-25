@@ -1,0 +1,3490 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0b0508" />
+<title>天刀全服功力榜 — CY</title>
+<meta name="description" content="天涯明月刀 OL 全服功力榜与帮派榜：各大区服务器全收录，支持服务器切换、门派帮派筛选与功力成长曲线。" />
+<meta property="og:title" content="天刀全服功力榜" />
+<meta property="og:description" content="各大区全服角色 · 含功力成长曲线" />
+<meta property="og:type" content="website" />
+<style>
+/* ============================================================
+   CY 功力榜
+   主题：暗夜 · 血红 · 金辉
+   ============================================================ */
+
+:root {
+  --bg-0: #080306;
+  --bg-1: #10060a;
+  --bg-2: #170a10;
+  --panel: rgba(24, 10, 16, 0.72);
+  --panel-solid: #17090f;
+  --line: rgba(196, 78, 98, 0.18);
+  --line-soft: rgba(196, 78, 98, 0.1);
+
+  --red: #c8102e;
+  --red-bright: #ff2e4d;
+  --red-deep: #6d0718;
+  --red-glow: rgba(255, 46, 77, 0.42);
+
+  --gold: #e3b556;
+  --gold-bright: #ffd77a;
+  --gold-deep: #8a6420;
+
+  --slate: #b9a6ad;
+  --slate-dim: #7d6a72;
+  --ink: #f3e8ea;
+
+  --ok: #59c98b;
+  --warn: #e0a044;
+
+  --r-sm: 6px;
+  --r-md: 12px;
+  --r-lg: 18px;
+
+  --sans: "Noto Sans SC", system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  --serif: "Noto Serif SC", "Songti SC", serif;
+  --cond: "Barlow Condensed", var(--sans);
+
+  --shell: 1180px;
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg-0);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* 背景光晕：血红在左上，金辉在右下 */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background:
+    radial-gradient(900px 600px at 12% -6%, rgba(200, 16, 46, 0.24), transparent 62%),
+    radial-gradient(800px 560px at 92% 8%, rgba(227, 181, 86, 0.1), transparent 60%),
+    radial-gradient(1100px 800px at 50% 108%, rgba(109, 7, 24, 0.34), transparent 65%),
+    linear-gradient(180deg, var(--bg-0), var(--bg-1) 45%, var(--bg-0));
+}
+
+/* 细密颗粒噪点 */
+.grain {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.5;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.055'/%3E%3C/svg%3E");
+}
+
+/* ============ 飘落花瓣 ============ */
+.petals {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.petal {
+  position: absolute;
+  top: -8vh;
+  width: 9px;
+  height: 13px;
+  background: linear-gradient(150deg, var(--red-bright), var(--red-deep));
+  border-radius: 50% 0 50% 50%;
+  opacity: 0;
+  filter: blur(0.3px);
+  animation: fall linear infinite;
+}
+@keyframes fall {
+  0%   { opacity: 0; transform: translate3d(0, -10vh, 0) rotate(0deg); }
+  8%   { opacity: 0.75; }
+  88%  { opacity: 0.5; }
+  100% { opacity: 0; transform: translate3d(var(--drift, 40px), 112vh, 0) rotate(560deg); }
+}
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* ============ 顶栏 ============ */
+.masthead {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 12px clamp(14px, 3vw, 34px);
+  background: rgba(9, 3, 6, 0.82);
+  backdrop-filter: blur(16px) saturate(1.3);
+  border-bottom: 1px solid var(--line);
+}
+
+/* 返回大厅 */
+.nav-hall {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  padding: 6px 10px 6px 6px;
+  margin-right: -4px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--slate);
+  font-size: 13px;
+  text-decoration: none;
+  transition: color 0.16s, border-color 0.16s, background 0.16s;
+}
+.nav-hall:hover {
+  color: var(--gold-bright);
+  border-color: rgba(227, 181, 86, 0.45);
+  background: rgba(227, 181, 86, 0.08);
+}
+.nav-hall:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+.nav-hall-text { letter-spacing: 0.02em; }
+
+.origin {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--ink);
+  flex-shrink: 0;
+}
+.origin-mark {
+  display: grid;
+  place-items: center;
+  width: 34px; height: 34px;
+  border-radius: 9px;
+  font-family: var(--serif);
+  font-size: 18px;
+  font-weight: 900;
+  color: #fff;
+  background: linear-gradient(150deg, var(--red-bright), var(--red-deep));
+  box-shadow: 0 0 16px var(--red-glow), inset 0 0 0 1px rgba(255, 215, 122, 0.35);
+}
+.origin-text {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.board-switch {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.02);
+}
+.board-btn {
+  appearance: none;
+  border: 0;
+  cursor: pointer;
+  padding: 6px 16px;
+  border-radius: 999px;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--slate-dim);
+  background: transparent;
+  transition: all 0.22s ease;
+  white-space: nowrap;
+}
+.board-btn:hover { color: var(--ink); }
+.board-btn.is-active {
+  color: #fff;
+  background: linear-gradient(140deg, var(--red), var(--red-deep));
+  box-shadow: 0 2px 14px rgba(200, 16, 46, 0.5);
+}
+
+.snapshot {
+  margin: 0 0 0 auto;
+  font-size: 12px;
+  color: var(--slate-dim);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.snapshot b { color: var(--gold); font-weight: 600; }
+
+/* ============ 主容器 ============ */
+.scroll {
+  position: relative;
+  z-index: 1;
+  width: min(100%, var(--shell));
+  margin: 0 auto;
+  padding: 0 clamp(14px, 3vw, 30px) 60px;
+}
+
+/* ============ Hero ============ */
+.hero {
+  position: relative;
+  padding: clamp(32px, 6vw, 62px) 0 26px;
+  text-align: center;
+}
+.hero-glow {
+  position: absolute;
+  left: 50%; top: 8%;
+  width: min(760px, 92vw);
+  height: 300px;
+  transform: translateX(-50%);
+  background: radial-gradient(closest-side, rgba(200, 16, 46, 0.3), transparent 72%);
+  filter: blur(28px);
+  pointer-events: none;
+}
+.hero-inner { position: relative; }
+
+.eyebrow {
+  display: inline-block;
+  margin: 0 0 14px;
+  padding: 4px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 11.5px;
+  letter-spacing: 0.22em;
+  color: var(--gold);
+  background: rgba(227, 181, 86, 0.06);
+}
+
+.board-title {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.bt-main {
+  font-family: var(--serif);
+  font-weight: 900;
+  font-size: clamp(38px, 8.6vw, 76px);
+  line-height: 1;
+  letter-spacing: 0.04em;
+  background: linear-gradient(178deg, #fff 6%, var(--gold-bright) 34%, var(--red-bright) 78%, var(--red-deep));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 4px 26px rgba(255, 46, 77, 0.42));
+}
+.bt-sub {
+  font-family: var(--cond);
+  font-weight: 600;
+  font-size: clamp(11px, 2vw, 15px);
+  letter-spacing: 0.44em;
+  color: var(--slate-dim);
+  text-indent: 0.44em;
+}
+
+.board-subtitle {
+  margin: 18px 0 0;
+  font-family: var(--serif);
+  font-size: clamp(13px, 2.4vw, 16px);
+  letter-spacing: 0.14em;
+  color: var(--slate);
+}
+
+/* ---- 前三甲 ---- */
+.podium {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(10px, 2vw, 20px);
+  align-items: end;
+  margin: clamp(28px, 5vw, 46px) 0 0;
+  padding: 0;
+}
+.pod {
+  position: relative;
+  padding: 20px 14px 18px;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(24, 10, 16, 0.85));
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  cursor: pointer;
+}
+.pod::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--pc, var(--red)), transparent);
+}
+.pod:hover {
+  transform: translateY(-5px);
+  border-color: color-mix(in srgb, var(--pc, var(--red)) 55%, transparent);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.55), 0 0 0 1px color-mix(in srgb, var(--pc, var(--red)) 30%, transparent);
+}
+.pod[data-pos="1"] { --pc: var(--gold-bright); }
+.pod[data-pos="2"] { --pc: #cfd6e2; }
+.pod[data-pos="3"] { --pc: #d68b52; }
+.pod[data-pos="1"] { padding-top: 30px; padding-bottom: 26px; }
+
+.pod-crown {
+  font-family: var(--cond);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  color: var(--pc);
+  text-indent: 0.3em;
+}
+.pod-rank {
+  margin-top: 4px;
+  font-family: var(--cond);
+  font-weight: 700;
+  font-size: clamp(30px, 6vw, 46px);
+  line-height: 0.9;
+  color: var(--pc);
+  text-shadow: 0 0 24px color-mix(in srgb, var(--pc) 45%, transparent);
+}
+.pod-name {
+  margin: 12px 0 0;
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: clamp(14px, 2.6vw, 19px);
+  line-height: 1.35;
+  word-break: break-all;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.pod-meta {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 5px;
+  font-size: 11.5px;
+  color: var(--slate-dim);
+}
+.pod-tag {
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--slate);
+}
+.pod-power {
+  margin-top: 12px;
+  font-family: var(--cond);
+  font-weight: 700;
+  font-size: clamp(20px, 4vw, 30px);
+  color: var(--red-bright);
+  letter-spacing: 0.01em;
+  text-shadow: 0 0 20px rgba(255, 46, 77, 0.4);
+}
+.pod-power small {
+  display: block;
+  margin-top: 2px;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  color: var(--slate-dim);
+  text-shadow: none;
+}
+
+/* ---- 数值条 ---- */
+.stat-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 1px;
+  margin: clamp(26px, 4vw, 38px) 0 0;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  background: var(--line-soft);
+}
+.stat {
+  padding: 14px 12px;
+  background: rgba(16, 6, 10, 0.72);
+  text-align: center;
+}
+.stat b {
+  display: block;
+  font-family: var(--cond);
+  font-weight: 700;
+  font-size: clamp(19px, 3.6vw, 26px);
+  color: var(--gold-bright);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+.stat span {
+  display: block;
+  margin-top: 3px;
+  font-size: 11.5px;
+  color: var(--slate-dim);
+  letter-spacing: 0.06em;
+}
+
+/* ============ 检索器 ============ */
+.threshold { margin-top: 30px; }
+.instrument {
+  padding: clamp(16px, 3vw, 24px);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--panel);
+  backdrop-filter: blur(12px);
+}
+
+.find {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 5px 5px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.32);
+  transition: border-color 0.22s ease, box-shadow 0.22s ease;
+}
+.find:focus-within {
+  border-color: rgba(255, 46, 77, 0.5);
+  box-shadow: 0 0 0 3px rgba(200, 16, 46, 0.16);
+}
+.find-icon { display: grid; place-items: center; color: var(--slate-dim); flex-shrink: 0; }
+.find input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 14px;
+  padding: 8px 0;
+}
+.find input::placeholder { color: var(--slate-dim); }
+.find input::-webkit-search-cancel-button { display: none; }
+
+.find-go, .find-clear {
+  appearance: none;
+  border: 0;
+  cursor: pointer;
+  font-family: var(--sans);
+  font-weight: 700;
+  border-radius: 999px;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+.find-go {
+  padding: 9px 22px;
+  font-size: 13.5px;
+  color: #fff;
+  background: linear-gradient(140deg, var(--red-bright), var(--red-deep));
+  box-shadow: 0 3px 16px rgba(200, 16, 46, 0.45);
+}
+.find-go:hover { filter: brightness(1.12); }
+.find-clear {
+  padding: 9px 16px;
+  font-size: 13px;
+  color: var(--slate);
+  background: rgba(255, 255, 255, 0.07);
+}
+.find-clear:hover { background: rgba(255, 255, 255, 0.13); color: var(--ink); }
+
+.sieve { margin-top: 16px; display: flex; flex-direction: column; gap: 11px; }
+.sieve-row { display: flex; gap: 12px; align-items: flex-start; }
+.sieve-label {
+  flex-shrink: 0;
+  width: 42px;
+  padding-top: 5px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--slate-dim);
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+.chip {
+  appearance: none;
+  cursor: pointer;
+  padding: 5px 13px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.025);
+  color: var(--slate);
+  font-family: var(--sans);
+  font-size: 12.5px;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+}
+.chip:hover {
+  border-color: rgba(255, 46, 77, 0.42);
+  color: var(--ink);
+  background: rgba(200, 16, 46, 0.12);
+}
+.chip.is-active {
+  color: #fff;
+  border-color: transparent;
+  background: linear-gradient(140deg, var(--red-bright), var(--red-deep));
+  box-shadow: 0 2px 12px rgba(200, 16, 46, 0.45);
+}
+.chip .chip-n {
+  margin-left: 5px;
+  opacity: 0.62;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.result-line {
+  margin: 14px 0 0;
+  padding-top: 12px;
+  border-top: 1px dashed var(--line);
+  font-size: 12.5px;
+  color: var(--slate-dim);
+}
+.result-line b { color: var(--gold-bright); font-variant-numeric: tabular-nums; }
+
+/* ============ 榜单正文 ============ */
+.roster { margin-top: 26px; }
+
+.roster-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  padding: 10px clamp(12px, 2vw, 18px);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md) var(--r-md) 0 0;
+  border-bottom: 0;
+  background: rgba(24, 10, 16, 0.6);
+}
+.bar-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--slate-dim);
+}
+.bar-group { display: inline-flex; gap: 4px; flex-wrap: wrap; }
+.bar-btn {
+  appearance: none;
+  cursor: pointer;
+  padding: 4px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--slate);
+  font-family: var(--sans);
+  font-size: 12px;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+}
+.bar-btn:hover { color: var(--ink); border-color: rgba(255, 46, 77, 0.4); }
+.bar-btn.is-active {
+  color: #fff;
+  border-color: transparent;
+  background: linear-gradient(140deg, var(--red), var(--red-deep));
+}
+.bar-right { margin-left: auto; }
+
+.table-shell {
+  border: 1px solid var(--line);
+  border-radius: 0 0 var(--r-md) var(--r-md);
+  background: var(--panel);
+  overflow: hidden;
+}
+.table-wrap { overflow-x: auto; }
+
+.ledger {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+.ledger th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 10px 12px;
+  text-align: left;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--slate-dim);
+  background: rgba(12, 4, 8, 0.96);
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+.ledger th.num, .ledger td.num { text-align: right; }
+.ledger th.ctr, .ledger td.ctr { text-align: center; }
+
+.ledger td {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--line-soft);
+  font-size: 13.5px;
+  vertical-align: middle;
+}
+.ledger tbody tr {
+  cursor: pointer;
+  transition: background 0.16s ease;
+}
+.ledger tbody tr:hover { background: rgba(200, 16, 46, 0.09); }
+.ledger tbody tr:last-child td { border-bottom: 0; }
+
+td.rank-cell { width: 74px; }
+.rk {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 26px;
+  padding: 0 7px;
+  border-radius: 7px;
+  font-family: var(--cond);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--slate);
+  background: rgba(255, 255, 255, 0.045);
+}
+.rk.t3-1 { color: #2a1a00; background: linear-gradient(140deg, var(--gold-bright), var(--gold-deep)); box-shadow: 0 0 14px rgba(227, 181, 86, 0.45); }
+.rk.t3-2 { color: #14181f; background: linear-gradient(140deg, #eef2f8, #9aa5b4); }
+.rk.t3-3 { color: #2a1000; background: linear-gradient(140deg, #f0a86a, #a85b25); }
+.rk.t10 { color: #fff; background: linear-gradient(140deg, rgba(255, 46, 77, 0.55), rgba(109, 7, 24, 0.55)); }
+.tilde { color: var(--warn); font-weight: 700; }
+
+.role-name {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+.rn-text {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 14.5px;
+  word-break: break-all;
+}
+.rn-text.is-hidden { color: var(--slate-dim); font-style: italic; font-weight: 400; }
+
+/* ---- 推断的名字 / 帮派（官方隐藏，按玩家截图比对得出）---- */
+.rn-text.is-guess,
+.guild-name.is-guess,
+.dw-name.is-guess { color: var(--flare, #8fd0ff); }
+.rn-text.is-guess .est-tag,
+.guild-name.is-guess .est-tag,
+.dw-name.is-guess .est-tag {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 0 4px;
+  font-family: var(--sans);
+  font-size: 9.5px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 14px;
+  vertical-align: 2px;
+  color: #04202f;
+  background: #6ec7f5;
+  border-radius: 3px;
+  cursor: help;
+}
+.dw-name.is-guess .est-tag { font-size: 11px; line-height: 17px; vertical-align: 4px; }
+.dw-item dd.dw-guess-note { font-size: 11.5px; line-height: 1.75; color: var(--mist); }
+.badge {
+  padding: 1px 7px;
+  border-radius: 5px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+.badge.former { color: var(--gold); background: rgba(227, 181, 86, 0.14); border: 1px solid rgba(227, 181, 86, 0.3); }
+.badge.hid { color: var(--slate-dim); background: rgba(255, 255, 255, 0.055); border: 1px solid var(--line); }
+.badge.menpai { color: #ffd0d8; background: rgba(200, 16, 46, 0.2); border: 1px solid rgba(200, 16, 46, 0.34); }
+
+.cell-sub { display: block; font-size: 11px; color: var(--slate-dim); margin-top: 2px; }
+.guild-name { color: var(--slate); }
+.guild-none { color: var(--slate-dim); font-style: italic; }
+.pw { font-family: var(--cond); font-weight: 600; font-size: 15.5px; color: var(--red-bright); }
+.pw.hidden { color: var(--slate-dim); font-family: var(--sans); font-size: 12.5px; font-weight: 500; }
+.arrow { color: var(--slate-dim); font-size: 11px; }
+
+.empty {
+  margin: 0;
+  padding: 46px 20px;
+  text-align: center;
+  color: var(--slate-dim);
+  font-size: 13.5px;
+}
+
+/* ---- 分页 ---- */
+.pager {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  margin-top: 20px;
+}
+.pg {
+  appearance: none;
+  cursor: pointer;
+  min-width: 34px;
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.025);
+  color: var(--slate);
+  font-family: var(--cond);
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.18s ease;
+}
+.pg:hover:not(:disabled) { border-color: rgba(255, 46, 77, 0.45); color: var(--ink); }
+.pg.is-active {
+  color: #fff;
+  border-color: transparent;
+  background: linear-gradient(140deg, var(--red-bright), var(--red-deep));
+  box-shadow: 0 2px 12px rgba(200, 16, 46, 0.45);
+}
+.pg:disabled { opacity: 0.32; cursor: not-allowed; }
+.pg.gap { border: 0; background: transparent; cursor: default; }
+
+/* ============ 说明区 ============ */
+.rite { margin-top: 52px; }
+.rite h2 {
+  margin: 0 0 20px;
+  font-family: var(--serif);
+  font-size: 21px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.rite h2::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--line), transparent);
+}
+.rite-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+.rite article {
+  padding: 18px 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--panel);
+  position: relative;
+  overflow: hidden;
+}
+.rite article::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 2px;
+  background: linear-gradient(180deg, var(--red-bright), transparent);
+}
+.rite h3 {
+  margin: 0 0 9px;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--gold-bright);
+  letter-spacing: 0.03em;
+}
+.rite p {
+  margin: 0;
+  font-size: 12.8px;
+  line-height: 1.78;
+  color: var(--slate);
+}
+.rite b { color: var(--ink); font-weight: 700; }
+.rite i { color: var(--gold); font-style: normal; }
+
+/* ============ 页脚 ============ */
+.site-footer {
+  margin-top: 40px;
+  padding-top: 22px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 20px;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: var(--slate-dim);
+  text-align: center;
+}
+.foot-snap { color: var(--slate); }
+
+/* ============ 回到顶部 ============ */
+.to-top {
+  position: fixed;
+  right: 20px;
+  bottom: 24px;
+  z-index: 45;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: rgba(24, 10, 16, 0.9);
+  color: var(--slate);
+  backdrop-filter: blur(10px);
+  opacity: 0;
+  transform: translateY(12px);
+  pointer-events: none;
+  transition: all 0.28s ease;
+}
+.to-top.show { opacity: 1; transform: none; pointer-events: auto; }
+.to-top:hover { color: var(--red-bright); border-color: rgba(255, 46, 77, 0.45); }
+
+/* ============ 抽屉详情 ============ */
+.drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(3, 0, 2, 0.72);
+  backdrop-filter: blur(3px);
+  animation: fade 0.22s ease;
+}
+@keyframes fade { from { opacity: 0; } }
+
+.drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 61;
+  width: min(430px, 92vw);
+  height: 100%;
+  overflow-y: auto;
+  padding: 26px 24px 40px;
+  background: linear-gradient(180deg, #180a11, #0c0407);
+  border-left: 1px solid var(--line);
+  box-shadow: -24px 0 60px rgba(0, 0, 0, 0.6);
+  transform: translateX(102%);
+  transition: transform 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.drawer.open { transform: none; }
+.drawer-close {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  width: 34px;
+  height: 34px;
+  cursor: pointer;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--slate);
+  font-size: 20px;
+  line-height: 1;
+  transition: all 0.2s ease;
+}
+.drawer-close:hover { color: #fff; background: rgba(200, 16, 46, 0.25); border-color: rgba(255, 46, 77, 0.4); }
+
+.dw-eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.24em;
+  color: var(--gold);
+  text-transform: uppercase;
+}
+.dw-name {
+  margin: 8px 0 0;
+  font-family: var(--serif);
+  font-size: 25px;
+  font-weight: 900;
+  line-height: 1.3;
+  word-break: break-all;
+  color: #fff;
+}
+.dw-name.is-hidden { color: var(--slate-dim); font-style: italic; font-size: 20px; }
+.dw-rankline {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: var(--slate);
+}
+.dw-rankline b { color: var(--red-bright); font-family: var(--cond); font-size: 17px; }
+
+.dw-power {
+  margin: 18px 0 0;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: radial-gradient(120% 130% at 0% 0%, rgba(200, 16, 46, 0.24), transparent 65%), rgba(0, 0, 0, 0.3);
+}
+.dw-power b {
+  display: block;
+  font-family: var(--cond);
+  font-weight: 700;
+  font-size: 34px;
+  line-height: 1.1;
+  color: var(--red-bright);
+  text-shadow: 0 0 24px rgba(255, 46, 77, 0.45);
+}
+.dw-power span { display: block; margin-top: 3px; font-size: 11.5px; letter-spacing: 0.16em; color: var(--slate-dim); }
+
+.dw-grid {
+  margin: 18px 0 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  background: var(--line-soft);
+}
+.dw-item { padding: 12px 14px; background: rgba(12, 4, 8, 0.7); }
+.dw-item.wide { grid-column: 1 / -1; }
+.dw-item dt { font-size: 11px; letter-spacing: 0.1em; color: var(--slate-dim); }
+.dw-item dd { margin: 4px 0 0; font-size: 14px; color: var(--ink); word-break: break-all; }
+.dw-item dd.mono { font-family: var(--cond); font-size: 16px; color: var(--gold-bright); }
+
+.dw-sec { margin: 22px 0 0; }
+.dw-sec h4 {
+  margin: 0 0 10px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: var(--gold);
+}
+.dw-formers { display: flex; flex-wrap: wrap; gap: 7px; }
+.dw-formers .fm {
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  color: var(--gold-bright);
+  background: rgba(227, 181, 86, 0.1);
+  border: 1px solid rgba(227, 181, 86, 0.28);
+}
+.dw-formers .fm i { color: var(--slate-dim); font-style: normal; font-size: 11px; }
+.dw-sig {
+  margin: 0;
+  padding: 12px 14px;
+  border-left: 2px solid var(--red);
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 0 var(--r-sm) var(--r-sm) 0;
+  font-family: var(--serif);
+  font-size: 13px;
+  line-height: 1.75;
+  color: var(--slate);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.dw-note { font-size: 12px; color: var(--slate-dim); line-height: 1.7; }
+.dw-rankbars { display: flex; flex-direction: column; gap: 9px; }
+.dw-rankbar { display: flex; align-items: center; gap: 10px; font-size: 12.5px; }
+.dw-rankbar .k { width: 76px; color: var(--slate-dim); flex-shrink: 0; }
+.dw-rankbar .track { flex: 1; height: 6px; border-radius: 999px; background: rgba(255, 255, 255, 0.07); overflow: hidden; }
+.dw-rankbar .fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--red-deep), var(--red-bright)); }
+.dw-rankbar .v { width: 68px; text-align: right; color: var(--gold-bright); font-family: var(--cond); font-size: 13.5px; flex-shrink: 0; }
+
+/* ============ 响应式 ============ */
+@media (max-width: 860px) {
+  .masthead { flex-wrap: wrap; gap: 10px; }
+  .nav-hall { padding: 6px 8px; }
+  .nav-hall-text { display: none; }
+  .snapshot { width: 100%; margin: 0; order: 3; }
+  .podium { grid-template-columns: 1fr; gap: 12px; }
+  .pod[data-pos="1"] { order: -1; }
+  .pod { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 14px; text-align: left; padding: 14px 16px; }
+  .pod[data-pos="1"] { padding-top: 16px; padding-bottom: 16px; }
+  .pod-crown { display: none; }
+  .pod-rank { margin: 0; font-size: 34px; }
+  .pod-name { margin: 0; -webkit-line-clamp: 1; text-align: left; }
+  .pod-meta { justify-content: flex-start; margin-top: 4px; }
+  .pod-power { margin: 0; text-align: right; }
+  .pod-power small { display: none; }
+  .sieve-row { flex-direction: column; gap: 6px; }
+  .sieve-label { width: auto; padding-top: 0; }
+}
+
+@media (max-width: 620px) {
+  .origin-text { display: none; }
+  .stat-strip { grid-template-columns: repeat(3, 1fr); }
+  .bar-right { margin-left: 0; width: 100%; }
+  .ledger th, .ledger td { padding: 8px 9px; }
+  .ledger td { font-size: 13px; }
+  td.rank-cell { width: 56px; }
+  .dw-grid { grid-template-columns: 1fr; }
+  .find { flex-wrap: wrap; border-radius: var(--r-md); padding: 10px; }
+  .find input { flex-basis: 100%; }
+  .find-go, .find-clear { flex: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  .petals { display: none; }
+}
+
+
+/* ---- 隐藏功力的估算值 ---- */
+.pw.est { color: var(--warn); }
+.pw.est .est-tag {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 0 4px;
+  font-family: var(--sans);
+  font-size: 9.5px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 14px;
+  vertical-align: 2px;
+  letter-spacing: 0;
+  color: #2b1600;
+  background: var(--warn);
+  border-radius: 3px;
+}
+.pod-power .pw.est { text-shadow: 0 0 20px rgba(224, 160, 68, 0.5); }
+.pod-power .pw.hidden { font-family: var(--sans); font-size: 13px; }
+
+
+/* ---- 功力成长曲线 ---- */
+.dw-chart-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 9px;
+  font-size: 11.5px;
+  color: var(--slate-dim);
+}
+.dw-chart-meta .ch-delta {
+  margin-left: auto;
+  font-family: var(--cond);
+  font-weight: 700;
+  font-size: 17px;
+  letter-spacing: 0.01em;
+}
+.ch-delta.up { color: var(--gold-bright); }
+.ch-delta.down { color: var(--ok); }
+.ch-delta.flat { color: var(--slate-dim); }
+.dw-chart { display: block; width: 100%; height: auto; overflow: visible; }
+.ch-grid { stroke: rgba(196, 78, 98, 0.17); stroke-width: 1; stroke-dasharray: 3 3; }
+.ch-ylab, .ch-xlab { font-family: var(--cond); font-size: 10px; fill: var(--slate-dim); }
+.ch-line { fill: none; stroke: var(--red-bright); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.ch-dot { fill: var(--bg-1); stroke: var(--gold); stroke-width: 1.5; }
+.ch-last { fill: var(--gold-bright); stroke: #fff; stroke-width: 1.5; }
+.dw-chart-foot { margin: 9px 0 0; font-size: 11.5px; color: var(--slate-dim); }
+.dw-chart-foot b { color: var(--gold-bright); font-family: var(--cond); font-size: 14px; }
+
+
+/* ============ 服务器选择器 ============ */
+.srv-picker { position: relative; flex-shrink: 0; }
+
+.srv-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 200px;
+  padding: 6px 12px 6px 11px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.srv-btn:hover {
+  border-color: rgba(255, 46, 77, 0.45);
+  background: rgba(200, 16, 46, 0.13);
+}
+.srv-flag {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: linear-gradient(140deg, var(--red-bright), var(--red-deep));
+  box-shadow: 0 0 8px var(--red-glow);
+}
+.srv-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.srv-caret { flex-shrink: 0; color: var(--slate-dim); transition: transform 0.22s ease; }
+.srv-btn[aria-expanded="true"] .srv-caret { transform: rotate(180deg); }
+
+.srv-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 60;
+  width: 272px;
+  max-height: min(64vh, 470px);
+  overflow-y: auto;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: linear-gradient(180deg, #1a0b12, #0d0407);
+  box-shadow: 0 22px 54px rgba(0, 0, 0, 0.68);
+  animation: fade 0.16s ease;
+}
+.srv-menu::-webkit-scrollbar { width: 8px; }
+.srv-menu::-webkit-scrollbar-thumb { background: rgba(196, 78, 98, 0.3); border-radius: 4px; }
+
+.srv-group + .srv-group {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line-soft);
+}
+.srv-group-title {
+  padding: 3px 9px 6px;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  color: var(--gold);
+}
+.srv-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 9px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--slate);
+  font-family: var(--sans);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.srv-item:hover { background: rgba(200, 16, 46, 0.16); color: var(--ink); }
+.srv-item.is-active {
+  color: #fff;
+  background: linear-gradient(140deg, rgba(255, 46, 77, 0.32), rgba(109, 7, 24, 0.32));
+  box-shadow: inset 0 0 0 1px rgba(255, 46, 77, 0.3);
+}
+.srv-item-name { flex: 1; }
+.srv-item-n {
+  font-family: var(--cond);
+  font-size: 12px;
+  color: var(--slate-dim);
+  font-variant-numeric: tabular-nums;
+}
+.srv-item.is-active .srv-item-n { color: var(--gold-bright); }
+
+@media (max-width: 620px) {
+  .srv-btn { max-width: 128px; }
+  .srv-menu { width: min(88vw, 272px); }
+}
+
+/* ---- 帮派榜：官方缺失时的推算值 ---- */
+.guild-est { color: var(--slate-dim); font-family: var(--cond); font-size: 14px; }
+
+/* ============ 聚合视图（全区全服 / 大区）============ */
+.srv-item.is-agg .srv-item-name { font-weight: 700; color: var(--gold-bright); }
+.srv-item.is-agg.is-active .srv-item-name { color: #fff; }
+.srv-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 5px;
+  font-size: 9.5px;
+  font-weight: 700;
+  line-height: 14px;
+  vertical-align: 1px;
+  letter-spacing: 0.04em;
+  color: #2b1600;
+  background: linear-gradient(140deg, var(--gold-bright), var(--gold-deep));
+  border-radius: 3px;
+}
+.srv-item.is-active .srv-tag { background: rgba(255, 255, 255, 0.85); }
+.srv-cell { color: var(--slate); font-size: 12.5px; white-space: nowrap; }
+
+.badge.srv-badge {
+  margin-left: 6px;
+  color: var(--slate);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--line);
+}
+
+/* ---- 帮派每日变化小表 ---- */
+.mini-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.mini-table th {
+  padding: 6px 6px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--slate-dim);
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+}
+.mini-table th.num, .mini-table td.num { text-align: right; }
+.mini-table td {
+  padding: 7px 6px;
+  font-size: 12.5px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.mini-table tr:last-child td { border-bottom: 0; }
+.mini-table .ch-delta { font-size: 13.5px; }
+
+/* ============ 帮派详情 ============ */
+.gd-dim { margin-left: 6px; font-size: 11px; color: var(--slate-dim); }
+
+.gd-stats { margin: 0; }
+.gd-stat {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+.gd-stat:last-child { border-bottom: 0; }
+.gd-stat dt {
+  flex: 0 0 118px;
+  font-size: 11.5px;
+  letter-spacing: 0.03em;
+  color: var(--slate-dim);
+}
+.gd-stat dd {
+  flex: 1;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--slate);
+}
+.gd-stat dd b { color: var(--ink); }
+.gd-stat dd.mono { font-family: var(--cond); font-size: 14.5px; letter-spacing: 0.01em; }
+
+/* ---- 人员流动 ---- */
+.gd-flow {
+  margin-top: 12px;
+  padding: 10px 11px;
+  border: 1px solid var(--line-soft);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.017);
+}
+.gd-flow:first-of-type { margin-top: 6px; }
+.gd-flow-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.gd-flow-head b { font-size: 13px; color: var(--ink); font-variant-numeric: tabular-nums; }
+.gd-flow-head span { display: inline-flex; align-items: baseline; gap: 8px; font-size: 12px; color: var(--slate-dim); }
+.gd-flow-head .ch-delta { font-size: 14px; }
+.gd-flow-body { padding-top: 4px; }
+.gd-flow-item { padding: 7px 0; border-bottom: 1px dashed var(--line-soft); }
+.gd-flow-item:last-child { border-bottom: 0; }
+.gd-flow-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 12.5px;
+}
+.gd-flow-label {
+  flex: 0 0 74px;
+  color: var(--slate);
+  border-bottom: 1px dotted var(--slate-dim);
+  cursor: help;
+}
+.gd-flow-n { font-family: var(--cond); font-size: 13px; color: var(--slate-dim); }
+.gd-flow-row .ch-delta { margin-left: auto; font-size: 13.5px; }
+.gd-names {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.gd-names li {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 2px 7px;
+  font-size: 11.5px;
+  color: var(--slate);
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 999px;
+}
+.gd-names .gd-pw { font-family: var(--cond); font-size: 11px; color: var(--gold); }
+@media (max-width: 620px) {
+  .gd-stat { flex-direction: column; gap: 3px; }
+  .gd-stat dt { flex: none; }
+}
+
+.gd-names li.gd-nm-more {
+  color: var(--slate-dim);
+  background: transparent;
+  padding-left: 0;
+}
+
+.pw.dim { color: var(--slate-dim); font-family: var(--cond); font-size: 14px; }
+
+/* ============ 帮派评级 / 稳定度 ============ */
+.gd-grade {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 4px 0 14px;
+}
+.gd-grade-badge {
+  flex: 0 0 58px;
+  height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--cond);
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #ffe9b0;
+  border-radius: 12px;
+  background: linear-gradient(150deg, rgba(224, 160, 68, 0.34), rgba(109, 7, 24, 0.42));
+  box-shadow: inset 0 0 0 1px rgba(224, 160, 68, 0.45), 0 8px 22px rgba(0, 0, 0, 0.35);
+}
+.gd-grade-badge.gSp { color: #fff3cf; box-shadow: inset 0 0 0 1px rgba(255, 214, 120, 0.75), 0 0 22px rgba(224, 160, 68, 0.35); }
+.gd-grade-badge.gS  { color: #ffe9b0; }
+.gd-grade-badge.gAp { color: #f0d4b4; background: linear-gradient(150deg, rgba(224, 160, 68, 0.2), rgba(109, 7, 24, 0.34)); }
+.gd-grade-badge.gA  { color: #d8c3b2; background: linear-gradient(150deg, rgba(255, 255, 255, 0.08), rgba(109, 7, 24, 0.3)); }
+.gd-grade-badge.gB,
+.gd-grade-badge.gC  { color: var(--slate-dim); background: rgba(255, 255, 255, 0.04); box-shadow: inset 0 0 0 1px var(--line); }
+.gd-grade-info { display: flex; flex-direction: column; gap: 3px; }
+.gd-grade-info b {
+  font-family: var(--cond);
+  font-size: 27px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--gold-bright);
+}
+.gd-grade-info span { font-size: 11.5px; color: var(--slate-dim); }
+
+.gd-bars { display: flex; flex-direction: column; gap: 7px; }
+.gd-bar { display: flex; align-items: center; gap: 9px; font-size: 11.5px; }
+.gd-bar-name { flex: 0 0 88px; color: var(--slate-dim); }
+.gd-bar-track {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.07);
+  overflow: hidden;
+}
+.gd-bar-track em {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--red-bright), var(--gold-bright));
+}
+.gd-bar-val { flex: 0 0 30px; text-align: right; font-family: var(--cond); font-size: 12.5px; color: var(--slate); }
+
+.gd-stab {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line-soft);
+}
+.gd-stab-head { display: flex; align-items: baseline; gap: 9px; }
+.gd-stab-head span { font-size: 11.5px; color: var(--slate-dim); }
+.gd-stab-score { font-family: var(--cond); font-size: 21px; font-weight: 700; }
+.gd-stab-tag {
+  margin-left: auto;
+  padding: 1px 8px;
+  font-size: 10.5px;
+  font-style: normal;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  opacity: 0.9;
+}
+.gd-stab-score.ok,  .gd-stab-tag.ok  { color: var(--gold-bright); }
+.gd-stab-score.mid, .gd-stab-tag.mid { color: var(--gold); }
+.gd-stab-score.bad, .gd-stab-tag.bad { color: var(--red-bright); }
+.gd-stab-bar {
+  height: 6px;
+  margin: 9px 0 11px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.07);
+  overflow: hidden;
+}
+.gd-stab-bar i { display: block; height: 100%; border-radius: 3px; }
+.gd-stab-bar i.ok  { background: linear-gradient(90deg, rgba(224,160,68,.5), var(--gold-bright)); }
+.gd-stab-bar i.mid { background: linear-gradient(90deg, rgba(224,160,68,.35), var(--gold)); }
+.gd-stab-bar i.bad { background: linear-gradient(90deg, rgba(255,46,77,.4), var(--red-bright)); }
+
+.gd-stats-inline { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+.gd-stats-inline .gd-stat { padding: 5px 0; }
+.gd-stats-inline .gd-stat dt { flex: 0 0 84px; font-size: 10.5px; }
+.gd-stats-inline .gd-stat dd { font-size: 12.5px; }
+
+/* ============ 挖人关系网 ============ */
+.gd-rel-sum {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 6px;
+  font-size: 12px;
+  color: var(--slate-dim);
+}
+.gd-rel-sum b { font-family: var(--cond); font-size: 15px; }
+.gd-rel-svg { display: block; width: 100%; height: auto; margin: 2px 0 8px; overflow: visible; }
+.gd-rel-line { stroke-linecap: round; }
+.gd-rel-line.in  { stroke: var(--gold); opacity: 0.5; }
+.gd-rel-line.out { stroke: var(--red-bright); opacity: 0.45; }
+.gd-rel-node { fill: var(--bg-1); stroke: var(--gold); stroke-width: 1.4; }
+.gd-rel-label { font-family: var(--sans); font-size: 10px; fill: var(--slate); }
+.gd-rel-num { font-family: var(--cond); font-size: 9.5px; fill: var(--slate-dim); }
+.gd-rel-hub { fill: rgba(200, 16, 46, 0.22); stroke: var(--gold); stroke-width: 1.6; }
+.gd-rel-hub-label { font-family: var(--sans); font-size: 10.5px; font-weight: 700; fill: #ffe9b0; }
+
+.gd-rel-list { margin: 6px 0 0; padding: 0; list-style: none; }
+.gd-rel-list li {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 7px 0;
+  border-bottom: 1px dashed var(--line-soft);
+  font-size: 12px;
+}
+.gd-rel-list li:last-child { border-bottom: 0; }
+.gd-rel-name { flex: 1; color: var(--slate); }
+.gd-rel-nums { display: inline-flex; flex-direction: column; gap: 2px; text-align: right; }
+.gd-rel-nums i { font-style: normal; font-family: var(--cond); font-size: 11.5px; }
+.gd-rel-net { flex: 0 0 42px; text-align: right; font-family: var(--cond); font-size: 14px; }
+
+.gd-stats dd.up, .gd-rel-nums i.up, .gd-rel-sum b.up, .gd-rel-net.up { color: var(--gold-bright); }
+.gd-stats dd.down, .gd-rel-nums i.down, .gd-rel-sum b.down, .gd-rel-net.down { color: var(--ok); }
+.gd-rel-net.flat, .gd-rel-sum b.flat { color: var(--slate-dim); }
+
+/* ============ 帮内成员榜 ============ */
+.gd-mem { margin-top: 2px; }
+.gd-mem th { padding: 5px 5px; }
+.gd-mem td { padding: 6px 5px; font-size: 12.5px; }
+.gd-mem-rank { color: var(--slate-dim); font-family: var(--cond); font-size: 12px; }
+.gd-mem-row { cursor: pointer; transition: background 0.15s ease; }
+.gd-mem-row:hover { background: rgba(200, 16, 46, 0.13); }
+.gd-mem .badge.menpai { font-size: 10.5px; padding: 1px 6px; }
+.gd-mem .pw { font-size: 13.5px; }
+.gd-more-btn {
+  width: 100%;
+  margin-top: 8px;
+  padding: 7px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--slate);
+  font-family: var(--sans);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+.gd-more-btn:hover { border-color: rgba(255, 46, 77, 0.45); color: var(--ink); background: rgba(200, 16, 46, 0.1); }
+
+/* 首屏分片加载提示（全区全服榜前 2000 名先出，其余后台补） */
+.rest-hint { color: var(--warn); font-weight: 600; }
+
+/* ---------- 多服对比：勾选钮 + 底部操作栏 ---------- */
+.srv-pick {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  margin-left: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid rgba(196, 78, 98, 0.45);
+  color: var(--slate-dim);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.srv-pick:hover { border-color: var(--warn); color: var(--warn); background: rgba(200, 16, 46, 0.18); }
+.srv-pick.is-on {
+  background: linear-gradient(140deg, #ff2e4d, #a3071c);
+  border-color: transparent;
+  color: #fff;
+  font-weight: 700;
+}
+.srv-item.is-picked { background: rgba(200, 16, 46, 0.12); }
+.srv-item.is-picked .srv-item-name { color: var(--gold-bright); }
+.srv-item.is-picked.is-active { background: linear-gradient(140deg, rgba(255, 46, 77, 0.32), rgba(109, 7, 24, 0.32)); }
+.srv-item.is-picked.is-active .srv-item-name { color: #fff; }
+
+.srv-cmp-bar {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px -4px -4px;
+  padding: 8px 10px;
+  border-top: 1px solid rgba(196, 78, 98, 0.25);
+  background: linear-gradient(180deg, rgba(20, 8, 12, 0.86), rgba(12, 5, 8, 0.98));
+  backdrop-filter: blur(6px);
+}
+.srv-cmp-hint { flex: 1; font-size: 11px; color: var(--slate-dim); }
+.srv-cmp-btn {
+  flex: 0 0 auto;
+  padding: 6px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(140deg, #ff2e4d, #a3071c);
+  color: #fff;
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.srv-cmp-btn[disabled] { background: rgba(120, 90, 96, 0.35); color: var(--slate-dim); cursor: default; }
+.srv-cmp-btn:not([disabled]):hover { filter: brightness(1.12); }
+.pod-tag.pod-sv { color: var(--gold-bright); border-color: rgba(214, 168, 88, 0.4); }
+
+</style>
+</head>
+<body class="board-power">
+
+<div class="petals" id="petals" aria-hidden="true"></div>
+<div class="grain" aria-hidden="true"></div>
+
+<header class="masthead">
+  <a class="nav-hall" href="./" title="返回大厅" aria-label="返回大厅">
+    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+    <span class="nav-hall-text">大厅</span>
+  </a>
+
+  <a class="origin" href="#top">
+    <span class="origin-mark" aria-hidden="true">花</span>
+    <span class="origin-text">天刀全服功力榜</span>
+  </a>
+
+  <div class="srv-picker" id="srvPicker">
+    <button type="button" class="srv-btn" id="srvBtn" aria-haspopup="listbox" aria-expanded="false">
+      <span class="srv-flag" aria-hidden="true"></span>
+      <span class="srv-name" id="srvName">载入中…</span>
+      <svg class="srv-caret" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+    </button>
+    <div class="srv-menu" id="srvMenu" role="listbox" aria-label="选择服务器" hidden></div>
+  </div>
+
+  <nav class="board-switch" aria-label="榜单切换">
+    <button type="button" class="board-btn is-active" data-board="power" aria-pressed="true">功力榜</button>
+    <button type="button" class="board-btn" data-board="guild" aria-pressed="false">帮派榜</button>
+  </nav>
+
+  <p class="snapshot" id="snapshotLine">正在读取数据…</p>
+</header>
+
+<main class="scroll" id="top">
+
+  <section class="hero" aria-labelledby="boardTitle">
+    <div class="hero-glow" aria-hidden="true"></div>
+    <div class="hero-inner">
+      <p class="eyebrow" id="heroEyebrow">天地之间 · 数据读取中</p>
+      <h1 class="board-title" id="boardTitle">
+        <span class="bt-main" id="btMain">全服功力榜</span>
+        <span class="bt-sub">ALL-SERVER RANKING</span>
+      </h1>
+      <p class="board-subtitle" id="boardSubtitle">曼珠沙华开两岸，花叶永不相见</p>
+
+      <ol class="podium" id="podium" aria-label="前三甲"></ol>
+
+      <div class="stat-strip" id="statStrip"></div>
+    </div>
+  </section>
+
+  <section class="threshold">
+    <div class="instrument">
+      <form class="find" id="findForm" role="search">
+        <span class="find-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20.5 20.5-3.8-3.8"/></svg>
+        </span>
+        <label class="sr-only" for="q">搜索角色名、曾用名、帮派或门派</label>
+        <input id="q" name="q" type="search" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="在本服中搜索角色名 / 曾用名 / 帮派 / 门派…" />
+        <button type="submit" class="find-go">查询</button>
+        <button type="button" class="find-clear" id="findClear" hidden>清除</button>
+      </form>
+
+      <div class="sieve" id="sieve">
+        <div class="sieve-row" data-axis="menpai">
+          <span class="sieve-label">门派</span>
+          <div class="chips" id="menpaiChips" role="group" aria-label="按门派筛选"></div>
+        </div>
+        <div class="sieve-row" data-axis="guild">
+          <span class="sieve-label">帮派</span>
+          <div class="chips" id="guildChips" role="group" aria-label="按帮派筛选"></div>
+        </div>
+        <div class="sieve-row" data-axis="tier" id="tierRow">
+          <span class="sieve-label">榜段</span>
+          <div class="chips" id="tierChips" role="group" aria-label="按榜段筛选"></div>
+        </div>
+      </div>
+
+      <p class="result-line" id="resultLine" role="status">正在读取…</p>
+    </div>
+  </section>
+
+  <section class="roster" aria-label="榜单正文">
+    <div class="roster-bar" id="rosterBar">
+      <span class="bar-label">排序</span>
+      <div class="bar-group" id="sortGroup"></div>
+      <span class="bar-label">每页</span>
+      <div class="bar-group" id="pageSizeGroup"></div>
+      <div class="bar-right">
+        <button type="button" class="bar-btn" id="copyPageBtn">复制本页名单</button>
+      </div>
+    </div>
+    <div class="table-shell">
+      <table class="ledger" id="ledger">
+        <caption class="sr-only">全服功力榜正文，点击行可展开详细资料。</caption>
+        <colgroup id="ledgerCols"></colgroup>
+        <thead><tr id="ledgerHead"></tr></thead>
+        <tbody id="ledgerBody"></tbody>
+      </table>
+      <p class="empty" id="empty" hidden></p>
+    </div>
+    <nav class="pager" id="pager" aria-label="翻页"></nav>
+  </section>
+
+  <section class="rite" aria-labelledby="riteTitle">
+    <h2 id="riteTitle">页面说明</h2>
+    <div class="rite-grid">
+      <article>
+        <h3>数据从哪来</h3>
+        <p>数据源自《天涯明月刀 OL》官方名人堂，由历次数据并集重建。官方名人堂每榜只公开前 500 名，本站按 <b>14 个门派子榜 × 各大区</b> 逐一抓取后取并集，同一角色只保留最高功力，最终覆盖 <b id="riteMeta">各大区共 16 服</b>、<b id="riteCount">26,000+</b> 名角色。官方给出的名次原样保留；只在门派子榜里出现的角色，名次按并集功力估算，数字前标 <span class="tilde">~</span>。</p>
+      </article>
+      <article>
+        <h3>曾用名怎么判断</h3>
+        <p>官方接口不返回改名履历，本站的曾用名全部是<b>数据推断</b>，并不准确。判断逻辑：相邻两次数据之间，同一个服务器里有一个名字消失、又出现一个帮派相同、功力接近、名次位移很小的新名字，就记一笔改名并逐日累积。没有命中的人不会显示曾用名。</p>
+      </article>
+      <article>
+        <h3>隐藏的功力怎么补</h3>
+        <p>玩家可以分别隐藏「角色名」「功力」「帮派名」。<b>榜上隐藏功力的人，本站取他上一位和下一位公开玩家的功力平均值</b>，以 <span class="tilde">≈</span> 开头并带「估」字标记显示。这是估算、不是官方数据，仅供参照对照；隐藏功力的成员计入帮派「收录成员」，但不计入帮派总功力。连角色名本身都隐藏的显示「角色名已隐藏」，展开后仍可看到门派、公开的帮派与玩家签名。</p>
+      </article>
+      <article>
+        <h3>功力成长曲线从哪来</h3>
+        <p>数据源保留了每日数据，本站把每个角色的历史功力与名次一并取回，展开详情即可看到走势。中途上榜或改名重建的角色数据点较少，缺数据的那天在曲线上是断点、不做插值，也不拿 0 冒充。<b>隐藏了功力的角色，榜上只记录名次不记录功力，因此他们的走势改用「名次变化曲线」呈现</b>——名次越小越靠前，一眼能看出排位升降。</p>
+      </article>
+      <article>
+        <h3>三个层级的榜单</h3>
+        <p>点左上角按钮可切换三种视角：<b>全区全服</b>（各大区各服混排）、<b>大区榜</b>（同一大区内各服混排）、<b>单个服务器</b>。数据都是<b>按需加载</b>的——选了哪个才下载哪个，所以首页不会一次拖走全部内容。切换后筛选条件会重置。<br>全服榜约 2.9 MB、大区榜约 0.6 MB，为控制体积<b>不包含成长曲线</b>；想看曲线切到对应的单个服务器即可。单服视图数据最全（含曲线）。</p>
+      </article>
+      <article>
+        <h3>帮派功力怎么算</h3>
+        <p>帮派榜的「帮派功力」与「平均功力」<b>直接采用官方帮派榜的数据</b>——官方口径是「前 80 名成员的功力之和」，平均功力即该值 ÷ 80。之所以不自己算：本站只收录「榜上有名的成员」，帮派里的低功力成员收不到，自算会系统性偏低，且越小的帮派偏得越多（实测有帮派差到 <b>30%</b>）。官方榜未收录的帮派才退回本站自算，并标上「<span class="tilde">估</span>」字。另外「上榜成员」统计的是进入功力榜的成员数，<b>不等于帮派的真实人数</b>。</p>
+      </article>
+      <article>
+        <h3>帮派每日变化怎么看</h3>
+        <p>帮派榜的「<b>日变化</b>」是最近一天帮派功力的变化量，鼠标移上去能看到分解。<b>要特别注意它含成员进出</b>：<br>· <b>总变化</b>＝当天前80名功力之和 − 前一天。吸收强者会大涨，成员流失会下跌；<br>· <b>留守增长</b>＝只算留下来的成员<u>自身</u>的功力提升，这才是真正「练功」的部分。<br>实测中常见总变化几百万、而留守增长只有几千的情况——那基本是成员流动而非集体提升。点开帮派详情可看每天的总变化、留守增长与进出人数。<br>数据源只提供<b>最近 5 天</b>的帮派变化，本站已从今日起<b>自建历史长期累积</b>。</p>
+      </article>
+      <article>
+        <h3>帮派详情看什么</h3>
+        <p>在帮派榜点任意一行，会打开帮派详情，依次是：<b>关键数据</b>（官方名次「全服 / 大区」双榜、功力最高成员、盟主、平均功力＝官方值 ÷ 80、采集时间）、<b>榜单收录构成</b>（收录成员与隐藏功力人数、收录总功力的公开／隐藏拆分、前 80 之和）、<b>帮派评级与稳定度</b>、<b>前 80 之和成长曲线</b>、<b>挖人关系网</b>、<b>人员流动明细</b>（入帮 / 新收录 / 退帮 / 掉出收录，附名单与功力）、<b>帮内成员功力榜</b>（前 80 名，可点进角色详情）。详情数据按服务器分包，点开某个帮派时才下载对应那包。</p>
+      </article>
+      <article>
+        <h3>帮派评级与关系网怎么算</h3>
+        <p><b>评级是本站算法，不是官方数据。</b>综合评分取「当前视图内」的百分位加权：前 80 战力占 <b>65%</b>、成员平均功力 15%、最高战力 10%、阵容规模 10%，再用幂函数压缩（低分段抬升，避免长尾全挤在个位数）。等级按名次分布划分：<b>S+</b> 前 2%、<b>S</b> 前 10%、<b>A+</b> 前 25%、<b>A</b> 前 50%、<b>B</b> 前 75%，其余为 C——所以同一个帮派在全服榜和大区榜里的评级可能不同，这是正常的（比较范围不同）。<br><b>稳定度</b>＝变动人次相对成员数的换血率换算（100 ÷ (1 + 1.5 × 换血率)），窗口为最近 5 天；它同时给出「记录流入/流出」（含收录边界的进出）与「真实人员变动」（只算入帮与退帮）。<br><b>挖人关系网</b>的数据有个先天局限：数据源只记录「入帮时的来源帮派」，<b>不提供退帮去向</b>，所以流出方向是靠对方帮派的入帮记录反推出来的。窗口最近 5 天，本站会逐日累积。</p>
+      </article>
+      <article>
+        <h3>口径与边界</h3>
+        <p>数字对应数据日期，不是打开页面的那一刻。门派、帮派内名次按本次数据并集重算，官方不提供。榜单仅作数据整理与检索用途，如官方要求可随时停止收录。</p>
+      </article>
+    </div>
+  </section>
+
+  <footer class="site-footer">
+    <span>天刀全服功力榜 · 数据源：天涯明月刀 OL 名人堂</span>
+    <span class="foot-snap" id="footSnap"></span>
+  </footer>
+
+</main>
+
+<button type="button" class="to-top" id="toTop" aria-label="回到顶部">
+  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>
+</button>
+
+<div class="drawer-backdrop" id="drawerBackdrop" hidden></div>
+<aside class="drawer" id="drawer" aria-hidden="true">
+  <button class="drawer-close" id="drawerClose" type="button" aria-label="关闭详情">×</button>
+  <div id="drawerContent"></div>
+</aside>
+
+<script src="./data/servers.js?v=__DATA_VER__"></script>
+<script>
+/* ============================================================
+   彼岸花功力榜 · 交互逻辑
+   ============================================================ */
+(function () {
+  'use strict';
+
+  // 数据版本号（构建时替换为快照日期）。给所有 data/*.js 带上 ?v=，
+  // 否则浏览器/边缘节点会一直用缓存里的旧榜单——每天更新了也看不到。
+  var DATA_VER = '__DATA_VER__';
+
+  // 服务器清单 / 全局日期表 / 总览统计 由 data/servers.js 提供
+  var SRV_LIST = window.__SRV_LIST || [];
+  var HD = window.__SRV_DAYS || [];
+  var META = window.__SRV_META || {};
+  // 注意：各服数据是动态 <script> 载入的，必须每次现取 window.__SRV_DATA，
+  // 不能在启动时缓存引用，否则动态挂上去的数据读不到。
+  function store() { return window.__SRV_DATA || {}; }
+
+  // 服务器 id → 服名（聚合数据里只存 id 索引）
+  var SRV_NAME = {};
+  SRV_LIST.forEach(function (s) { SRV_NAME[s.id] = s.name; });
+
+  // 聚合视图（全区全服 / 各大区）——数据由 data/agg-*.js 按需载入
+  var AGG_META = null;
+  var AGG_CACHE = {};
+  var VIEWS = [];
+
+  var DB = null;        // 当前服务器的数据
+  var ROLES = [];
+  var GUILDS = [];
+
+  var MENPAI_ORDER = ['真武','太白','神威','丐帮','唐门','五毒','少林','天香','神刀','移花','从龙','雪衣','长生剑','万象'];
+
+  var state = {
+    view: '',
+    board: 'power',
+    q: '',
+    menpai: '',
+    guild: '',
+    tier: '',
+    measure: 'hp',
+    sort: 'rank',
+    page: 1,
+    pageSize: 30
+  };
+
+  var $ = function (id) { return document.getElementById(id); };
+  var fmt = function (n) {
+    if (n === null || n === undefined || isNaN(n)) return '—';
+    return Math.round(n).toLocaleString('en-US');
+  };
+  // 大数值量级化：亿 / 万，避免小服显示成「0亿」
+  var bigNum = function (v) {
+    v = v || 0;
+    if (v >= 1e8) return (v / 1e8).toFixed(v >= 1e9 ? 0 : 1) + '亿';
+    if (v >= 1e4) return Math.round(v / 1e4) + '万';
+    return fmt(v);
+  };
+  var esc = function (s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  };
+
+  // 隐藏功力的角色：用「上一位 + 下一位公开功力」的平均值显示（pe 由数据层算好）
+  var powerHtml = function (r) {
+    if (!r.ph) {
+      return r.p ? '<span class="pw">' + fmt(r.p) + '</span>'
+                 : '<span class="pw hidden">—</span>';
+    }
+    if (r.pe) {
+      return '<span class="pw est" title="估算值：取上下相邻名次公开功力的平均，非官方数据">≈' +
+             fmt(r.pe) + '<i class="est-tag">估</i></span>';
+    }
+    return '<span class="pw hidden">隐藏未公开</span>';
+  };
+  var powerText = function (r) {
+    if (!r.ph) return r.p ? fmt(r.p) : '—';
+    return r.pe ? '≈' + fmt(r.pe) + '(估算)' : '隐藏';
+  };
+
+  // 名字 / 帮派为「推断」时的小标记。官方榜隐藏了这两项，这里按玩家提供的
+  // 游戏内实时榜单比对得出，只补名字和帮派归属，不动功力（避免帮派总功力虚增）。
+  var NAME_TIP = '角色名为推断：官方榜隐藏了角色名，按玩家提供的游戏内榜单比对得出';
+  var GUILD_TIP = '帮派为推断：该角色隐藏了帮派，按玩家提供的游戏内榜单比对得出';
+  var nameHtml = function (r, tag) {
+    var t = tag || 'span';
+    var cls = r.nh ? ' is-hidden' : (r.gu ? ' is-guess' : '');
+    var body = esc(r.n) + (r.gu ? '<i class="est-tag" title="' + NAME_TIP + '">估</i>' : '');
+    return '<' + t + ' class="rn-text' + cls + '"' + (r.gu ? ' title="' + NAME_TIP + '"' : '') + '>' + body + '</' + t + '>';
+  };
+  var guildHtml = function (r) {
+    if (!r.g) {
+      return '<span class="guild-none">' + (r.gh ? '帮派隐藏' : '无帮派') + '</span>';
+    }
+    return '<span class="guild-name' + (r.gg ? ' is-guess' : '') + '"' +
+      (r.gg ? ' title="' + GUILD_TIP + '"' : '') + '>' + esc(r.g) +
+      (r.gg ? '<i class="est-tag">估</i>' : '') + '</span>';
+  };
+
+  /* ---------- 派生数据（切换服务器时重算） ---------- */
+  var guildMemberCount = {};
+  var menpaiCount = {};
+  var GUILD_TOP = [];
+  var maxPower = 0;
+
+  var IS_AGG = false;
+
+  function recomputeDerived() {
+    ROLES.forEach(function (r, i) {
+      r._i = i;   // 每行一个稳定索引，用于点击定位（聚合数据没有 key）
+      r._search = (r.n + ' ' + (r.fn || []).join(' ') + ' ' + r.g + ' ' + r.m).toLowerCase();
+    });
+    guildMemberCount = {};
+    menpaiCount = {};
+    maxPower = 0;
+    ROLES.forEach(function (r) {
+      if (r.g) guildMemberCount[r.g] = (guildMemberCount[r.g] || 0) + 1;
+      menpaiCount[r.m] = (menpaiCount[r.m] || 0) + 1;
+      if (r.p && r.p > maxPower) maxPower = r.p;
+    });
+    GUILD_TOP = Object.keys(guildMemberCount)
+      .sort(function (a, b) { return guildMemberCount[b] - guildMemberCount[a]; })
+      .slice(0, 24);
+
+    GUILDS.forEach(function (g, i) {
+      g._gi = i;
+      // 最近一天的功力变化：f = [[MM-DD, 总变化, 留守增长, 走人数, 来人数], ...]
+      var f = g.f || [];
+      g._d = f.length ? f[f.length - 1] : null;
+      g._d0 = g._d ? g._d[1] : null;
+    });
+  }
+
+  /* ---------- 顶部数值条 ---------- */
+  function renderStats() {
+    var withPower = ROLES.filter(function (r) { return r.p; }).length;
+    var official = ROLES.filter(function (r) { return r.ro; }).length;
+    var totalPower = ROLES.reduce(function (s, r) { return s + (r.p || 0); }, 0);
+    var stats = [
+      { b: fmt(ROLES.length), s: '收录角色' },
+      { b: fmt(withPower), s: '公开功力' },
+      { b: fmt(official), s: '官方在榜' },
+      { b: fmt(Object.keys(guildMemberCount).length), s: '帮派' },
+      { b: MENPAI_ORDER.filter(function (m) { return menpaiCount[m]; }).length, s: '门派' },
+      { b: bigNum(totalPower), s: '收录总功力' }
+    ];
+    $('statStrip').innerHTML = stats.map(function (x) {
+      return '<div class="stat"><b>' + x.b + '</b><span>' + x.s + '</span></div>';
+    }).join('');
+  }
+
+  /* ---------- 前三甲 ---------- */
+  function renderPodium() {
+    var top3 = ROLES.slice().sort(function (a, b) {
+      var ra = a.ro ? a.r : 1e9, rb = b.ro ? b.r : 1e9;
+      return ra - rb;
+    }).slice(0, 3);
+    $('podium').innerHTML = top3.map(function (r, i) {
+      var pos = i + 1;
+      var power = powerHtml(r);
+      var guild = r.g ? esc(r.g) + (r.gg ? '<i class="est-tag">估</i>' : '') : (r.gh ? '帮派隐藏' : '无帮派');
+      // 跨服视图（全区 / 大区 / 多服对比）要标出服务器，否则看不出是哪个服的人
+      var svTag = (IS_AGG && r.sv) ? '<span class="pod-tag pod-sv">' + esc(r.sv) + '</span>' : '';
+      return '<li class="pod" data-pos="' + pos + '" data-idx="' + r._i + '">' +
+        '<div class="pod-crown">TOP ' + pos + '</div>' +
+        '<div class="pod-rank">' + pos + '</div>' +
+        '<p class="pod-name' + (r.nh ? ' is-hidden' : (r.gu ? ' is-guess' : '')) + '"' +
+          (r.gu ? ' title="' + NAME_TIP + '"' : '') + '>' + esc(r.n) +
+          (r.gu ? '<i class="est-tag">估</i>' : '') + '</p>' +
+        '<div class="pod-meta">' +
+          svTag +
+          '<span class="pod-tag">' + esc(r.m) + '</span>' +
+          '<span class="pod-tag">' + guild + '</span>' +
+        '</div>' +
+        '<div class="pod-power">' + power + '<small>' + (r.ro ? '官方名次 ' + r.r : '预估名次 ~' + r.r) + '</small></div>' +
+        '</li>';
+    }).join('');
+  }
+
+  /* ---------- 筛选 chips ---------- */
+  function renderChips() {
+    var mp = MENPAI_ORDER.filter(function (m) { return menpaiCount[m]; });
+    $('menpaiChips').innerHTML = chip('menpai', '', '全部门派', ROLES.length) +
+      mp.map(function (m) { return chip('menpai', m, m, menpaiCount[m]); }).join('');
+
+    $('guildChips').innerHTML = chip('guild', '', '全部帮派', ROLES.filter(function (r) { return r.g; }).length) +
+      GUILD_TOP.map(function (g) { return chip('guild', g, g, guildMemberCount[g]); }).join('');
+
+    var tiers = [
+      ['', '全部'], ['top10', '十强'], ['top100', '百强'], ['top500', '五百强'], ['extended', '扩容收录']
+    ];
+    var tc = {};
+    ROLES.forEach(function (r) { tc[r.t] = (tc[r.t] || 0) + 1; });
+    $('tierChips').innerHTML = tiers.map(function (t) {
+      var n = t[0] ? (tc[t[0]] || 0) : ROLES.length;
+      return chip('tier', t[0], t[1], n);
+    }).join('');
+
+    var mc = $('measureChips');
+    if (mc) mc.innerHTML = '';
+  }
+
+  function chip(axis, val, label, n) {
+    var active = state[axis] === val ? ' is-active' : '';
+    var num = n === undefined ? '' : '<span class="chip-n">' + n + '</span>';
+    return '<button type="button" class="chip' + active + '" data-axis="' + axis + '" data-val="' + esc(val) + '">' +
+      esc(label) + num + '</button>';
+  }
+
+  /* ---------- 排序 / 每页 ---------- */
+  function renderBars() {
+    var sorts = state.board === 'power'
+      ? [['rank', '名次'], ['power', '功力'], ['name', '角色名'], ['guild', '帮派']]
+      : [['ov', '帮派功力'], ['hp', '总功力'], ['oa', '平均功力'], ['up', '日涨幅'],
+         ['down', '日跌幅'], ['tm', '上榜成员'], ['name', '帮派名']];
+    $('sortGroup').innerHTML = sorts.map(function (s) {
+      return '<button type="button" class="bar-btn' + (state.sort === s[0] ? ' is-active' : '') +
+        '" data-sort="' + s[0] + '">' + s[1] + '</button>';
+    }).join('');
+    $('pageSizeGroup').innerHTML = [20, 30, 50, 100].map(function (n) {
+      return '<button type="button" class="bar-btn' + (state.pageSize === n ? ' is-active' : '') +
+        '" data-size="' + n + '">' + n + '</button>';
+    }).join('');
+  }
+
+  /* ---------- 角色筛选与排序 ---------- */
+  function filterRoles() {
+    var q = state.q.trim().toLowerCase();
+    var list = ROLES.filter(function (r) {
+      if (state.menpai && r.m !== state.menpai) return false;
+      if (state.guild && r.g !== state.guild) return false;
+      if (state.tier && r.t !== state.tier) return false;
+      if (q && r._search.indexOf(q) === -1) return false;
+      return true;
+    });
+    list.sort(function (a, b) {
+      switch (state.sort) {
+        case 'power':
+          return (b.p || b.pe || 0) - (a.p || a.pe || 0);
+        case 'name':
+          return a.n.localeCompare(b.n, 'zh');
+        case 'guild':
+          return (a.g || '\uffff').localeCompare(b.g || '\uffff', 'zh') || a.r - b.r;
+        default:
+          return a.r - b.r;
+      }
+    });
+    return list;
+  }
+
+  /* ---------- 帮派口径 ----------
+     官方帮派榜：帮派功力 = 前 80 名成员功力之和；平均功力 = 该值 ÷ 80。
+     本站只收录榜上有名的成员，自算会随收录完整度浮动（小帮派偏差可达 30%），
+     所以**官方值优先**，官方榜没收录这个帮派时才退回自算值并标注。 */
+  function guildOff(g) { return !!(g.off && g.ov !== null && g.ov !== undefined); }
+  function guildPower(g) {
+    return guildOff(g) ? g.ov : (g.t80 || 0);
+  }
+  function guildAvg(g) {
+    if (guildOff(g)) return (g.oa !== null && g.oa !== undefined) ? g.oa : Math.round((g.ov || 0) / 80);
+    return g.a80 || 0;
+  }
+
+  /* ---------- 帮派筛选与排序 ---------- */
+  function filterGuilds() {
+    var q = state.q.trim().toLowerCase();
+    var list = GUILDS.filter(function (g) {
+      if (q && (g.g + ' ' + g.ld).toLowerCase().indexOf(q) === -1) return false;
+      return true;
+    });
+    list.sort(function (a, b) {
+      var k = state.sort;
+      if (k === 'name') return a.g.localeCompare(b.g, 'zh');
+      if (k === 'tm') return (b.tm || 0) - (a.tm || 0);
+      if (k === 'hp') return (b.hp || 0) - (a.hp || 0);
+      if (k === 'oa') return guildAvg(b) - guildAvg(a);
+      if (k === 'up') return (b._d0 === null ? -1e18 : b._d0) - (a._d0 === null ? -1e18 : a._d0);
+      if (k === 'down') return (a._d0 === null ? 1e18 : a._d0) - (b._d0 === null ? 1e18 : b._d0);
+      return guildPower(b) - guildPower(a);
+    });
+    return list;
+  }
+
+  /* ---------- 渲染表格 ---------- */
+  function renderTable() {
+    var isPower = state.board === 'power';
+    var row = $('tierRow');
+    if (row) row.hidden = !isPower;
+
+    var list = isPower ? filterRoles() : filterGuilds();
+    var totalPages = Math.max(1, Math.ceil(list.length / state.pageSize));
+    if (state.page > totalPages) state.page = totalPages;
+    if (state.page < 1) state.page = 1;
+    var start = (state.page - 1) * state.pageSize;
+    var pageList = list.slice(start, start + state.pageSize);
+
+    if (isPower) {
+      if (IS_AGG) {
+        $('ledgerCols').innerHTML = '<col style="width:74px"><col><col style="width:100px"><col style="width:88px"><col style="width:168px"><col style="width:118px">';
+        $('ledgerHead').innerHTML =
+          '<th>名次</th><th>角色</th><th>服务器</th><th>门派</th><th>帮派</th><th class="num">功力</th>';
+      } else {
+        $('ledgerCols').innerHTML = '<col style="width:74px"><col><col style="width:90px"><col style="width:170px"><col style="width:120px">';
+        $('ledgerHead').innerHTML =
+          '<th>名次</th><th>角色</th><th>门派</th><th>帮派</th><th class="num">功力</th>';
+      }
+    } else {
+      $('ledgerCols').innerHTML = '<col style="width:66px"><col><col style="width:82px"><col style="width:108px"><col style="width:108px"><col style="width:94px"><col style="width:102px"><col style="width:96px">';
+      $('ledgerHead').innerHTML =
+        '<th>排行</th><th>帮派</th><th class="num">上榜成员</th><th class="num">总功力</th>' +
+        '<th class="num">帮派功力</th><th class="num">平均功力</th><th class="num">日变化</th>' +
+        '<th class="ctr">盟主</th>';
+    }
+
+    if (!pageList.length) {
+      $('ledgerBody').innerHTML = '';
+      $('empty').hidden = false;
+      $('empty').textContent = isPower ? '没有找到符合条件的角色' : '没有找到符合条件的帮派';
+    } else {
+      $('empty').hidden = true;
+      $('ledgerBody').innerHTML = isPower ? pageList.map(roleRow).join('') : pageList.map(guildRow).join('');
+    }
+
+    renderResultLine(list.length, start, pageList.length, isPower);
+    renderPager(totalPages);
+  }
+
+  function roleRow(r) {
+    var rk = start0rank(r);
+    return '<tr data-idx="' + r._i + '">' +
+      '<td class="rank-cell">' + rk + '</td>' +
+      '<td>' +
+        '<div class="role-name">' +
+          nameHtml(r) +
+          (r.fn && r.fn.length ? '<span class="badge former">曾用名 ' + esc(r.fn.join(' / ')) + '</span>' : '') +
+        '</div>' +
+      '</td>' +
+      (IS_AGG ? '<td><span class="srv-cell">' + esc(r.sv || '') + '</span></td>' : '') +
+      '<td><span class="badge menpai">' + esc(r.m) + '</span></td>' +
+      '<td>' + guildHtml(r) + '</td>' +
+      '<td class="num">' + powerCell(r) + '</td>' +
+    '</tr>';
+  }
+
+  function guildDeltaCell(g) {
+    if (g._d0 === null || g._d0 === undefined) return '<span class="guild-est">—</span>';
+    var f = g._d, d = g._d0;
+    var stay = f[2] || 0, outN = f[3] || 0, inN = f[4] || 0;
+    var cls = d > 0 ? 'up' : (d < 0 ? 'down' : 'flat');
+    // 悬停摊开：总变化含人员进出，留守增长才是「练功」的部分
+    var tip = '总变化 ' + (d > 0 ? '+' : '') + fmt(d) + '（含成员进出）\n' +
+              '留守增长 ' + (stay > 0 ? '+' : '') + fmt(stay) + '\n' +
+              '走 ' + outN + ' 人 / 来 ' + inN + ' 人';
+    return '<span class="ch-delta ' + cls + '" title="' + esc(tip) + '">' +
+           (d > 0 ? '+' : '') + fmt(d) + '</span>';
+  }
+
+  function guildRow(g) {
+    var off = guildOff(g);
+    var pCell = off
+      ? '<span class="pw">' + fmt(guildPower(g)) + '</span>'
+      : '<span class="pw est">' + fmt(guildPower(g)) + '<i class="est-tag">估</i></span>';
+    var aCell = off ? fmt(guildAvg(g)) : '<span class="guild-est">' + fmt(guildAvg(g)) + '</span>';
+    var sub = '上榜 ' + (g.tm || 0) + ' 人' +
+      (g.hpm ? ' · 含 ' + g.hpm + ' 名隐藏功力' : ' · 功力全公开') +
+      (off ? '' : ' · 官方榜未收录，数值为本站推算');
+    return '<tr data-guild="' + esc(g.g) + '" data-gidx="' + g._gi + '">' +
+      '<td class="rank-cell"><span class="rk" data-rank="' + (state.page - 1) + '"></span></td>' +
+      '<td><span class="rn-text">' + esc(g.g) + '</span>' +
+        (IS_AGG && g.sv ? '<span class="badge srv-badge">' + esc(g.sv) + '</span>' : '') +
+        '<span class="cell-sub">' + sub + '</span></td>' +
+      '<td class="num">' + (g.tm || 0) + '</td>' +
+      '<td class="num"><span class="pw dim">' + fmt(g.hp || 0) + '</span></td>' +
+      '<td class="num">' + pCell + '</td>' +
+      '<td class="num">' + aCell + '</td>' +
+      '<td class="num">' + guildDeltaCell(g) + '</td>' +
+      '<td class="ctr">' + (g.ld ? esc(g.ld) : '<span class="guild-none">未知</span>') + '</td>' +
+    '</tr>';
+  }
+
+  var _rankSeq = 0;
+  function start0rank(r) {
+    var cls = 'rk';
+    if (r.r === 1) cls += ' t3-1';
+    else if (r.r === 2) cls += ' t3-2';
+    else if (r.r === 3) cls += ' t3-3';
+    else if (r.r <= 10) cls += ' t10';
+    var pre = r.ro ? '' : '<span class="tilde">~</span>';
+    return '<span class="' + cls + '">' + pre + r.r + '</span>';
+  }
+
+  function powerCell(r) {
+    return powerHtml(r);
+  }
+
+  function renderResultLine(total, start, shown, isPower) {
+    var unit = isPower ? '名角色' : '个帮派';
+    var extra = '';
+    if (isPower && (state.menpai || state.guild || state.tier || state.q)) extra = '（已筛选）';
+    // 首屏只载入前 N 名时如实说明，避免用户以为榜单只有这么点人
+    var loadingHint = (DB && DB.partial && isPower)
+      ? ' · <span class="rest-hint">前 ' + fmt(DB.roles.length) + ' 名已就绪，完整榜单载入中…</span>' : '';
+    $('resultLine').innerHTML = '共 <b>' + total + '</b> ' + unit + extra + loadingHint +
+      (total ? ' · 当前显示第 ' + (start + 1) + '–' + (start + shown) + ' 条' : '');
+  }
+
+  /* ---------- 分页 ---------- */
+  function renderPager(totalPages) {
+    var p = state.page, out = [];
+    var btn = function (label, page, dis, active, gap) {
+      if (gap) return '<span class="pg gap">…</span>';
+      return '<button type="button" class="pg' + (active ? ' is-active' : '') + '"' +
+        (dis ? ' disabled' : '') + ' data-page="' + page + '">' + label + '</button>';
+    };
+    out.push(btn('‹', p - 1, p <= 1, false));
+    var pages = [];
+    for (var i = 1; i <= totalPages; i++) {
+      if (i === 1 || i === totalPages || Math.abs(i - p) <= 1) pages.push(i);
+      else if (pages[pages.length - 1] !== 'gap') pages.push('gap');
+    }
+    pages.forEach(function (x) {
+      if (x === 'gap') out.push(btn('', 0, false, false, true));
+      else out.push(btn(x, x, false, x === p));
+    });
+    out.push(btn('›', p + 1, p >= totalPages, false));
+    $('pager').innerHTML = out.join('');
+  }
+
+  /* ---------- 帮派榜行号修正 ---------- */
+  function fixGuildRanks() {
+    var rows = $('ledgerBody').querySelectorAll('tr');
+    var base = (state.page - 1) * state.pageSize;
+    rows.forEach(function (tr, i) {
+      var el = tr.querySelector('.rk');
+      if (el) {
+        el.textContent = base + i + 1;
+        el.classList.remove('t3-1', 't3-2', 't3-3', 't10');
+        if (base + i === 0) el.classList.add('t3-1');
+        else if (base + i === 1) el.classList.add('t3-2');
+        else if (base + i === 2) el.classList.add('t3-3');
+        else if (base + i < 10) el.classList.add('t10');
+      }
+    });
+  }
+
+  /* ---------- 功力成长曲线 ---------- */
+  // 解码紧凑格式：r.h = [起始下标, [功力,名次], ..., [-1, 跳过的天数], ...]
+  function parseHistory(r) {
+    if (!r.h || r.h.length < 2) return null;
+    var idx = r.h[0], out = [];
+    for (var i = 1; i < r.h.length; i++) {
+      var v = r.h[i];
+      if (!v || v.length < 2) continue;
+      if (v[0] === -1) { idx += (v[1] || 1); continue; }   // 断点/缺值：跳过若干天
+      out.push({ date: HD[idx] || '', power: v[0], rank: v[1] || 0 });
+      idx += 1;
+    }
+    return out.length >= 2 ? out : null;
+  }
+
+  function historyChart(r) {
+    var pts = parseHistory(r);
+    if (!pts) {
+      var why;
+      if (DB && DB.kind === 'agg') {
+        why = '全服 / 大区视图为控制体积未载入成长曲线，<b>切换到该角色所属的服务器</b>即可查看。';
+      } else if (r.nh || r.gu) {
+        why = '该角色在官方榜里隐藏了角色名，历史只能按名次追踪、无法关联到具体角色，因此不提供曲线。';      } else {
+        why = '该角色暂无历史曲线：数据来源于 ' + esc(HD[0] || '—') +
+              ' 开始，之后才上榜或改名重建的角色没有足够的数据点。';
+      }
+      return '<div class="dw-sec"><h4>功力成长曲线</h4><p class="dw-note">' + why + '</p></div>';
+    }
+    var f = pts[0], l = pts[pts.length - 1];
+    // 隐藏功力的角色，历史里只有名次 → 改画名次曲线
+    var hasPower = pts.some(function (p) { return p.power !== null && p.power !== undefined; });
+
+    var W = 380, H = 168, pl = 52, pr = 14, pt = 14, pb = 26;
+    var iw = W - pl - pr, ih = H - pt - pb;
+
+    var vals = pts.map(function (p) { return hasPower ? p.power : p.rank; });
+    var mx = Math.max.apply(null, vals), mn = Math.min.apply(null, vals);
+    if (mx === mn) { var bump = hasPower ? 100 : 1; mx += bump; mn -= bump; }
+    var pad = (mx - mn) * 0.14; mn -= pad; mx += pad;
+
+    var X = function (i) { return pl + (pts.length < 2 ? iw / 2 : iw * i / (pts.length - 1)); };
+    var Y = function (v) {
+      var t = (v - mn) / (mx - mn);
+      return pt + ih * (hasPower ? (1 - t) : t);   // 功力越高越靠上；名次越小越靠上
+    };
+    var valOf = function (p) { return hasPower ? p.power : p.rank; };
+
+    var grid = '';
+    [0, 0.5, 1].forEach(function (t) {
+      var v = mx - (mx - mn) * t, y = pt + ih * t;
+      grid += '<line x1="' + pl + '" y1="' + y.toFixed(1) + '" x2="' + (pl + iw) + '" y2="' + y.toFixed(1) + '" class="ch-grid"/>' +
+        '<text x="' + (pl - 6) + '" y="' + (y + 3.5).toFixed(1) + '" class="ch-ylab" text-anchor="end">' +
+        (hasPower ? fmt(Math.round(v)) : Math.round(v)) + '</text>';
+    });
+
+    var line = pts.map(function (p, i) { return X(i).toFixed(1) + ',' + Y(valOf(p)).toFixed(1); }).join(' ');
+    var area = pl + ',' + (pt + ih) + ' ' + line + ' ' + (pl + iw) + ',' + (pt + ih);
+
+    var step = pts.length > 32 ? Math.ceil(pts.length / 32) : 1;
+    var dots = '';
+    pts.forEach(function (p, i) {
+      if (i % step !== 0 && i !== pts.length - 1) return;
+      dots += '<circle cx="' + X(i).toFixed(1) + '" cy="' + Y(valOf(p)).toFixed(1) + '" r="2.5" class="ch-dot"/>';
+    });
+
+    var xlab = '<text x="' + pl + '" y="' + (H - 8) + '" class="ch-xlab" text-anchor="start">' + esc((f.date || '').slice(5)) + '</text>' +
+      '<text x="' + (pl + iw) + '" y="' + (H - 8) + '" class="ch-xlab" text-anchor="end">' + esc((l.date || '').slice(5)) + '</text>';
+
+    // 指标：功力用增减值，名次用升降位数
+    var metric;
+    if (hasPower) {
+      var d = l.power - f.power;
+      metric = '<b class="ch-delta ' + (d >= 0 ? 'up' : 'down') + '">' + (d >= 0 ? '+' : '') + fmt(d) + '</b>';
+    } else {
+      var dr = f.rank - l.rank;   // 正数 = 名次变小 = 上升
+      metric = '<b class="ch-delta ' + (dr > 0 ? 'up' : dr < 0 ? 'down' : 'flat') + '">' +
+        (dr === 0 ? '持平' : (dr > 0 ? '↑ ' + dr + ' 位' : '↓ ' + (-dr) + ' 位')) + '</b>';
+    }
+
+    var foot = hasPower
+      ? '当前 <b>' + fmt(l.power) + '</b> 功力 · 名次 <b>' + l.rank + '</b>'
+      : '该玩家隐藏了功力，走势改用 <b>名次</b> 呈现（名次越小越靠前） · 当前名次 <b>' + l.rank + '</b>';
+
+    return '<div class="dw-sec">' +
+      '<h4>' + (hasPower ? '功力成长曲线' : '名次变化曲线') + '</h4>' +
+      '<div class="dw-chart-meta">' +
+        '<span>' + esc(f.date) + ' → ' + esc(l.date) + '</span>' +
+        '<span>' + pts.length + ' 个数据点</span>' +
+        metric +
+      '</div>' +
+      '<svg class="dw-chart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + (hasPower ? '功力成长曲线' : '名次变化曲线') + '">' +
+        '<defs><linearGradient id="chGrad" x1="0" y1="0" x2="0" y2="1">' +
+          '<stop offset="0%" stop-color="rgba(255,46,77,.36)"/>' +
+          '<stop offset="100%" stop-color="rgba(255,46,77,0)"/>' +
+        '</linearGradient></defs>' +
+        grid +
+        '<polygon points="' + area + '" fill="url(#chGrad)"/>' +
+        '<polyline points="' + line + '" class="ch-line"/>' +
+        dots +
+        '<circle cx="' + X(pts.length - 1).toFixed(1) + '" cy="' + Y(valOf(l)).toFixed(1) + '" r="4.2" class="ch-last"/>' +
+        xlab +
+      '</svg>' +
+      '<p class="dw-chart-foot">' + foot + '</p>' +
+      '</div>';
+  }
+
+  /* ---------- 详情抽屉 ---------- */
+  function openRole(idx) {
+    var r = ROLES[idx];
+    if (!r) return;
+    var maxRef = Math.max(maxPower, r.p || 0);
+    var powerBlock = r.ph
+      ? (r.pe
+          ? '<b style="color:var(--warn)">≈' + fmt(r.pe) + '</b>' +
+            '<span>估算值 · 取上下相邻名次公开功力的平均</span>' +
+            (r.pr ? '<span style="margin-top:7px;font-size:12px;color:var(--slate)">区间 ' +
+              fmt(r.pr.lo) + ' – ' + fmt(r.pr.hi) +
+              (r.pr.hiAt && r.pr.loAt ? '（第 ' + r.pr.hiAt + ' 名与第 ' + r.pr.loAt + ' 名之间）' : '') +
+              '</span>' : '')
+          : '<b style="font-size:20px;color:var(--slate)">隐藏未公开</b><span>该玩家隐藏了功力数值</span>')
+      : '<b>' + fmt(r.p) + '</b><span>功力' + (r.ro ? ' · 官方在榜' : ' · 并集推定') + '</span>';
+
+    var rankBars = '';
+    if (r.rm) {
+      var pct = Math.max(3, 100 - Math.min(97, (r.rm - 1) / 15 * 100));
+      rankBars += rankBar('门派内', r.rm, pct, '第 ' + r.rm + ' 名');
+    }
+    var powerPct = r.p ? Math.max(3, Math.min(100, (r.p / maxRef) * 100)) : 0;
+    if (r.p) rankBars += rankBar('功力水位', null, powerPct, '相对全服榜首 ' + Math.round(r.p / maxRef * 100) + '%');
+
+    var formerHtml = (r.fn && r.fn.length)
+      ? '<div class="dw-formers">' + r.fn.map(function (f) {
+          return '<span class="fm">' + esc(f) + ' <i>推断</i></span>';
+        }).join('') + '</div>'
+      : '<p class="dw-note">无推断出的曾用名记录。官方接口不提供改名履历，本站曾用名全部来自历次数据比对推断，仅供参考。</p>';
+
+    var sigHtml = r.sig
+      ? '<p class="dw-sig">' + esc(r.sig) + '</p>'
+      : '<p class="dw-note">该角色没有公开的玩家签名。</p>';
+
+    $('drawerContent').innerHTML =
+      '<p class="dw-eyebrow">' + (r.ro ? '官方在榜' : '扩容收录') + ' · ' + esc(r.m) + '</p>' +
+      '<h3 class="dw-name' + (r.nh ? ' is-hidden' : (r.gu ? ' is-guess' : '')) + '">' + esc(r.n) +
+        (r.gu ? '<i class="est-tag">估</i>' : '') + '</h3>' +
+      '<p class="dw-rankline">全服名次 <b>' + (r.ro ? '' : '~') + r.r + '</b>' +
+        (r.rm ? ' · 门派内第 <b>' + r.rm + '</b> 名' : '') + '</p>' +
+      '<div class="dw-power">' + powerBlock + '</div>' +
+      '<dl class="dw-grid">' +
+        '<div class="dw-item"><dt>门派</dt><dd>' + esc(r.m) + '</dd></div>' +
+        '<div class="dw-item"><dt>服务器</dt><dd>' + esc(r.sv || DB.server) +
+          (DB.kind === 'agg' ? '' : '（' + esc(DB.region) + '）') + '</dd></div>' +
+        '<div class="dw-item wide"><dt>帮派</dt><dd>' +
+          (r.g ? esc(r.g) + (r.gg ? '<i class="est-tag" title="' + GUILD_TIP + '">估</i>' : '')
+               : (r.gh ? '帮派名已隐藏' : '无帮派')) + '</dd></div>' +
+        (r.gu ? '<div class="dw-item wide"><dt>名字来源</dt><dd class="dw-guess-note">' +
+          '官方榜隐藏了角色名。此处名字与帮派为玩家提供的游戏内实时榜单比对推断，' +
+          '<b>功力仍按官方隐藏处理，未作修改</b>，以免影响帮派总功力。</dd></div>' : '') +
+        '<div class="dw-item"><dt>数据来源于</dt><dd>' + esc(DB.snapshot) + '</dd></div>' +
+      '</dl>' +
+      (rankBars ? '<div class="dw-sec"><h4>名次水位</h4><div class="dw-rankbars">' + rankBars + '</div></div>' : '') +
+      historyChart(r) +
+      '<div class="dw-sec"><h4>曾用名（推断）</h4>' + formerHtml + '</div>' +
+      '<div class="dw-sec"><h4>玩家签名</h4>' + sigHtml + '</div>' +
+      '<div class="dw-sec"><h4>成员构成</h4><div class="dw-note">收录于彼岸花服务器，出于并集重建，同一角色只保留最高功力记录。</div></div>';
+
+    $('drawerContent').querySelector('.dw-name').setAttribute('title', r.n);
+    $('drawer').classList.add('open');
+    $('drawer').setAttribute('aria-hidden', 'false');
+    $('drawerBackdrop').hidden = false;
+  }
+
+  function rankBar(k, rank, pct, valText) {
+    return '<div class="dw-rankbar"><span class="k">' + k + '</span>' +
+      '<span class="track"><span class="fill" style="width:' + pct.toFixed(1) + '%"></span></span>' +
+      '<span class="v">' + valText + '</span></div>';
+  }
+
+  function closeDrawer() {
+    $('drawer').classList.remove('open');
+    $('drawer').setAttribute('aria-hidden', 'true');
+    $('drawerBackdrop').hidden = true;
+  }
+
+  /* ---------- 帮派详情 ---------- */
+  // 详情数据按服分包（data/gd-<serverId>.js），点到某个帮派才加载那个服的
+  var GHIST = null;
+  var GD_PENDING = {};
+  var GHIST_PENDING = null;
+
+  function loadGuildDetail(sid) {
+    if (!sid) return Promise.resolve(null);
+    var cached = (window.__GD || {})[sid];
+    if (cached) return Promise.resolve(cached);
+    if (GD_PENDING[sid]) return GD_PENDING[sid];      // 连点多个帮派时不重复下载
+    GD_PENDING[sid] = loadScript('data/gd-' + sid + '.js').then(function () {
+      return (window.__GD || {})[sid] || null;
+    });
+    return GD_PENDING[sid];
+  }
+
+  function loadGhist() {
+    if (GHIST) return Promise.resolve(GHIST);
+    if (GHIST_PENDING) return GHIST_PENDING;
+    GHIST_PENDING = loadScript('data/ghist.js').then(function () {
+      GHIST = window.__GHIST || { days: [], g: {} };
+      return GHIST;
+    }, function () {
+      GHIST = { days: [], g: {} };
+      return GHIST;
+    });
+    return GHIST_PENDING;
+  }
+
+  // 通用折线绘制（帮派成长曲线用）
+  function lineSvg(pts, opts) {
+    opts = opts || {};
+    var W = opts.w || 400, H = opts.h || 152, pl = 64, pr = 14, pt = 14, pb = 26;
+    var iw = W - pl - pr, ih = H - pt - pb;
+    var vals = pts.map(function (p) { return p.v; });
+    var mx = Math.max.apply(null, vals), mn = Math.min.apply(null, vals);
+    if (mx === mn) { mx += 1000; mn -= 1000; }
+    var pad = (mx - mn) * 0.16; mn -= pad; mx += pad;
+    var X = function (i) { return pl + (pts.length < 2 ? iw / 2 : iw * i / (pts.length - 1)); };
+    var Y = function (v) { return pt + ih * (1 - (v - mn) / (mx - mn)); };
+
+    var grid = '';
+    [0, 0.5, 1].forEach(function (t) {
+      var v = mx - (mx - mn) * t, y = pt + ih * t;
+      grid += '<line x1="' + pl + '" y1="' + y.toFixed(1) + '" x2="' + (pl + iw) + '" y2="' + y.toFixed(1) + '" class="ch-grid"/>' +
+        '<text x="' + (pl - 6) + '" y="' + (y + 3.5).toFixed(1) + '" class="ch-ylab" text-anchor="end">' +
+        bigNum(Math.round(v)) + '</text>';
+    });
+
+    var line = pts.map(function (p, i) { return X(i).toFixed(1) + ',' + Y(p.v).toFixed(1); }).join(' ');
+    var area = pl + ',' + (pt + ih) + ' ' + line + ' ' + (pl + iw) + ',' + (pt + ih);
+    var step = pts.length > 30 ? Math.ceil(pts.length / 30) : 1;
+    var dots = '';
+    pts.forEach(function (p, i) {
+      if (i % step !== 0 && i !== pts.length - 1) return;
+      dots += '<circle cx="' + X(i).toFixed(1) + '" cy="' + Y(p.v).toFixed(1) + '" r="2.5" class="ch-dot"/>';
+    });
+    var lab = '<text x="' + pl + '" y="' + (H - 8) + '" class="ch-xlab" text-anchor="start">' + esc(pts[0].d) + '</text>' +
+      '<text x="' + (pl + iw) + '" y="' + (H - 8) + '" class="ch-xlab" text-anchor="end">' + esc(pts[pts.length - 1].d) + '</text>';
+
+    return '<svg class="dw-chart" viewBox="0 0 ' + W + ' ' + H + '" role="img">' +
+      '<defs><linearGradient id="gpGrad" x1="0" y1="0" x2="0" y2="1">' +
+        '<stop offset="0%" stop-color="rgba(224,160,68,.32)"/>' +
+        '<stop offset="100%" stop-color="rgba(224,160,68,0)"/>' +
+      '</linearGradient></defs>' +
+      grid +
+      '<polygon points="' + area + '" fill="url(#gpGrad)"/>' +
+      '<polyline points="' + line + '" class="ch-line"/>' +
+      dots +
+      '<circle cx="' + X(pts.length - 1).toFixed(1) + '" cy="' + Y(pts[pts.length - 1].v).toFixed(1) + '" r="4.2" class="ch-last"/>' +
+      lab +
+    '</svg>';
+  }
+
+  /* ---------- 帮派评级 / 稳定度 / 成员榜 / 关系网 ---------- */
+  var RATING = null;        // 当前视图内的评级缓存，切换视图时清空
+
+  function guildKeyOf(g) {
+    return (IS_AGG && g.sv) ? (g.sv + '|' + g.g) : g.g;
+  }
+
+  // 综合评分：前80战力 65% + 成员平均 15% + 最高战力 10% + 阵容规模 10%，
+  // 全部取「当前视图内的百分位」，再用幂函数压缩（低分段抬升，头部集中）
+  function computeRatings() {
+    var n = GUILDS.length;
+    if (!n) return null;
+    if (RATING && RATING._n === n && RATING._v === state.view) return RATING;
+
+    var maxMap = {};
+    ROLES.forEach(function (r) {
+      if (!r.g || !r.p) return;
+      var k = guildKeyOf(r);
+      if (!maxMap[k] || r.p > maxMap[k]) maxMap[k] = r.p;
+    });
+
+    var list = GUILDS.map(function (g) {
+      var k = guildKeyOf(g);
+      return { k: k, power: guildPower(g) || 0, avg: guildAvg(g) || 0,
+               size: g.tm || 0, mx: maxMap[k] || 0 };
+    });
+
+    function pctMap(field) {
+      var sorted = list.slice().sort(function (a, b) { return a[field] - b[field]; });
+      var m = {};
+      sorted.forEach(function (x, i) {
+        m[x.k] = sorted.length > 1 ? i / (sorted.length - 1) : 1;
+      });
+      return m;
+    }
+    var pP = pctMap('power'), pA = pctMap('avg'), pS = pctMap('size'), pM = pctMap('mx');
+
+    var out = { _n: n, _v: state.view, _total: n };
+    list.forEach(function (x) {
+      var push = function (p) { return Math.pow(Math.max(0, p || 0), 0.45); };
+      var d = 0.65 * push(pP[x.k]) + 0.15 * push(pA[x.k]) +
+              0.10 * push(pM[x.k]) + 0.10 * push(pS[x.k]);
+      out[x.k] = {
+        score: Math.round(d * 1000) / 10,
+        parts: [['前80战力深度', Math.round(push(pP[x.k]) * 100)],
+                ['成员平均功力', Math.round(push(pA[x.k]) * 100)],
+                ['最高战力', Math.round(push(pM[x.k]) * 100)],
+                ['阵容规模', Math.round(push(pS[x.k]) * 100)]],
+      };
+    });
+
+    var order = list.slice().sort(function (a, b) { return out[b.k].score - out[a.k].score; });
+    var tot = order.length;
+    order.forEach(function (x, i) {
+      var p = (i + 1) / tot;
+      out[x.k].rank = i + 1;
+      out[x.k].grade = p <= 0.02 ? 'S+' : p <= 0.10 ? 'S' : p <= 0.25 ? 'A+'
+                     : p <= 0.50 ? 'A' : p <= 0.75 ? 'B' : 'C';
+    });
+    RATING = out;
+    return out;
+  }
+
+  function stabilityOf(d) {
+    var mv = 0, real = 0;
+    (d.rf || []).forEach(function (x) {
+      mv += (x[3] || 0) + (x[4] || 0) + (x[5] || 0) + (x[6] || 0);
+      real += (x[3] || 0) + (x[5] || 0);
+    });
+    var rate = d.tm ? mv / d.tm : 0;
+    var score = Math.round(100 / (1 + rate * 1.5) * 10) / 10;
+    var label = score >= 85 ? '铁板一块' : score >= 70 ? '稳定' : score >= 50 ? '略有流动'
+              : score >= 30 ? '频繁换血' : '大换血';
+    var cls = score >= 70 ? 'ok' : score >= 50 ? 'mid' : 'bad';
+    return { mv: mv, real: real, score: score, label: label, cls: cls,
+             inN: (d.rf || []).reduce(function (a, x) { return a + (x[3] || 0) + (x[4] || 0); }, 0),
+             outN: (d.rf || []).reduce(function (a, x) { return a + (x[5] || 0) + (x[6] || 0); }, 0) };
+  }
+
+  function shortName(s, n) {
+    s = String(s || '');
+    n = n || 6;
+    return s.length > n ? s.slice(0, n) + '…' : s;
+  }
+
+  // 帮内成员榜（直接由当前视图的角色表算，零额外数据）
+  function guildMembersOf(g, cap) {
+    var out = [];
+    for (var i = 0; i < ROLES.length; i++) {
+      var r = ROLES[i];
+      if (!r.g || r.g !== g.g || !r.p) continue;
+      if (IS_AGG && g.sv && r.sv !== g.sv) continue;
+      out.push(r);
+    }
+    out.sort(function (a, b) { return b.p - a.p; });
+    return { arr: out.slice(0, cap || 80), total: out.length };
+  }
+
+  function ratingHtml(g, d) {
+    var R = computeRatings();
+    var key = guildKeyOf(g);
+    var info = R ? R[key] : null;
+    if (!info) return '';
+
+    var bars = info.parts.map(function (p) {
+      return '<div class="gd-bar"><span class="gd-bar-name">' + p[0] + '</span>' +
+        '<i class="gd-bar-track"><em style="width:' + Math.max(2, p[1]) + '%"></em></i>' +
+        '<b class="gd-bar-val">' + p[1] + '</b></div>';
+    }).join('');
+
+    var st = stabilityOf(d);
+    var scope = (IS_AGG && state.view !== 'all')
+      ? (((viewById(state.view) || {}).label || '').replace(/大区$/, '') + '大区')
+      : (state.view === 'all' ? '全区全服' : ((viewById(state.view) || {}).label || ''));
+
+    return '<div class="dw-sec"><h4>帮派评级</h4>' +
+      '<div class="gd-grade">' +
+        '<div class="gd-grade-badge g' + esc(info.grade.replace('+', 'p')) + '">' + esc(info.grade) + '</div>' +
+        '<div class="gd-grade-info"><b>' + info.score.toFixed(1) + '</b>' +
+          '<span>综合评分 · ' + esc(scope) + '第 ' + info.rank + ' 名 / 共 ' + R._total + ' 个帮派</span></div>' +
+      '</div>' +
+      '<div class="gd-bars">' + bars + '</div>' +
+      '<p class="dw-note">评级为<b>本站算法</b>：以当前视图内的百分位计权——前 80 战力占 65%、成员平均功力 15%、' +
+        '最高战力 10%、阵容规模 10%，并用幂函数压缩（低分段抬升）。等级按名次分布划分：' +
+        '<b>S+</b> 前 2%、<b>S</b> 前 10%、<b>A+</b> 前 25%、<b>A</b> 前 50%、<b>B</b> 前 75%，其余为 C。</p>' +
+      '<div class="gd-stab">' +
+        '<div class="gd-stab-head"><span>帮派稳定度</span>' +
+          '<b class="gd-stab-score ' + st.cls + '">' + st.score.toFixed(1) + '</b>' +
+          '<i class="gd-stab-tag ' + st.cls + '">' + st.label + '</i></div>' +
+        '<div class="gd-stab-bar"><i class="' + st.cls + '" style="width:' + Math.max(2, st.score) + '%"></i></div>' +
+        '<dl class="gd-stats gd-stats-inline">' +
+          '<div class="gd-stat"><dt>记录流入</dt><dd class="mono up">+' + fmt(st.inN) + '</dd></div>' +
+          '<div class="gd-stat"><dt>记录流出</dt><dd class="mono down">-' + fmt(st.outN) + '</dd></div>' +
+          '<div class="gd-stat"><dt>真实人员变动</dt><dd class="mono">' + st.real + ' 人次</dd></div>' +
+          '<div class="gd-stat"><dt>记录变动合计</dt><dd class="mono">' + fmt(st.mv) + ' 人次</dd></div>' +
+        '</dl>' +
+        '<p class="dw-note">稳定度＝变动人次相对成员数的换血率换算（100 ÷ (1 + 1.5 × 换血率)），窗口为最近 5 天。' +
+          '「记录流入/流出」含收录边界的进出，「真实人员变动」只算入帮与退帮。</p>' +
+      '</div></div>';
+  }
+
+  function relHtml(g, d) {
+    var rel = (d.rel || []).filter(function (r) { return r[1] || r[3]; });
+    if (!rel.length) {
+      return '<div class="dw-sec"><h4>挖人关系网</h4>' +
+        '<p class="dw-note">最近 5 天内该帮派没有与其他帮派之间的人员往来记录（入帮时携带来源帮派的成员）。</p></div>';
+    }
+    var tin = rel.reduce(function (a, r) { return a + (r[1] || 0); }, 0);
+    var tout = rel.reduce(function (a, r) { return a + (r[3] || 0); }, 0);
+    var net = tin - tout;
+
+    var rows = rel.map(function (r) {
+      var inn = r[1] || 0, inp = r[2] || 0, outn = r[3] || 0, outp = r[4] || 0;
+      var n = inn - outn;
+      return '<li><span class="gd-rel-name">' + esc(r[0]) + '</span>' +
+        '<span class="gd-rel-nums">' +
+          (inn ? '<i class="up">流入 ' + inn + ' 人 +' + fmt(inp) + '</i>' : '') +
+          (outn ? '<i class="down">流出 ' + outn + ' 人 -' + fmt(outp) + '</i>' : '') +
+        '</span>' +
+        '<b class="gd-rel-net ' + (n > 0 ? 'up' : n < 0 ? 'down' : 'flat') + '">' +
+          (n > 0 ? '+ ' + n : n < 0 ? '− ' + (-n) : '0') + '</b></li>';
+    }).join('');
+
+    return '<div class="dw-sec"><h4>挖人关系网</h4>' +
+      '<div class="gd-rel-sum">' +
+        '<span>流入 <b class="up">+' + tin + '</b> 人</span>' +
+        '<span>流出 <b class="down">-' + tout + '</b> 人</span>' +
+        '<span>净流入 <b class="' + (net > 0 ? 'up' : net < 0 ? 'down' : 'flat') + '">' +
+          (net > 0 ? '+' : '') + net + '</b> 人</span>' +
+      '</div>' +
+      relSvg(g, rel) +
+      '<ul class="gd-rel-list">' + rows + '</ul>' +
+      '<p class="dw-note">数据源自带的人员流动只记录「入帮时的来源帮派」，<b>不提供退帮去向</b>；' +
+        '表中流出方向是靠对方帮派的入帮记录反推出来的。窗口为最近 5 天，本站会逐日累积。</p></div>';
+  }
+
+  function relSvg(g, rel) {
+    var W = 360, H = 250, cx = W / 2, cy = H / 2;
+    var n = Math.min(rel.length, 8);
+    var maxV = 1;
+    rel.forEach(function (r) { maxV = Math.max(maxV, (r[1] || 0) + (r[3] || 0)); });
+    var R = 96, parts = [];
+    for (var i = 0; i < n; i++) {
+      var a = -Math.PI / 2 + i * (2 * Math.PI / n);
+      var x = cx + R * Math.cos(a), y = cy + (R * 0.74) * Math.sin(a);
+      var r = rel[i], inn = r[1] || 0, outn = r[3] || 0;
+      var w = (1 + 3 * ((inn + outn) / maxV)).toFixed(1);
+      if (inn) parts.push('<line x1="' + x.toFixed(1) + '" y1="' + y.toFixed(1) +
+        '" x2="' + cx + '" y2="' + cy + '" class="gd-rel-line in" stroke-width="' + w + '"/>');
+      if (outn) parts.push('<line x1="' + cx + '" y1="' + cy + '" x2="' + x.toFixed(1) +
+        '" y2="' + y.toFixed(1) + '" class="gd-rel-line out" stroke-width="' + w + '"/>');
+      parts.push('<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="4.5" class="gd-rel-node"/>');
+      parts.push('<text x="' + x.toFixed(1) + '" y="' + (y - 10).toFixed(1) +
+        '" class="gd-rel-label" text-anchor="middle">' + esc(shortName(r[0], 5)) + '</text>');
+      parts.push('<text x="' + x.toFixed(1) + '" y="' + (y + 19).toFixed(1) +
+        '" class="gd-rel-num" text-anchor="middle">入' + inn + ' 出' + outn + '</text>');
+    }
+    parts.push('<circle cx="' + cx + '" cy="' + cy + '" r="30" class="gd-rel-hub"/>');
+    parts.push('<text x="' + cx + '" y="' + (cy + 4) + '" class="gd-rel-hub-label" text-anchor="middle">' +
+      esc(shortName(g.g, 6)) + '</text>');
+    return '<svg class="gd-rel-svg" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="帮派人员往来关系">' +
+      parts.join('') + '</svg>';
+  }
+
+  function membersHtml(g) {
+    var m = guildMembersOf(g, 80);
+    if (!m.arr.length) {
+      return '<div class="dw-sec"><h4>帮内成员功力榜</h4>' +
+        '<p class="dw-note">当前视图里没有该帮派的上榜成员（帮派若隐藏了帮派名，成员不会被归属到这里）。</p></div>';
+    }
+    function rows(arr, from) {
+      return arr.map(function (r, i) {
+        var idx = from + i + 1;
+        return '<tr data-ridx="' + r._i + '" class="gd-mem-row">' +
+          '<td class="num gd-mem-rank">' + idx + '</td>' +
+          '<td>' + nameHtml(r) +
+            (IS_AGG && r.sv ? '<span class="cell-sub">' + esc(r.sv) + '</span>' : '') + '</td>' +
+          '<td><span class="badge menpai">' + esc(r.m) + '</span></td>' +
+          '<td class="num">' + powerHtml(r) + '</td></tr>';
+      }).join('');
+    }
+    var head = '<thead><tr><th class="num">#</th><th>角色</th><th>门派</th><th class="num">功力</th></tr></thead>';
+    var first = m.arr.slice(0, 10), rest = m.arr.slice(10);
+    return '<div class="dw-sec"><h4>帮内成员功力榜 · 前 ' + m.arr.length + '</h4>' +
+      '<table class="mini-table gd-mem">' + head + '<tbody>' + rows(first, 0) + '</tbody></table>' +
+      (rest.length
+        ? '<div id="gdMemMore" hidden><table class="mini-table gd-mem"><tbody>' +
+            rows(rest, 10) + '</tbody></table></div>' +
+          '<button type="button" class="gd-more-btn" id="gdMemBtn" data-more="展开其余 ' + rest.length +
+            ' 名成员">展开其余 ' + rest.length + ' 名成员</button>'
+        : '') +
+      '<p class="dw-note">按当前视图内的收录成员计算（共 ' + m.total + ' 人，展示前 ' + m.arr.length +
+        ' 名）。点任意一行可查看该角色详情。隐藏功力的成员用估算值显示。</p></div>';
+  }
+
+  function openGuild(g) {
+    var sid = g.rid || ((viewById(state.view) || {}).kind === 'srv' ? state.view : '');
+    var off = guildOff(g);
+    var total = g._d0;
+    var totalCls = total > 0 ? 'up' : (total < 0 ? 'down' : 'flat');
+
+    function wireDrawer(g) {
+      var btn = $('guildMembersBtn');
+      if (btn) btn.addEventListener('click', function () { gotoGuildMembers(g.g); });
+      var mb = $('gdMemBtn');
+      if (mb) mb.addEventListener('click', function () {
+        var box = $('gdMemMore');
+        if (!box) return;
+        var open = box.hidden;
+        box.hidden = !open;
+        mb.textContent = open ? '收起成员名单' : mb.dataset.more;
+      });
+      var rows = document.querySelectorAll('#drawerContent .gd-mem-row');
+      Array.prototype.forEach.call(rows, function (tr) {
+        tr.addEventListener('click', function () { openRole(+tr.getAttribute('data-ridx')); });
+      });
+    }
+
+    function shell(inner) {
+      $('drawerContent').innerHTML = inner;
+      $('drawer').classList.add('open');
+      $('drawer').setAttribute('aria-hidden', 'false');
+      $('drawerBackdrop').hidden = false;
+      wireDrawer(g);
+    }
+
+    function head(d) {
+      var power = d ? d.ov : guildPower(g);
+      var isOff = d ? d.off : off;
+      var rg = (viewById(sid) || {}).region || g.rg || DB.region || '';
+      return '<p class="dw-eyebrow">帮派 · ' + esc(rg) + ' · ' +
+          esc(g.sv || DB.server || '') + '</p>' +
+        '<h3 class="dw-name">' + esc(g.g) + '</h3>' +
+        '<p class="dw-rankline">官方帮派榜 · 帮派功力值为<b>前 80 名成员功力之和</b>' +
+          (isOff ? '（含隐藏数值的成员）' : '') + '</p>' +
+        '<div class="dw-power"><b>' + fmt(power) + '</b>' +
+          '<span>' + (isOff ? '官方帮派功力' : '本站推算 · 前 80 名之和（官方榜未收录）') + '</span>' +
+          (total !== null && total !== undefined
+            ? '<span style="margin-top:7px">最近一日 <b class="ch-delta ' + totalCls +
+              '" style="font-size:15px">' + (total > 0 ? '+' : '') + fmt(total) + '</b></span>'
+            : '') +
+        '</div>';
+    }
+
+    // 先渲染骨架（基础信息立即可见），详情到达后替换
+    shell(head(null) +
+      '<div id="gdMore">' +
+        '<dl class="dw-grid">' +
+          '<div class="dw-item"><dt>平均功力</dt><dd class="mono">' + fmt(guildAvg(g)) + '</dd></div>' +
+          '<div class="dw-item"><dt>上榜成员</dt><dd>' + (g.tm || 0) + ' 人</dd></div>' +
+        '</dl>' +
+        '<div class="dw-sec"><p class="dw-note">正在载入帮派详情…</p></div>' +
+      '</div>');
+
+    Promise.all([loadGuildDetail(sid), loadGhist()]).then(function (res) {
+      var d = res[0] && sid ? res[0][g.g] : null;
+      var gh = res[1];
+      var more = $('gdMore');
+      if (!more) return;                       // 抽屉已被关闭
+      more.outerHTML = guildDetailHtml(g, d, gh, sid);
+      wireDrawer(g);
+    }, function () {
+      var more = $('gdMore');
+      if (more) more.outerHTML =
+        '<div class="dw-sec"><p class="dw-note">帮派详情载入失败（data/gd-' + esc(sid) + '.js 不可访问），' +
+        '以上为基础信息。</p></div>';
+    });
+  }
+
+  function guildDetailHtml(g, d, gh, sid) {
+    if (!d) {
+      return '<div class="dw-sec"><p class="dw-note">该帮派暂无官方详情数据（数据源仅对收录到的帮派提供明细）。</p></div>' +
+        '<div class="dw-sec"><button type="button" class="find-go" id="guildMembersBtn" style="width:100%">查看该帮派的上榜成员</button></div>';
+    }
+
+    var out = '';
+
+    // ---- 关键数据 ----
+    var rows = [];
+    var rgName = (viewById(sid) || {}).region || g.rg || '';
+    if (d.ogr) rows.push(['官方名次', '全服第 <b>' + d.ogr + '</b> 名' +
+      (d.orr && rgName ? ' · ' + esc(rgName) + '第 <b>' + d.orr + '</b> 名' : '')]);
+    if (d.top) rows.push(['功力最高成员', esc(d.top[0]) + ' <b>' + fmt(d.top[1]) + '</b>' +
+      (d.top[2] ? '<span class="gd-dim">（名次 ' + d.top[2] + '）</span>' : '')]);
+    if (d.ld) rows.push(['官方代表角色 / 盟主', esc(d.ld)]);
+    rows.push(['平均功力', '<b>' + fmt(d.oa || guildAvg(g)) + '</b>' +
+      (d.off ? '<span class="gd-dim">官方值 ÷ 80</span>' : '<span class="gd-dim">本站推算</span>')]);
+    if (d.cap) rows.push(['采集时间', '<span class="mono">' + esc(d.cap) + '</span>']);
+
+    out += '<div class="dw-sec"><h4>关键数据</h4><dl class="gd-stats">' +
+      rows.map(function (r) {
+        return '<div class="gd-stat"><dt>' + r[0] + '</dt><dd>' + r[1] + '</dd></div>';
+      }).join('') + '</dl></div>';
+
+    // ---- 成员与功力构成 ----
+    var pub = d.pm || Math.max(0, (d.tm || 0) - (d.hpm || 0));
+    var powerLine = fmt(d.tp) + ' = 公开值合计 <b>' + fmt(d.vp) + '</b>' +
+      (d.he ? ' + 隐藏成员估算 <b>' + fmt(d.he) + '</b>' : '');
+    out += '<div class="dw-sec"><h4>榜单收录构成</h4>' +
+      '<dl class="gd-stats">' +
+      '<div class="gd-stat"><dt>数据来源于·收录成员</dt><dd><b>' + (d.tm || 0) + '</b> 人' +
+        (d.hpm ? '，其中 <b>' + d.hpm + '</b> 人隐藏了功力（计入人数，功力按名次区间中位值计入）' : '') + '</dd></div>' +
+      '<div class="gd-stat"><dt>收录总功力</dt><dd class="mono">' + powerLine + '</dd></div>' +
+      '<div class="gd-stat"><dt>前 80 之和（本站口径）</dt><dd class="mono">' + fmt(d.t80) +
+        '<span class="gd-dim">公开数值里的前 80 名，共 ' + (d.tm || 0) + ' 人参与</span></dd></div>' +
+      '</dl>' +
+      '<p class="dw-note">官方功力值已包含隐藏成员，<b>不要与「收录总功力」相加</b>。收录人数只统计进入榜单的成员，不等于帮派真实人数。</p>' +
+      '</div>';
+
+    // ---- 帮派评级与稳定度 ----
+    out += ratingHtml(g, d);
+
+    // ---- 前80之和成长曲线（数据源近 5 天） ----
+    var hf = d.hf || [];
+    if (hf.length >= 2) {
+      var pts = hf.map(function (x) { return { d: x[0], v: x[1] }; });
+      var delta = pts[pts.length - 1].v - pts[0].v;
+      var dcls = delta > 0 ? 'up' : (delta < 0 ? 'down' : 'flat');
+      out += '<div class="dw-sec"><h4>前 80 之和成长曲线</h4>' +
+        '<div class="dw-chart-meta"><span>' + esc(hf[0][0]) + ' → ' + esc(hf[hf.length - 1][0]) + '</span>' +
+          '<span>' + hf.length + ' 个数据点</span>' +
+          '<b class="ch-delta ' + dcls + '">' + (delta >= 0 ? '+' : '') + fmt(delta) + '</b></div>' +
+        lineSvg(pts) +
+        '<p class="dw-chart-foot">当前前 80 之和 <b>' + fmt(hf[hf.length - 1][1]) + '</b>' +
+          ' · 收录成员 <b>' + (d.tm || 0) + '</b> 人</p>' +
+        '<p class="dw-note">该曲线含成员进出的影响（吸收高手会抬升、成员流失会拉低）。</p></div>';
+    }
+
+    // ---- 30 天长周期曲线（按成员功力曲线回溯聚合） ----
+    var key = sid + '|' + g.g;
+    var arr = (gh && gh.g && gh.g[key]) || null;
+    if (arr && gh.days && gh.days.length >= 2) {
+      var lp = [];
+      for (var i = 0; i < gh.days.length; i++) {
+        var v = arr[i];
+        if (v !== null && v !== undefined) lp.push({ d: gh.days[i].slice(5), v: v });
+      }
+      if (lp.length >= 2) {
+        var ld = lp[lp.length - 1].v - lp[0].v;
+        var lcls = ld > 0 ? 'up' : (ld < 0 ? 'down' : 'flat');
+        out += '<div class="dw-sec"><h4>帮派功力走势（近 ' + gh.days.length + ' 天）</h4>' +
+          '<div class="dw-chart-meta"><span>' + esc(lp[0].d) + ' → ' + esc(lp[lp.length - 1].d) + '</span>' +
+            '<span>' + lp.length + ' 天</span>' +
+            '<b class="ch-delta ' + lcls + '">' + (ld >= 0 ? '+' : '') + fmt(ld) + '</b></div>' +
+          lineSvg(lp) +
+          '<p class="dw-note">按收录成员的功力曲线逐日回溯聚合，取当日前 80 名之和，口径与榜单一致；个别成员当天未上榜时会略微低估。成员进出的影响同样体现在曲线里。</p></div>';
+      }
+    }
+
+    // ---- 挖人关系网 ----
+    out += relHtml(g, d);
+
+    // ---- 人员流动明细 ----
+    var rf = (d.rf || []).slice().reverse();     // 最近的排前面
+    if (rf.length) {
+      out += '<div class="dw-sec"><h4>人员流动（入帮 / 新收录 / 退帮 / 掉出收录）</h4>';
+      rf.forEach(function (x) {
+        var dt = x[0], prevN = x[1], curN = x[2];
+        var joinN = x[3], freshN = x[4], leaveN = x[5], dropN = x[6];
+        var joinP = x[7], freshP = x[8], leaveP = x[9], dropP = x[10];
+        var net = (joinN + freshN) - (leaveN + dropN);
+        var has = joinN || freshN || leaveN || dropN;
+
+        out += '<div class="gd-flow">' +
+          '<div class="gd-flow-head"><b>' + esc(dt) + '</b>' +
+            '<span>' + prevN + ' → ' + curN + ' 人' +
+              '<b class="ch-delta ' + (net > 0 ? 'up' : net < 0 ? 'down' : 'flat') + '">' +
+              (net > 0 ? '+' : '') + net + ' 人</b></span></div>';
+        if (!has) { out += '<p class="dw-note">当日无人员变动。</p></div>'; return; }
+
+        out += '<div class="gd-flow-body">' +
+          flowItem('新收录', freshN, freshP, x[12], 'up', '功力达到收录线、进入榜单视野') +
+          flowItem('入帮', joinN, joinP, x[11], 'up', '从其他帮派转入') +
+          flowItem('掉出收录', dropN, dropP, x[14], 'down', '功力掉出榜单收录范围（不等于退帮）') +
+          flowItem('退帮', leaveN, leaveP, x[13], 'down', '离开该帮派') +
+        '</div></div>';
+      });
+      out += '<p class="dw-note">「新收录 / 掉出收录」是本站视野的变化——功力越过收录边界就会进出榜，' +
+        '<b>掉出收录不等于退帮</b>；「入帮 / 退帮」才是真实的帮派成员变动。数据源仅提供最近 5 天。</p></div>';
+    }
+
+    // ---- 帮内成员功力榜 ----
+    out += membersHtml(g);
+
+    out += '<div class="dw-sec"><button type="button" class="find-go" id="guildMembersBtn" style="width:100%">' +
+      '在功力榜中筛选该帮派成员</button></div>';
+
+    return out;
+  }
+
+  function flowItem(label, n, p, list, dir, tip) {
+    if (!n) return '';
+    var cls = dir === 'up' ? 'up' : 'down';
+    var signed = dir === 'down' ? -Math.abs(p || 0) : Math.abs(p || 0);
+    var arr = list || [];
+    var names = arr.map(function (x) {
+      return '<li><span class="gd-nm">' + esc(x[0]) + '</span>' +
+        (x[1] ? '<span class="gd-pw">' + fmt(x[1]) + '</span>' : '') + '</li>';
+    }).join('');
+    // 名单被截断时说明还有多少人（数据源本身没给名单时不显示）
+    if (arr.length && n > arr.length) {
+      names += '<li class="gd-nm-more">…另 ' + (n - arr.length) + ' 人</li>';
+    }
+    return '<div class="gd-flow-item">' +
+      '<div class="gd-flow-row"><span class="gd-flow-label" title="' + esc(tip) + '">' + label + '</span>' +
+        '<span class="gd-flow-n">' + n + ' 人</span>' +
+        '<b class="ch-delta ' + cls + '">' + (signed > 0 ? '+' : '') + fmt(signed) + '</b></div>' +
+      (names ? '<ul class="gd-names">' + names + '</ul>' : '') +
+    '</div>';
+  }
+
+  function gotoGuildMembers(name) {
+    closeDrawer();
+    state.board = 'power';
+    state.guild = name;
+    state.page = 1;
+    state.sort = 'rank';
+    document.querySelectorAll('.board-btn').forEach(function (x) {
+      x.classList.toggle('is-active', x.dataset.board === 'power');
+      x.setAttribute('aria-pressed', x.dataset.board === 'power' ? 'true' : 'false');
+    });
+    refresh();
+    $('rosterBar').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  /* ---------- 刷新 ---------- */
+  function refresh() {
+    renderBars();
+    renderTable();
+    if (state.board === 'guild') fixGuildRanks();
+    document.querySelectorAll('.chip').forEach(function (c) {
+      var axis = c.dataset.axis;
+      c.classList.toggle('is-active', state[axis] === c.dataset.val);
+    });
+  }
+
+  /* ---------- 事件绑定 ---------- */
+  function bind() {
+    // 服务器选择器
+    $('srvBtn').addEventListener('click', function (e) {
+      e.stopPropagation();
+      toggleServerMenu();
+    });
+    $('srvMenu').addEventListener('click', function (e) {
+      // 勾选对比（不关闭菜单，方便连点两个服）
+      var pk = e.target.closest('.srv-pick');
+      if (pk) {
+        e.preventDefault();
+        e.stopPropagation();
+        togglePick(pk.getAttribute('data-pick'));
+        renderServerPicker();
+        markCurrentServer();
+        return;
+      }
+      // 开始对比
+      var cb = e.target.closest('[data-cmp]');
+      if (cb) {
+        e.preventDefault();
+        if (PICK.length >= 2) {
+          toggleServerMenu(false);
+          startCompare();
+        }
+        return;
+      }
+      var b = e.target.closest('.srv-item');
+      if (!b) return;
+      toggleServerMenu(false);
+      var id = b.getAttribute('data-srv');
+      if (id && id !== state.view) switchView(id);
+    });
+    document.addEventListener('click', function (e) {
+      if (!$('srvPicker').contains(e.target)) toggleServerMenu(false);
+    });
+
+    // 榜单切换
+    document.querySelectorAll('.board-btn').forEach(function (b) {
+      b.addEventListener('click', function () {
+        if (state.board === b.dataset.board) return;
+        state.board = b.dataset.board;
+        document.querySelectorAll('.board-btn').forEach(function (x) {
+          x.classList.toggle('is-active', x === b);
+          x.setAttribute('aria-pressed', x === b ? 'true' : 'false');
+        });
+        document.body.classList.toggle('board-guild', state.board === 'guild');
+        // 该榜单默认排序
+        state.sort = state.board === 'power' ? 'rank' : 'ov';
+        state.page = 1;
+        $('rosterBar').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        refresh();
+      });
+    });
+
+    // 搜索
+    $('findForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+      state.q = $('q').value;
+      state.page = 1;
+      $('findClear').hidden = !state.q;
+      refresh();
+    });
+    $('q').addEventListener('input', function () {
+      $('findClear').hidden = !$('q').value;
+    });
+    $('findClear').addEventListener('click', function () {
+      $('q').value = '';
+      state.q = '';
+      state.page = 1;
+      $('findClear').hidden = true;
+      refresh();
+    });
+
+    // chips
+    $('sieve').addEventListener('click', function (e) {
+      var c = e.target.closest('.chip');
+      if (!c) return;
+      var axis = c.dataset.axis, val = c.dataset.val;
+      state[axis] = state[axis] === val ? '' : val;
+      state.page = 1;
+      refresh();
+    });
+
+    // 排序 / 每页
+    $('rosterBar').addEventListener('click', function (e) {
+      var s = e.target.closest('[data-sort]');
+      if (s) { state.sort = s.dataset.sort; state.page = 1; refresh(); return; }
+      var z = e.target.closest('[data-size]');
+      if (z) { state.pageSize = +z.dataset.size; state.page = 1; refresh(); return; }
+      if (e.target.closest('#copyPageBtn')) copyPage();
+    });
+
+    // 翻页
+    $('pager').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-page]');
+      if (!b || b.disabled) return;
+      state.page = +b.dataset.page;
+      refresh();
+      $('rosterBar').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+
+    // 表格行点击
+    $('ledgerBody').addEventListener('click', function (e) {
+      var tr = e.target.closest('tr');
+      if (!tr) return;
+      if (tr.dataset.idx !== undefined && tr.dataset.idx !== '') openRole(+tr.dataset.idx);
+      else if (tr.dataset.gidx !== undefined && tr.dataset.gidx !== '') {
+        var g = null;
+        for (var i = 0; i < GUILDS.length; i++) if (GUILDS[i]._gi === +tr.dataset.gidx) { g = GUILDS[i]; break; }
+        if (g) openGuild(g);
+      }
+    });
+
+    // 前三甲 & 抽屉
+    $('podium').addEventListener('click', function (e) {
+      var p = e.target.closest('.pod');
+      if (p) openRole(+p.dataset.idx);
+    });
+    $('drawerClose').addEventListener('click', closeDrawer);
+    $('drawerBackdrop').addEventListener('click', closeDrawer);
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') closeDrawer();
+    });
+
+    // 回到顶部
+    var toTop = $('toTop');
+    toTop.addEventListener('click', function () { window.scrollTo({ top: 0, behavior: 'smooth' }); });
+    window.addEventListener('scroll', function () {
+      toTop.classList.toggle('show', window.scrollY > 500);
+    }, { passive: true });
+  }
+
+  /* ---------- 复制本页名单 ---------- */
+  function copyPage() {
+    var rows = $('ledgerBody').querySelectorAll('tr');
+    var lines = [];
+    if (state.board === 'power') {
+      lines.push('名次\t角色\t' + (IS_AGG ? '服务器\t' : '') + '门派\t帮派\t功力');
+      rows.forEach(function (tr) {
+        var r = ROLES[+tr.dataset.idx];
+        if (!r) return;
+        lines.push([r.r, r.n].concat(IS_AGG ? [r.sv || ''] : []).concat(
+          [r.m, r.g || '无', powerText(r)]).join('\t'));
+      });
+    } else {
+      lines.push('排行\t帮派\t上榜成员\t总功力\t帮派功力\t平均功力\t日变化\t口径\t盟主');
+      var list = filterGuilds();
+      var start = (state.page - 1) * state.pageSize;
+      rows.forEach(function (tr, i) {
+        var g = list[start + i];
+        if (!g) return;
+        lines.push([start + i + 1, g.g, g.tm || 0, g.hp || 0, guildPower(g), guildAvg(g),
+                    (g._d0 === null || g._d0 === undefined) ? '—' : g._d0,
+                    guildOff(g) ? '官方' : '推算', g.ld || '未知'].join('\t'));
+      });
+    }
+    var text = lines.join('\n');
+    var done = function () {
+      var btn = $('copyPageBtn');
+      var old = btn.textContent;
+      btn.textContent = '已复制 ✓';
+      setTimeout(function () { btn.textContent = old; }, 1600);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, function () { fallback(text, done); });
+    } else fallback(text, done);
+  }
+  function fallback(text, cb) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); cb(); } catch (e) {}
+    document.body.removeChild(ta);
+  }
+
+  /* ---------- 花瓣 ---------- */
+  function petals() {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var box = $('petals');
+    var n = window.innerWidth < 700 ? 12 : 22;
+    var html = '';
+    for (var i = 0; i < n; i++) {
+      var left = Math.random() * 100;
+      var dur = 11 + Math.random() * 13;
+      var delay = -Math.random() * 24;
+      var sz = 0.65 + Math.random() * 0.95;
+      var drift = (Math.random() * 160 - 80).toFixed(0);
+      html += '<span class="petal" style="left:' + left.toFixed(1) + '%;' +
+        'animation-duration:' + dur.toFixed(1) + 's;animation-delay:' + delay.toFixed(1) + 's;' +
+        'transform:scale(' + sz.toFixed(2) + ');--drift:' + drift + 'px"></span>';
+    }
+    box.innerHTML = html;
+  }
+
+  /* ---------- 初始化 ---------- */
+  /* ---------- 视图：全区全服 / 大区 / 单服 ---------- */
+  function loadScript(src) {
+    return new Promise(function (resolve, reject) {
+      var s = document.createElement('script');
+      s.src = src + (src.indexOf('?') < 0 ? '?' : '&') + 'v=' + encodeURIComponent(DATA_VER);
+      s.onload = function () { resolve(); };
+      s.onerror = function () { reject(new Error(src + ' 读取失败')); };
+      document.head.appendChild(s);
+    });
+  }
+
+  function buildViews() {
+    var groups = {};
+    SRV_LIST.forEach(function (s) {
+      var r = s.region || '其他大区';
+      (groups[r] = groups[r] || []).push(s);
+    });
+    var total = 0;
+    SRV_LIST.forEach(function (s) { total += (s.n || 0); });
+
+    var views = [{ id: 'all', label: '全区全服', short: '全区全服', n: total, kind: 'agg', region: '' }];
+    var ORDER = ['青龙乱舞', '大地飞鹰', '云上之城', '沧海云帆', '时光吹雪', '其他大区'];
+    Object.keys(groups).sort(function (a, b) {
+      var ia = ORDER.indexOf(a), ib = ORDER.indexOf(b);
+      return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+    }).forEach(function (region) {
+      var list = groups[region].slice().sort(function (a, b) { return (b.n || 0) - (a.n || 0); });
+      var rn = list.reduce(function (a, s) { return a + (s.n || 0); }, 0);
+      views.push({
+        id: 'r-' + String(list[0].id).slice(0, 2),
+        label: region, short: region, n: rn, kind: 'agg', region: region
+      });
+      list.forEach(function (s) {
+        views.push({ id: s.id, label: s.name, short: s.name, n: s.n || 0, kind: 'srv', region: region });
+      });
+    });
+    return views;
+  }
+
+  function viewById(id) {
+    for (var i = 0; i < VIEWS.length; i++) if (VIEWS[i].id === id) return VIEWS[i];
+    return null;
+  }
+
+  /* ---------- 多服对比 ---------- */
+  // 在下拉列表里勾 2~4 个服，合成一个临时榜单：功力统一排序、行内标服务器。
+  var PICK = [];
+  var CMP_MAX = 4;
+
+  function savePick() {
+    try { localStorage.setItem('pick', JSON.stringify(PICK)); } catch (e) {}
+  }
+
+  function loadPick() {
+    try {
+      var raw = JSON.parse(localStorage.getItem('pick') || '[]');
+      if (Object.prototype.toString.call(raw) !== '[object Array]') return;
+      PICK = raw.filter(function (id) {
+        var v = viewById(id);
+        return v && v.kind === 'srv';
+      }).slice(0, CMP_MAX);
+    } catch (e) { PICK = []; }
+  }
+
+  function loadServerData(id) {
+    var c = store()[id];
+    if (c) return Promise.resolve(c);
+    return loadScript('data/s-' + id + '.js').then(function () { return store()[id] || null; });
+  }
+
+  function togglePick(id) {
+    var i = PICK.indexOf(id);
+    if (i >= 0) PICK.splice(i, 1);
+    else if (PICK.length >= CMP_MAX) return false;
+    else PICK.push(id);
+    savePick();
+    return true;
+  }
+
+  function buildCompareView(ids) {
+    return Promise.all(ids.map(loadServerData)).then(function (list) {
+      var roles = [], guilds = [], names = [], snap = '';
+      list.forEach(function (d, i) {
+        if (!d) return;
+        var sid = ids[i];
+        names.push(d.server);
+        snap = snap || d.snapshot || '';
+        (d.roles || []).forEach(function (r) {
+          var o = {};
+          for (var k in r) if (Object.prototype.hasOwnProperty.call(r, k)) o[k] = r[k];
+          o.rid = sid;
+          o.sv = d.server;
+          roles.push(o);
+        });
+        (d.guilds || []).forEach(function (g) {
+          var o = {};
+          for (var k in g) if (Object.prototype.hasOwnProperty.call(g, k)) o[k] = g[k];
+          o.rid = sid;
+          o.sv = d.server;
+          guilds.push(o);
+        });
+      });
+      var pv = function (r) { return (r.p !== null && r.p !== undefined) ? r.p : (r.pe || 0); };
+      roles.sort(function (a, b) { return pv(b) - pv(a) || (a.r || 0) - (b.r || 0); });
+      roles.forEach(function (r, i) { r.r = i + 1; });      // 合并后名次重排
+      guilds.sort(function (a, b) { return (guildPower(b) || 0) - (guildPower(a) || 0); });
+      return {
+        label: names.join(' + '),
+        kind: 'agg',
+        aggKind: 'cmp',
+        cmp: 1,
+        server: names.join(' + '),
+        region: '多服对比',
+        snapshot: snap,
+        roles: roles,
+        guilds: guilds,
+        partial: 0,
+        totalRoles: roles.length,
+        totalGuilds: guilds.length
+      };
+    });
+  }
+
+  function startCompare() {
+    if (PICK.length < 2) return;
+    var v = viewById('cmp');
+    if (!v) {
+      v = { id: 'cmp', kind: 'agg', cmp: 1, region: '', label: '', short: '对比', n: 0 };
+      VIEWS.splice(1, 0, v);        // 排在「全区全服」之后
+    }
+    // 先把名字填上，载入提示才是「正在合并 彼岸花 + 千秋月…」而不是空白
+    var names = PICK.map(function (id) { return SRV_NAME[id] || id; });
+    v.label = names.join(' + ');
+    v.short = names.length > 2 ? (names.length + ' 服') : names.join('/');
+    switchView('cmp');
+  }
+
+  function loadAggMeta() {
+    if (AGG_META) return Promise.resolve(AGG_META);
+    return loadScript('data/agg-meta.js').then(function () {
+      AGG_META = window.__AGG_META || { servers: [], menpai: [], snapshot: '' };
+      return AGG_META;
+    });
+  }
+
+  // 聚合数据是定长数组（省 45% 体积），在这里还原成标准字段
+  function decodeAgg(raw) {
+    var SV = (AGG_META && AGG_META.servers) || [];
+    var MP = (AGG_META && AGG_META.menpai) || [];
+    var roles = (raw.roles || []).map(function (a) {
+      return {
+        r: a[0], ro: !!a[1], n: a[2], nh: !!a[3], fn: a[4] || [],
+        rid: SV[a[5]], sv: SRV_NAME[SV[a[5]]] || SV[a[5]], m: MP[a[6]] || '未知',
+        g: a[7] || '', gh: !!a[8], p: a[9], ph: !!a[10], pe: a[11],
+        rm: a[12], t: a[13], pr: a[14], gu: !!a[15], gg: !!a[16], h: null
+      };
+    });
+    var guilds = (raw.guilds || []).map(function (a) {
+      return {
+        g: a[0], rid: SV[a[1]], sv: SRV_NAME[SV[a[1]]] || SV[a[1]], tm: a[2], ov: a[3], oa: a[4],
+        t80: a[5], a80: a[6], hp: a[7], ld: a[8], off: !!a[9], hpm: a[10],
+        f: a[11] || []          // 每日变化（聚合数据里也带着）
+      };
+    });
+    return {
+      label: raw.label,
+      kind: 'agg',              // 前端用它判断「跨服视图」
+      aggKind: raw.kind,        // all / region
+      server: raw.label,
+      region: raw.kind === 'all' ? '全区' : raw.label,
+      snapshot: (AGG_META && AGG_META.snapshot) || '',
+      roles: roles,
+      guilds: guilds,
+      partial: raw.partial || 0,          // 1 = 只载入了首屏，其余还在后台拉
+      totalRoles: raw.totalRoles || roles.length,
+      totalGuilds: raw.totalGuilds || guilds.length
+    };
+  }
+
+  // 全区全服首屏只有前 2000 名；其余在后台静默接着拉，拉完原地合并重绘。
+  var REST_PENDING = {};
+  function prefetchAggRest(id, data) {
+    if (!data || !data.partial || REST_PENDING[id]) return;
+    REST_PENDING[id] = true;
+    loadScript('data/agg-all-rest.js').then(function () {
+      var raw = window.__AGG_ALL_REST;
+      if (!raw) return;
+      var more = decodeAgg({ label: data.label, kind: data.kind, roles: raw.roles || [], guilds: raw.guilds || [] });
+      data.roles = data.roles.concat(more.roles);
+      data.guilds = data.guilds.concat(more.guilds);
+      data.partial = 0;
+      if (state.view === id && DB === data) {
+        ROLES = data.roles;                 // 数组已被替换，必须同步引用
+        GUILDS = data.guilds.slice();
+        refresh();
+      }
+    }, function () { /* 拉不到就保持首屏，不影响使用 */ });
+  }
+
+  function loadView(id) {
+    var v = viewById(id);
+    if (!v) return Promise.reject(new Error('未知的视图'));
+    if (v.cmp) {
+      return buildCompareView(PICK.slice()).then(function (d) {
+        var vv = viewById('cmp');
+        if (vv) { vv.label = d.label; vv.n = d.roles.length; }
+        return d;
+      });
+    }
+    if (v.kind === 'srv') {
+      var c = store()[id];
+      if (c) return Promise.resolve(c);
+      return loadScript('data/s-' + id + '.js').then(function () {
+        var d = store()[id];
+        if (!d) throw new Error('文件已载入但内容为空');
+        return d;
+      });
+    }
+    if (AGG_CACHE[id]) return Promise.resolve(AGG_CACHE[id]);
+    return loadAggMeta().then(function () {
+      var vname = '__AGG_' + id.replace(/-/g, '_').toUpperCase();
+      return loadScript('data/agg-' + id + '.js').then(function () {
+        var raw = window[vname];
+        if (!raw) throw new Error('聚合数据为空');
+        AGG_CACHE[id] = decodeAgg(raw);
+        prefetchAggRest(id, AGG_CACHE[id]);
+        return AGG_CACHE[id];
+      });
+    });
+  }
+
+  function setBusy(on, msg) {
+    if (!on) return;
+    $('resultLine').innerHTML = esc(msg || '载入中…');
+    $('ledgerBody').innerHTML = '';
+    $('podium').innerHTML = '';
+    $('statStrip').innerHTML = '';
+    $('pager').innerHTML = '';
+    $('ledgerHead').innerHTML = '';
+  }
+
+  function renderHeader() {
+    var v = viewById(state.view) || { label: '—', short: '—', kind: 'srv', region: '', id: '' };
+    var snap = (DB && DB.snapshot) || META.snapshot || '—';
+    var isAgg = v.kind === 'agg';
+    var isCmp = !!v.cmp;
+    $('snapshotLine').innerHTML = '数据来源于 <b>' + esc(snap) + '</b> · 全服 <b>' + fmt(META.total || 0) +
+      '</b> 名角色 · <b>' + (META.servers || 0) + '</b> 个服务器';
+    $('heroEyebrow').textContent = (isCmp ? '多服对比'
+      : (isAgg ? (v.id === 'all' ? '全区全服' : '大区榜') : v.region)) +
+      ' · ' + v.label + ' · ' + snap + ' 数据';
+    $('btMain').textContent = isCmp ? '多服对比榜'
+      : (isAgg ? (v.id === 'all' ? '全区全服功力榜' : v.label + '大区榜')
+               : v.label + ' 功力榜');
+    $('srvName').textContent = isCmp ? '对比' : v.short;
+    $('footSnap').textContent = '数据来源于 ' + snap;
+    var rm = $('riteMeta');
+    if (rm) rm.textContent = (META.regions || 0) + ' 大区 ' + (META.servers || 0) + ' 服';
+    var rc = $('riteCount');
+    if (rc) rc.textContent = fmt(META.total || 0);
+    document.title = v.label + ' · 天刀全服功力榜 — CY';
+    document.body.classList.toggle('view-agg', isAgg);
+  }
+
+  function switchView(id, opts) {
+    opts = opts || {};
+    var v = viewById(id);
+    if (!v) return;
+    setBusy(true, v.cmp
+      ? ('正在合并 ' + (v.label || (PICK.length + ' 个服')) + ' 的数据…（首次需下载这几个服的完整数据）')
+      : ('正在载入 ' + v.label + ' 的数据…'));
+    loadView(id).then(function (d) {
+      DB = d;
+      ROLES = d.roles || [];
+      GUILDS = (d.guilds || []).slice();
+      state.view = id;
+      IS_AGG = (d.kind === 'agg');
+      RATING = null;              // 评级依赖当前视图的分布，换视图必须重算
+      recomputeDerived();
+
+      state.page = 1;
+      state.q = '';
+      state.menpai = '';
+      state.guild = '';
+      state.tier = '';
+      state.sort = state.board === 'power' ? 'rank' : 'ov';
+      $('q').value = '';
+      $('findClear').hidden = true;
+      try { localStorage.setItem('view', v.cmp ? '' : id); } catch (e) {}
+
+      renderHeader();
+      renderStats();
+      renderPodium();
+      renderChips();
+      refresh();
+      markCurrentServer();
+    }, function (err) {
+      var hint = v.kind === 'agg'
+        ? '（聚合数据较大，请确认 data/agg-*.js 可访问）'
+        : '（若你是把网页下载到本地双击打开的，请确认 data 文件夹与本文件在同一层）';
+      $('resultLine').innerHTML = '<b style="color:var(--warn)">数据载入失败</b>：' +
+        esc(err.message) + hint;
+    });
+  }
+
+  function renderServerPicker() {
+    var html = '';
+    var lastRegion = undefined;
+    VIEWS.forEach(function (v) {
+      if (v.cmp) return;                       // 「对比」不是可选的目标，由勾选生成
+      var isRegionHead = (v.kind === 'agg' && v.id !== 'all');
+      if (v.region !== lastRegion) {
+        if (lastRegion !== undefined) html += '</div>';
+        html += '<div class="srv-group">' +
+          (v.region ? '<div class="srv-group-title">' + esc(v.region) + '</div>' : '');
+        lastRegion = v.region;
+      }
+      var picked = PICK.indexOf(v.id) >= 0;
+      var cls = 'srv-item' + (v.kind === 'agg' ? ' is-agg' : '') + (picked ? ' is-picked' : '');
+      var tag = v.id === 'all' ? '<span class="srv-tag">全部</span>'
+              : (isRegionHead && !/大区$/.test(v.short) ? '<span class="srv-tag">大区</span>' : '');
+      // 单服右侧给一个勾选钮，用来多选对比
+      var pick = v.kind === 'srv'
+        ? '<span class="srv-pick' + (picked ? ' is-on' : '') + '" data-pick="' + esc(v.id) + '"' +
+          ' role="checkbox" aria-checked="' + picked + '" title="加入对比">' + (picked ? '✓' : '+') + '</span>'
+        : '';
+      html += '<button type="button" class="' + cls + '" role="option" data-srv="' + esc(v.id) + '">' +
+        '<span class="srv-item-name">' + esc(v.kind === 'agg' ? v.short : v.label) + tag + '</span>' +
+        pick +
+        '<span class="srv-item-n">' + fmt(v.n) + '</span></button>';
+    });
+    if (lastRegion !== undefined) html += '</div>';
+
+    // 底部对比操作栏
+    var hint = PICK.length >= 2 ? '已选 ' + PICK.length + ' 个服'
+             : (PICK.length === 1 ? '再选 1 个服就能对比' : '点右侧 + 可多选对比（2~' + CMP_MAX + ' 个）');
+    html += '<div class="srv-cmp-bar">' +
+      '<span class="srv-cmp-hint">' + esc(hint) + '</span>' +
+      '<button type="button" class="srv-cmp-btn" data-cmp="go"' + (PICK.length < 2 ? ' disabled' : '') + '>' +
+      (PICK.length >= 2 ? '开始对比' : '对比') + '</button></div>';
+
+    $('srvMenu').innerHTML = html;
+  }
+
+  function markCurrentServer() {
+    var items = document.querySelectorAll('.srv-item');
+    Array.prototype.forEach.call(items, function (b) {
+      b.classList.toggle('is-active', b.getAttribute('data-srv') === state.view);
+    });
+  }
+
+  function toggleServerMenu(force) {
+    var menu = $('srvMenu'), btn = $('srvBtn');
+    var open = (force === undefined) ? menu.hidden : force;
+    menu.hidden = !open;
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (open) markCurrentServer();
+  }
+
+  function init() {
+    if (!SRV_LIST.length) {
+      $('resultLine').innerHTML = '<b style="color:var(--warn)">服务器清单载入失败</b>：请确认 data/servers.js 可以访问。';
+      return;
+    }
+    VIEWS = buildViews();
+    loadPick();
+    renderServerPicker();
+    renderHeader();
+    bind();
+    petals();
+
+    // 默认：上次选择 → 全区全服
+    var saved = '';
+    try { saved = localStorage.getItem('view') || ''; } catch (e) {}
+    var pick = (saved && viewById(saved)) || viewById('all') || VIEWS[0];
+    switchView(pick.id);
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();
+
+</script>
+</body>
+</html>

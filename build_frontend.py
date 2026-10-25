@@ -20,6 +20,57 @@ import urllib.request
 SITE = (os.environ.get('SITE_URL') or 'https://lcldnpkx.github.io/tianya-rank').rstrip('/')
 OUT = os.environ.get('RANK_OUT') or 'public'
 DATA = os.path.join(OUT, 'data')
+BASE = os.path.dirname(os.path.abspath(__file__))
+OVERRIDE_FILE = os.path.join(BASE, 'role_overrides.json')
+
+
+def load_overrides():
+    if not os.path.exists(OVERRIDE_FILE):
+        return {}
+    try:
+        with open(OVERRIDE_FILE, encoding='utf-8') as f:
+            d = json.load(f)
+        return {k: v for k, v in d.items() if not k.startswith('_')}
+    except Exception as e:  # noqa: BLE001
+        print('  [override] 读取失败，忽略: %s' % e)
+        return {}
+
+
+def patch_overrides(path):
+    """把人工修正（名字 / 帮派，不动功力）写回抓下来的数据文件。
+
+    只在「只重建前端」这条路径上补这一步——否则复用线上旧数据会把修正冲掉。
+    """
+    ov = load_overrides()
+    if not ov:
+        return 0
+    raw = open(path, encoding='utf-8').read()
+    m = re.search(r'=\s*(\{.*\})\s*;?\s*$', raw, re.DOTALL)
+    if not m:
+        return 0
+    try:
+        blob = json.loads(m.group(1))
+    except Exception:  # noqa: BLE001
+        return 0
+    hit = 0
+    for r in blob.get('roles') or []:
+        o = ov.get(r.get('k') or '')
+        if not o:
+            continue
+        if o.get('n'):
+            r['n'] = o['n']
+            r['nh'] = False
+            r['gu'] = True
+        if o.get('g'):
+            r['g'] = o['g']
+            r['gh'] = False
+            r['gg'] = True
+        hit += 1
+    if hit:
+        head = raw[:m.start(1)]
+        with open(path, 'w', encoding='utf-8') as f:
+            f.write(head + json.dumps(blob, ensure_ascii=False, separators=(',', ':')) + ';')
+    return hit
 
 
 def grab(url, path):
@@ -46,7 +97,12 @@ def main():
         for pat in ('s-%s.js', 'gd-%s.js'):
             name = pat % sid
             try:
-                grab(SITE + '/data/' + name, os.path.join(DATA, name))
+                p = os.path.join(DATA, name)
+                grab(SITE + '/data/' + name, p)
+                if pat.startswith('s-'):
+                    n = patch_overrides(p)
+                    if n:
+                        print('  [override] %s 修正 %d 条' % (name, n))
             except Exception as e:            # noqa: BLE001
                 print('  skip %s: %s' % (name, e))
     for name in ('ghist.js', 'grel.js'):

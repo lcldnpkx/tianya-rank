@@ -146,6 +146,51 @@ def fetch_histories(keys, workers=HIST_WORKERS):
 
 
 # ---------------- 字段精简 ----------------
+# 人工修正表：数据源（官方名人堂）对部分号隐藏了名字/功力，或抓取滞后。
+# 这里用玩家提供的游戏内实时截图修正，键为角色 key（服务器id|名字 或 隐藏名占位 key）。
+# 文件不存在时跳过。每次 update.py 运行都会套用，不会被每日抓取冲掉。
+OVERRIDE_FILE = os.path.join(BASE, 'role_overrides.json')
+
+
+def load_overrides():
+    if not os.path.exists(OVERRIDE_FILE):
+        return {}
+    try:
+        with open(OVERRIDE_FILE, encoding='utf-8') as f:
+            return json.load(f) or {}
+    except Exception as e:  # noqa: BLE001
+        print('  [override] 读取失败，忽略: %s' % e, file=sys.stderr)
+        return {}
+
+
+def apply_overrides(roles):
+    """套用人工修正。
+
+    只改「名字」和「帮派归属」两类，**绝不改功力**——帮派总功力是官方口径，
+    跟着改动会让帮派数据整体失真。修正过的行带 gu（名字为推断）/ gg（帮派为推断）标记，
+    前端会显示成「名字 + 估」，鼠标悬停说明这是玩家截图比对得出的推断值。
+    """
+    ov = load_overrides()
+    if not ov:
+        return roles
+    n_hit = 0
+    for r in roles:
+        o = ov.get(r.get('key') or '')
+        if not o:
+            continue
+        n_hit += 1
+        if o.get('n'):
+            r['name'] = o['n']
+            r['nameHidden'] = False
+            r['guessName'] = True
+        if o.get('g'):
+            r['guild'] = o['g']
+            r['guildHidden'] = False
+            r['guessGuild'] = True
+    print('  [override] 套用人工修正 %d 条（共 %d 条规则）' % (n_hit, len(ov)), file=sys.stderr)
+    return roles
+
+
 def slim_role(i):
     return {
         'k': i.get('key'),
@@ -153,10 +198,12 @@ def slim_role(i):
         'ro': i.get('rankOfficial'),
         'n': i.get('name'),
         'nh': i.get('nameHidden', False),
+        'gu': i.get('guessName', False),        # 名字为推断（玩家截图比对）
         'fn': i.get('formerNames') or [],
         'm': i.get('menpai'),
         'g': i.get('guild') or '',
         'gh': i.get('guildHidden', False),
+        'gg': i.get('guessGuild', False),       # 帮派为推断
         'p': i.get('power'),
         'ph': i.get('powerHidden', False),
         'pr': i.get('powerRange'),
@@ -552,6 +599,7 @@ def main():
     print('  [roles] 抓取全服角色…', file=sys.stderr)
     roles_raw = fetch_all_roles()
     roles_raw, excluded_rids = apply_exclusion(roles_raw)
+    roles_raw = apply_overrides(roles_raw)
     roles = [slim_role(i) for i in roles_raw]
     if excluded_rids:
         print('  [exclude] 已剔除大区 %s（服务器 id: %s）'

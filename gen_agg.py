@@ -48,6 +48,8 @@ ROLE_FIELDS = [
     'rm',   # 12 门派内名次
     't',    # 13 榜段
     'pr',   # 14 功力区间
+    'gu',   # 15 名字为推断（官方隐藏，按玩家榜单比对）
+    'gg',   # 16 帮派为推断
 ]
 
 GUILD_FIELDS = [
@@ -112,6 +114,8 @@ def build(pub_dir):
             r.get('rm'),
             r.get('t'),
             r.get('pr'),
+            1 if r.get('gu') else 0,
+            1 if r.get('gg') else 0,
         ]
 
     def enc_guild(g, si):

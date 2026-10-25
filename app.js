@@ -79,6 +79,25 @@
     return r.pe ? '≈' + fmt(r.pe) + '(估算)' : '隐藏';
   };
 
+  // 名字 / 帮派为「推断」时的小标记。官方榜隐藏了这两项，这里按玩家提供的
+  // 游戏内实时榜单比对得出，只补名字和帮派归属，不动功力（避免帮派总功力虚增）。
+  var NAME_TIP = '角色名为推断：官方榜隐藏了角色名，按玩家提供的游戏内榜单比对得出';
+  var GUILD_TIP = '帮派为推断：该角色隐藏了帮派，按玩家提供的游戏内榜单比对得出';
+  var nameHtml = function (r, tag) {
+    var t = tag || 'span';
+    var cls = r.nh ? ' is-hidden' : (r.gu ? ' is-guess' : '');
+    var body = esc(r.n) + (r.gu ? '<i class="est-tag" title="' + NAME_TIP + '">估</i>' : '');
+    return '<' + t + ' class="rn-text' + cls + '"' + (r.gu ? ' title="' + NAME_TIP + '"' : '') + '>' + body + '</' + t + '>';
+  };
+  var guildHtml = function (r) {
+    if (!r.g) {
+      return '<span class="guild-none">' + (r.gh ? '帮派隐藏' : '无帮派') + '</span>';
+    }
+    return '<span class="guild-name' + (r.gg ? ' is-guess' : '') + '"' +
+      (r.gg ? ' title="' + GUILD_TIP + '"' : '') + '>' + esc(r.g) +
+      (r.gg ? '<i class="est-tag">估</i>' : '') + '</span>';
+  };
+
   /* ---------- 派生数据（切换服务器时重算） ---------- */
   var guildMemberCount = {};
   var menpaiCount = {};
@@ -140,13 +159,15 @@
     $('podium').innerHTML = top3.map(function (r, i) {
       var pos = i + 1;
       var power = powerHtml(r);
-      var guild = r.g ? esc(r.g) : (r.gh ? '帮派隐藏' : '无帮派');
+      var guild = r.g ? esc(r.g) + (r.gg ? '<i class="est-tag">估</i>' : '') : (r.gh ? '帮派隐藏' : '无帮派');
       // 跨服视图（全区 / 大区 / 多服对比）要标出服务器，否则看不出是哪个服的人
       var svTag = (IS_AGG && r.sv) ? '<span class="pod-tag pod-sv">' + esc(r.sv) + '</span>' : '';
       return '<li class="pod" data-pos="' + pos + '" data-idx="' + r._i + '">' +
         '<div class="pod-crown">TOP ' + pos + '</div>' +
         '<div class="pod-rank">' + pos + '</div>' +
-        '<p class="pod-name' + (r.nh ? ' is-hidden' : '') + '">' + esc(r.n) + '</p>' +
+        '<p class="pod-name' + (r.nh ? ' is-hidden' : (r.gu ? ' is-guess' : '')) + '"' +
+          (r.gu ? ' title="' + NAME_TIP + '"' : '') + '>' + esc(r.n) +
+          (r.gu ? '<i class="est-tag">估</i>' : '') + '</p>' +
         '<div class="pod-meta">' +
           svTag +
           '<span class="pod-tag">' + esc(r.m) + '</span>' +
@@ -311,13 +332,13 @@
       '<td class="rank-cell">' + rk + '</td>' +
       '<td>' +
         '<div class="role-name">' +
-          '<span class="rn-text' + (r.nh ? ' is-hidden' : '') + '">' + esc(r.n) + '</span>' +
+          nameHtml(r) +
           (r.fn && r.fn.length ? '<span class="badge former">曾用名 ' + esc(r.fn.join(' / ')) + '</span>' : '') +
         '</div>' +
       '</td>' +
       (IS_AGG ? '<td><span class="srv-cell">' + esc(r.sv || '') + '</span></td>' : '') +
       '<td><span class="badge menpai">' + esc(r.m) + '</span></td>' +
-      '<td><span class="guild-name">' + (r.g ? esc(r.g) : '<span class="guild-none">' + (r.gh ? '帮派隐藏' : '无帮派') + '</span>') + '</span></td>' +
+      '<td>' + guildHtml(r) + '</td>' +
       '<td class="num">' + powerCell(r) + '</td>' +
     '</tr>';
   }
@@ -444,9 +465,8 @@
       var why;
       if (DB && DB.kind === 'agg') {
         why = '全服 / 大区视图为控制体积未载入成长曲线，<b>切换到该角色所属的服务器</b>即可查看。';
-      } else if (r.nh) {
-        why = '该角色隐藏了角色名，且没有可锚定的签名，本表无法追踪它的历史。';
-      } else {
+      } else if (r.nh || r.gu) {
+        why = '该角色在官方榜里隐藏了角色名，历史只能按名次追踪、无法关联到具体角色，因此不提供曲线。';      } else {
         why = '该角色暂无历史曲线：数据来源于 ' + esc(HD[0] || '—') +
               ' 开始，之后才上榜或改名重建的角色没有足够的数据点。';
       }
@@ -566,7 +586,8 @@
 
     $('drawerContent').innerHTML =
       '<p class="dw-eyebrow">' + (r.ro ? '官方在榜' : '扩容收录') + ' · ' + esc(r.m) + '</p>' +
-      '<h3 class="dw-name' + (r.nh ? ' is-hidden' : '') + '">' + esc(r.n) + '</h3>' +
+      '<h3 class="dw-name' + (r.nh ? ' is-hidden' : (r.gu ? ' is-guess' : '')) + '">' + esc(r.n) +
+        (r.gu ? '<i class="est-tag">估</i>' : '') + '</h3>' +
       '<p class="dw-rankline">全服名次 <b>' + (r.ro ? '' : '~') + r.r + '</b>' +
         (r.rm ? ' · 门派内第 <b>' + r.rm + '</b> 名' : '') + '</p>' +
       '<div class="dw-power">' + powerBlock + '</div>' +
@@ -574,7 +595,12 @@
         '<div class="dw-item"><dt>门派</dt><dd>' + esc(r.m) + '</dd></div>' +
         '<div class="dw-item"><dt>服务器</dt><dd>' + esc(r.sv || DB.server) +
           (DB.kind === 'agg' ? '' : '（' + esc(DB.region) + '）') + '</dd></div>' +
-        '<div class="dw-item wide"><dt>帮派</dt><dd>' + (r.g ? esc(r.g) : (r.gh ? '帮派名已隐藏' : '无帮派')) + '</dd></div>' +
+        '<div class="dw-item wide"><dt>帮派</dt><dd>' +
+          (r.g ? esc(r.g) + (r.gg ? '<i class="est-tag" title="' + GUILD_TIP + '">估</i>' : '')
+               : (r.gh ? '帮派名已隐藏' : '无帮派')) + '</dd></div>' +
+        (r.gu ? '<div class="dw-item wide"><dt>名字来源</dt><dd class="dw-guess-note">' +
+          '官方榜隐藏了角色名。此处名字与帮派为玩家提供的游戏内实时榜单比对推断，' +
+          '<b>功力仍按官方隐藏处理，未作修改</b>，以免影响帮派总功力。</dd></div>' : '') +
         '<div class="dw-item"><dt>数据来源于</dt><dd>' + esc(DB.snapshot) + '</dd></div>' +
       '</dl>' +
       (rankBars ? '<div class="dw-sec"><h4>名次水位</h4><div class="dw-rankbars">' + rankBars + '</div></div>' : '') +
@@ -891,7 +917,7 @@
         var idx = from + i + 1;
         return '<tr data-ridx="' + r._i + '" class="gd-mem-row">' +
           '<td class="num gd-mem-rank">' + idx + '</td>' +
-          '<td><span class="rn-text' + (r.nh ? ' is-hidden' : '') + '">' + esc(r.n) + '</span>' +
+          '<td>' + nameHtml(r) +
             (IS_AGG && r.sv ? '<span class="cell-sub">' + esc(r.sv) + '</span>' : '') + '</td>' +
           '<td><span class="badge menpai">' + esc(r.m) + '</span></td>' +
           '<td class="num">' + powerHtml(r) + '</td></tr>';
@@ -1505,7 +1531,7 @@
         r: a[0], ro: !!a[1], n: a[2], nh: !!a[3], fn: a[4] || [],
         rid: SV[a[5]], sv: SRV_NAME[SV[a[5]]] || SV[a[5]], m: MP[a[6]] || '未知',
         g: a[7] || '', gh: !!a[8], p: a[9], ph: !!a[10], pe: a[11],
-        rm: a[12], t: a[13], pr: a[14], h: null
+        rm: a[12], t: a[13], pr: a[14], gu: !!a[15], gg: !!a[16], h: null
       };
     });
     var guilds = (raw.guilds || []).map(function (a) {

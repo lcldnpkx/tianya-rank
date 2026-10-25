@@ -669,6 +669,30 @@ td.rank-cell { width: 74px; }
   word-break: break-all;
 }
 .rn-text.is-hidden { color: var(--slate-dim); font-style: italic; font-weight: 400; }
+
+/* ---- 推断的名字 / 帮派（官方隐藏，按玩家截图比对得出）---- */
+.rn-text.is-guess,
+.guild-name.is-guess,
+.dw-name.is-guess { color: var(--flare, #8fd0ff); }
+.rn-text.is-guess .est-tag,
+.guild-name.is-guess .est-tag,
+.dw-name.is-guess .est-tag {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 0 4px;
+  font-family: var(--sans);
+  font-size: 9.5px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 14px;
+  vertical-align: 2px;
+  color: #04202f;
+  background: #6ec7f5;
+  border-radius: 3px;
+  cursor: help;
+}
+.dw-name.is-guess .est-tag { font-size: 11px; line-height: 17px; vertical-align: 4px; }
+.dw-item dd.dw-guess-note { font-size: 11.5px; line-height: 1.75; color: var(--mist); }
 .badge {
   padding: 1px 7px;
   border-radius: 5px;
