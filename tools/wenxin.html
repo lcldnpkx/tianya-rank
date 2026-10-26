@@ -486,6 +486,13 @@ body{
       };
     });
 
+    // 单本功力硬上限（游戏内最高 1463），超出时先削特技、再削属性
+    var CAP = DATA.maxPower || 1463;
+    if (attr + skill > CAP) {
+      skill = Math.max(0, CAP - attr);
+      if (attr + skill > CAP) { attr = Math.max(0, CAP - skill); }
+    }
+
     return {
       ratio: Math.round(ratio),
       chapters: chapters,
@@ -730,11 +737,34 @@ body{
     var res = rollResult({ band: r.band, bonusPct: 50 });
     st.claimed = st.claimed || {};
     st.claimed[r.n] = claimedOf(r.n) + 1;
-    st.items.push({ s: slot, p: res.totalPower, r: res, reward: true });
+    st.items.push({ s: slot, p: res.totalPower, r: res, reward: true, band: r.band.slice() });
     save();
     $('#claimDlg').close();
     renderAll();
     toast('已领取 ' + DATA.slots[slot - 1].n + ' · ' + res.totalPower + ' 功力');
+  }
+
+  // 旧版本公式生成的书可能超过单本上限（旧公式上限约 2900），按当前模型重算
+  function migrateOld() {
+    var CAP = DATA.maxPower || 1463;
+    var fixed = 0;
+    st.items.forEach(function (it) {
+      if (it.p == null) return;
+      if (it.p > CAP) {
+        var band = it.reward && it.band ? it.band : null;
+        var res = rollResult(band ? { band: band, bonusPct: 50 } : {});
+        it.r = res;
+        it.p = res.totalPower;
+        fixed++;
+      }
+      if (it.p >= CAP) it.p = CAP;      // 兜底
+      if (it.r && it.r.totalPower > CAP) it.r.totalPower = CAP;
+    });
+    if (fixed) {
+      st.best = Math.max.apply(null, [0].concat(st.items.filter(function (x) { return x.p != null; }).map(function (x) { return x.p; })));
+      save();
+      setTimeout(function () { toast('已按新模型重算 ' + fixed + ' 本超限心法（单本上限 ' + CAP + '）'); }, 700);
+    }
   }
 
   function renderAll() {
@@ -830,6 +860,7 @@ body{
         $('#sThr').textContent = d.threshold;
         $('#cntThr').textContent = d.threshold;
         $('#cntCap').textContent = d.capacity;
+        migrateOld();
         renderSlots();
         renderAll();
       })
