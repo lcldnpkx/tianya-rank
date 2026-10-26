@@ -792,11 +792,15 @@
     var out = [];
     for (var i = 0; i < ROLES.length; i++) {
       var r = ROLES[i];
-      if (!r.g || r.g !== g.g || !r.p) continue;
+      if (!r.g || r.g !== g.g) continue;
+      // 隐藏功力的成员也是帮里的人，只要算得出估算值就列出来（否则帮派榜里看不到他们）
+      if (!r.p && !r.pe) continue;
       if (IS_AGG && g.sv && r.sv !== g.sv) continue;
       out.push(r);
     }
-    out.sort(function (a, b) { return b.p - a.p; });
+    out.sort(function (a, b) {
+      return (b.p || b.pe || 0) - (a.p || a.pe || 0);
+    });
     return { arr: out.slice(0, cap || 80), total: out.length };
   }
 
@@ -925,6 +929,7 @@
     }
     var head = '<thead><tr><th class="num">#</th><th>角色</th><th>门派</th><th class="num">功力</th></tr></thead>';
     var first = m.arr.slice(0, 10), rest = m.arr.slice(10);
+    var nGuess = m.arr.filter(function (r) { return r.gg; }).length;
     return '<div class="dw-sec"><h4>帮内成员功力榜 · 前 ' + m.arr.length + '</h4>' +
       '<table class="mini-table gd-mem">' + head + '<tbody>' + rows(first, 0) + '</tbody></table>' +
       (rest.length
@@ -934,7 +939,11 @@
             ' 名成员">展开其余 ' + rest.length + ' 名成员</button>'
         : '') +
       '<p class="dw-note">按当前视图内的收录成员计算（共 ' + m.total + ' 人，展示前 ' + m.arr.length +
-        ' 名）。点任意一行可查看该角色详情。隐藏功力的成员用估算值显示。</p></div>';
+        ' 名）。点任意一行可查看该角色详情。隐藏功力的成员用估算值显示。' +
+        (nGuess ? '其中 <b>' + nGuess + '</b> 人在官方榜隐藏了帮派名，归属按玩家提供的游戏内榜单推断（标「估」），' +
+          '只用于展示名单，<b>不计入帮派功力</b>' +
+          (g.tm && g.tm !== m.total ? '；上方官方收录为 ' + g.tm + ' 人，差值即这部分推断归属。' : '。') : '') +
+      '</p></div>';
   }
 
   function openGuild(g) {
