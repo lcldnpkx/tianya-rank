@@ -348,7 +348,7 @@ body{
     <div class="panel__body">
       <div class="rewards" id="rewards"></div>
       <div class="note">
-        <b>说明：</b>奖励档位来自游戏内设定（累计鉴定次数达标可领）。鉴定结果按原站实测模型还原：整体比例 60%~99% 决定四项章法数值（起·承·转·合，含上限），随机一条章法附带 20%~50% 特技提升，属性功力 + 特技功力 = 总功力。点击背包中已鉴定的书可查看完整属性。所有数据只存在本机浏览器。
+        <b>说明：</b>奖励档位来自游戏内设定（累计鉴定次数达标可领，可循环领取）。鉴定结果按原站实测样本校准：整体比例 60%~99% 决定四条章法数值（起·承·转·合，属性从 22 种文心属性中随机，含气血、外防削弱、攻心诀攻击、灼魂防御等）；属性功力 ≈ 比例 × 11.7；特技落在其中一条章法上提升 20%~50%，特技功力 = 属性功力 × 特技% × 0.25 × 特技条数；总功力 = 属性功力 + 特技功力。鼠标移到背包中的心法上可查看完整文心数值。数据只存在本机浏览器。
       </div>
     </div>
   </section>
@@ -420,15 +420,21 @@ body{
     try { localStorage.setItem(LS, JSON.stringify(st)); } catch (e) {}
   }
 
-  // 文心数值模型（对齐原站实测）：
-  // 整体比例 ratio 决定四条章法数值 = 上限 × ratio；属性功力 = 章法上限和 × 0.727 × ratio；
-  // 特技落在其中一条章法上（20%~50%），特技功力 = 属性功力 × 特技% × 0.25；总功力 = 两者相加。
-  var FEAT_KEYS = ['起', '承', '转', '合'];
+  // 文心数值模型（2026-10 按原站 18 本实测样本校准）：
+  // · 整体比例 ratio 决定四条章法数值 = 该属性上限 × ratio（同一本书四条按同一比例）
+  // · 属性功力 ≈ ratio × 11.7（与章法属性种类无关，实测中位数 11.707）
+  // · 特技落在其中一条章法（20%~50%），特技功力 = 属性功力 × 特技% × 0.25 × 特技条数
+  // · 总功力 = 属性功力 + 特技功力
+  var CH_SEC = ['起', '承', '转', '合'];
+
   function pickAttrs(n) {
-    var pool = (DATA.attrPool || DATA.chapters.map(function (c) { return { n: c[0], t: 'flat', max: c[1] }; })).slice();
+    var pool = (DATA.attrPool && DATA.attrPool.length)
+      ? DATA.attrPool
+      : DATA.chapters.map(function (c) { return { n: c[0], t: 'flat', max: c[1] }; });
     var out = [];
-    for (var i = 0; i < n && pool.length; i++) {
-      out.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+    for (var i = 0; i < n; i++) {
+      var p = pool[Math.floor(Math.random() * pool.length)];
+      out.push({ n: p.n, t: p.t, max: p.max });
     }
     return out;
   }
@@ -436,55 +442,58 @@ body{
     if (isPct) return (Math.round(v * 10) / 10) + '%';
     return String(Math.round(v));
   }
-  // scale：章法上限整体缩放，用于奖励书凑到指定功力段
+
+  // opts.band：奖励书目标功力段；opts.bonusPct：固定特技比例
   function rollResult(opts) {
     opts = opts || {};
     var R = DATA.ratio;
-    var t = Math.pow(Math.random(), R.pow || 1.12);
-    var ratio = R.min + t * (R.max - R.min);
+    var K = R.powerK || 11.7;
     var picks = pickAttrs(4);
-    var maxSum = picks.reduce(function (a, c) { return a + c.max; }, 0);
+    var bonusPct = opts.bonusPct || (20 + 10 * Math.floor(Math.random() * 4));   // 20/30/40/50
+    var count = opts.count || (Math.random() < 0.15 ? 2 : 1);                    // 双特技约 15%
+    var fi = Math.floor(Math.random() * picks.length);
 
-    // 目标总功力：奖励书按功力段精确落点，普通鉴定走公式
-    var target = null;
-    if (opts.band) target = opts.band[0] + Math.floor(Math.random() * (opts.band[1] - opts.band[0] + 1));
+    var ratio, attr, skill;
 
-    var bonusPct = opts.bonusPct || (20 + 10 * Math.floor(Math.random() * 4));
-    var attr, skill;
-
-    if (target) {
-      // 反推属性功力，使 属性+特技 正好落在功力段内
-      attr = Math.round(target / (1 + bonusPct / 400));
-      while (attr + Math.round(attr * bonusPct / 400) < target) attr++;
-      while (attr + Math.round(attr * bonusPct / 400) > target) attr--;
+    if (opts.band) {
+      // 奖励书：总功力精确落在功力段内（先按 属性+特技 反推属性功力）
+      var target = opts.band[0] + Math.floor(Math.random() * (opts.band[1] - opts.band[0] + 1));
+      attr = Math.round(target / (1 + bonusPct / 400 * count));
+      while (attr + Math.round(attr * bonusPct / 100 * 0.25 * count) < target) attr++;
+      while (attr + Math.round(attr * bonusPct / 100 * 0.25 * count) > target) attr--;
       skill = target - attr;
-      ratio = attr * 100 / (maxSum * 0.727);               // 由属性功力回算比例
-      if (ratio > 100) ratio = 100;
+      ratio = 99;                                   // 奖励书按满比例展示
     } else {
-      attr = Math.round(maxSum * 0.727 * ratio / 100);
-      skill = Math.round(attr * bonusPct / 100 * 0.25);
+      var t = Math.pow(Math.random(), R.pow || 1.12);
+      ratio = R.min + t * (R.max - R.min);          // 60~99 偏下
+      attr = Math.round(ratio * K);
+      skill = Math.round(attr * bonusPct / 100 * 0.25 * count);
     }
 
-    var fi = Math.floor(Math.random() * picks.length);
+    // 章节数值 = 上限 × ratio；奖励书按目标功力放大上限，保证比例仍是 99%
+    var scale = opts.band ? (attr / (K * ratio)) : 1;
     var chapters = picks.map(function (c, i) {
-      var max = Math.round(c.max * (target ? (ratio / 99) : 1));
-      var val = Math.round(max * ratio / 100);
+      var max = c.max * scale;
+      var val = max * ratio / 100;
+      var isPct = c.t === 'pct';
       return {
-        name: c.n, pct: c.t === 'pct', max: max, value: val,
-        text: fmtVal(val, c.t === 'pct'),
-        extra: (i === fi ? Math.max(1, Math.round(val * bonusPct / 100)) : null)
+        name: c.n, pct: isPct,
+        max: isPct ? Math.round(max * 10) / 10 : Math.round(max),
+        value: isPct ? Math.round(val * 10) / 10 : Math.round(val),
+        text: fmtVal(val, isPct),
+        extra: (i === fi ? Math.max(1, Math.round(val * bonusPct / 100)) : null),
+        extraText: (i === fi ? fmtVal(Math.max(1, Math.round(val * bonusPct / 100)), isPct) : '')
       };
     });
-    chapters[fi].extraText = chapters[fi].extra == null ? '' : fmtVal(chapters[fi].extra, chapters[fi].pct);
 
     return {
       ratio: Math.round(ratio),
       chapters: chapters,
-      feature: { name: chapters[fi].name, bonusPct: bonusPct },
+      feature: { name: chapters[fi].name, bonusPct: bonusPct, count: count },
       attributePower: attr,
       skillPower: skill,
       totalPower: attr + skill,
-      reward: !!target
+      reward: !!opts.band
     };
   }
 
@@ -555,7 +564,6 @@ body{
 
   // ---------- 悬停提示：鼠标移到心法上显示文心数值 ----------
   var tipEl = $('#wxtip');
-  var CH_SEC = ['起', '承', '转', '合'];
 
   function tipHtml(it) {
     var name = DATA.slots[it.s - 1].n;
@@ -572,8 +580,7 @@ body{
       return head + '<div><span class="k">总功力：</span><span class="big">' + fmt(it.p) + '</span></div>' +
         '<div style="margin-top:4px;color:var(--dim)">旧记录，重新鉴定可查看完整文心数值。</div>';
     }
-    var maxSum = r.chapters.reduce(function (a, c) { return a + c.max; }, 0);
-    var ratioDisp = Math.round(r.attributePower / (maxSum * 0.727) * 100);
+    var ratioDisp = r.ratio || Math.round(r.attributePower / 11.7);
     var html = head +
       '<div><span class="k">总功力：</span><span class="big">' + fmt(r.totalPower) + '</span></div>' +
       '<div style="display:flex;justify-content:space-between;gap:10px">' +
@@ -590,7 +597,8 @@ body{
       }).join('') +
       '<div class="sec">特技章节</div>' +
       '<div class="feat">该武学属性中的' + esc(r.feature.name) + '提升<b>' + r.feature.bonusPct + '%</b>' +
-        '<span class="k">（20%~50%）</span></div>' +
+        '<span class="k">（20%~50%）</span>' +
+        (r.feature.count > 1 ? '<span class="k"> × ' + r.feature.count + ' 条</span>' : '') + '</div>' +
       (it.reward ? '<div style="margin-top:6px;color:var(--ok);font-size:10.5px">★ 鉴定奖励 · 固定功力段</div>' : '');
     return html;
   }
@@ -646,7 +654,8 @@ body{
         (r.totalPower >= DATA.threshold ? '<span class="lbl" style="color:var(--ok)">✓ 达标（≥' + DATA.threshold + '）</span>' : '') +
       '</div>' +
       '<table class="dtable"><tbody>' + rows + '</tbody></table>' +
-      '<div class="detail__feature">特技：该武学属性中的<b>' + esc(r.feature.name) + '</b>提升 <b>' + r.feature.bonusPct + '%</b>（20%~50% 随机）</div>';
+      '<div class="detail__feature">特技：该武学属性中的<b>' + esc(r.feature.name) + '</b>提升 <b>' + r.feature.bonusPct + '%</b>（20%~50% 随机）' +
+        (r.feature.count > 1 ? '，本次双特技（' + r.feature.count + ' 条）' : '') + '</div>';
     box.classList.add('is-on');
     $('#detailClose').addEventListener('click', function () { box.classList.remove('is-on'); });
     box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
