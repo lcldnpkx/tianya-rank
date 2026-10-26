@@ -186,7 +186,165 @@ body{
 .dbtn--gold:hover:not(:disabled){background:linear-gradient(180deg,#7d6126,#553f17);border-color:var(--gold)}
 .draw-note{margin-top:12px;font-size:11.5px;color:var(--dim);line-height:1.8}
 
-/* 产物属性 */
+/* ===== 衍心（无象衍心）三栏布局 ===== */
+.wxfx-layout{display:grid;grid-template-columns:280px minmax(0,1fr) 320px;gap:12px;align-items:start}
+@media(max-width:1180px){.wxfx-layout{grid-template-columns:1fr}}
+.wxfx-side{display:flex;flex-direction:column;gap:12px}
+.wxfx-right{position:sticky;top:64px}
+.wxfx-center{min-height:520px;display:flex;flex-direction:column}
+.wxfx-stage{
+  flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;
+  background:
+    radial-gradient(70% 55% at 50% 42%, rgba(120,170,230,.13) 0%, transparent 70%),
+    radial-gradient(45% 40% at 50% 38%, rgba(190,215,255,.08) 0%, transparent 70%);
+}
+.wx-hero{text-align:center;margin-bottom:4px}
+.wx-hero h3{margin:0;font-size:26px;letter-spacing:.42em;font-weight:400;color:#f0e6cf;
+  text-shadow:0 0 22px rgba(255,221,149,.28);padding-left:.42em}
+.wx-hero p{margin:7px 0 0;font-size:11.5px;letter-spacing:.22em;color:var(--dim)}
+.wx-orbit{display:flex;gap:clamp(40px,8vw,110px);justify-content:center;align-items:flex-start;margin:26px 0 6px;position:relative}
+.wx-orbit::before{
+  content:'';position:absolute;left:50%;top:46px;transform:translate(-50%,-50%);
+  width:clamp(300px,34vw,460px);height:clamp(300px,34vw,460px);
+  border-radius:50%;border:1px solid rgba(160,200,240,.13);pointer-events:none;
+}
+.wx-node{position:relative;width:132px;text-align:center;cursor:pointer}
+.wx-node:focus-visible{outline:2px solid var(--gold);outline-offset:4px}
+.wx-node__ring{
+  width:104px;height:104px;margin:0 auto 10px;border-radius:50%;overflow:hidden;
+  display:grid;place-items:center;
+  background:radial-gradient(circle at 50% 30%, rgba(120,160,220,.35), rgba(10,24,44,.9) 78%);
+  border:2px solid rgba(150,190,240,.45);
+  box-shadow:0 0 22px rgba(90,140,210,.28), inset 0 0 24px rgba(90,140,210,.2);
+  transition:border-color .16s, box-shadow .16s;
+}
+.wx-node:hover .wx-node__ring{border-color:rgba(255,221,149,.75);box-shadow:0 0 28px rgba(255,221,149,.3)}
+.wx-node__ring img{width:78%;height:78%;object-fit:contain;display:block;filter:drop-shadow(0 2px 8px rgba(0,0,0,.5))}
+.wx-node__ring:empty::after{content:'？';font-size:30px;color:var(--dim)}
+.wx-node__label{font-size:12.5px;color:var(--gold);letter-spacing:.04em;line-height:1.5}
+.wx-node__plus{
+  position:absolute;right:8px;top:80px;width:24px;height:24px;border-radius:50%;
+  background:rgba(10,24,44,.95);border:1.5px solid rgba(150,190,240,.6);color:var(--mist);
+  display:grid;place-items:center;font-size:14px;line-height:1;
+}
+
+/* 里程碑条目 */
+.mstep{padding:8px 0;border-bottom:1px solid rgba(29,61,99,.5)}
+.mstep:last-of-type{border-bottom:none}
+.mstep__l{display:flex;align-items:baseline;gap:7px;margin-bottom:5px}
+.mstep__l span{font-size:10.5px;color:var(--dim);font-family:var(--mono);flex-shrink:0}
+.mstep__l em{font-style:normal;font-size:11.5px;color:var(--mist);line-height:1.5}
+.mstep.is-ok .mstep__l em{color:var(--fog)}
+.mstep .dbtn{width:100%;min-width:0;padding:5px 0;font-size:11px}
+
+/* 心法库 */
+.lib{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.libcard{
+  position:relative;padding:9px;background:rgba(9,24,42,.7);border:2px solid var(--line);
+  cursor:pointer;transition:border-color .14s;display:flex;flex-direction:column;
+}
+.libcard:hover{border-color:rgba(255,221,149,.5)}
+.libcard.is-on{border-color:var(--gold);background:rgba(107,83,32,.3)}
+.libcard__top{display:flex;gap:9px;align-items:flex-start;margin-bottom:7px}
+.libcard__top img{width:44px;height:44px;object-fit:contain;flex-shrink:0}
+.libcard__t{min-width:0}
+.libcard__t b{display:block;font-size:12.5px;color:var(--gold);line-height:1.35}
+.libcard__t span{font-size:10.5px;color:var(--dim)}
+.libcard__dots{display:flex;gap:3px;margin:4px 0}
+.libcard__dots i{width:7px;height:7px;border-radius:50%;background:rgba(150,190,240,.25);display:block}
+.libcard__dots i.on{background:#5aa9ff;box-shadow:0 0 6px rgba(90,169,255,.8)}
+.libcard__powers{font-size:10.5px;color:var(--mist);line-height:1.65;margin-top:auto}
+.libcard__powers em{font-style:normal;color:var(--dim)}
+.libcard__acts{display:flex;gap:4px;margin-top:8px}
+.libcard__acts button{
+  flex:1;padding:4px 0;font-family:inherit;font-size:10.5px;cursor:pointer;
+  background:#12304f;border:1px solid var(--line-2);color:var(--mist);
+}
+.libcard__acts button:hover{color:var(--gold);border-color:rgba(255,221,149,.5)}
+.libcard__new{position:absolute;right:6px;top:6px;width:6px;height:6px;border-radius:50%;background:var(--orange)}
+
+/* 右侧产物详情 */
+.pv-power{display:flex;align-items:baseline;gap:8px;justify-content:center;margin-bottom:4px}
+.pv-power b{font-size:26px;font-family:var(--mono);color:var(--gold);line-height:1.2}
+.pv-power span{font-size:15px;color:var(--dim);font-family:var(--mono)}
+.pv-power .to{color:var(--dim);font-size:14px}
+.pv-power .now{color:var(--ok)}
+.pv-sub{text-align:center;font-size:10.5px;color:var(--dim);margin-bottom:10px}
+.pv-break{border:1px solid var(--line);padding:2px 0;margin-bottom:10px}
+.pv-break div{display:flex;justify-content:space-between;padding:4px 9px;font-size:11.5px;border-bottom:1px solid rgba(29,61,99,.4)}
+.pv-break div:last-child{border-bottom:none}
+.pv-break span{color:var(--dim)}
+.pv-break b{font-family:var(--mono);color:var(--mist);font-weight:400}
+.pv-break b.zero{color:var(--dim)}
+.pv-attrs{font-size:11.5px}
+.pv-attrs .r{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(29,61,99,.32)}
+.pv-attrs .r span{color:var(--mist)}
+.pv-attrs .r b{font-family:var(--mono);color:var(--dim);font-weight:400}
+.pv-attrs .r b.on{color:var(--fog)}
+.pv-ning{margin-top:10px;padding-top:9px;border-top:1px solid var(--line)}
+.pv-ning h5{margin:0 0 6px;font-size:11.5px;color:var(--gold);font-weight:600;display:flex;align-items:center;gap:5px}
+.pv-ning h5 em{font-style:normal;font-size:10px;color:var(--dim)}
+.pv-choice{
+  display:flex;align-items:center;gap:7px;width:100%;padding:7px 9px;margin-bottom:5px;
+  background:rgba(9,24,42,.8);border:1px solid var(--line);color:var(--mist);
+  font-family:inherit;font-size:11.5px;text-align:left;cursor:pointer;
+}
+.pv-choice:hover{border-color:rgba(255,221,149,.5)}
+.pv-choice.is-on{border-color:rgba(255,221,149,.75);background:rgba(107,83,32,.3);color:var(--gold)}
+.pv-choice b{font-family:var(--mono);font-weight:400;margin-left:auto;color:var(--fog)}
+.pv-choice.is-on b{color:var(--gold)}
+
+/* 凝心/承武弹窗（原站米色卡片风格） */
+.wxdlg{background:linear-gradient(180deg,#e8eef5,#dde6ef);color:#2b3a4d;border:1px solid #9fb3c8}
+.wxdlg .dlg__head{border-bottom:1px solid #b9c8d8}
+.wxdlg .dlg__head h3{color:#1f3b5c;letter-spacing:.2em}
+.wxdlg .dlg__x{border-color:#9fb3c8;color:#4a5f78}
+.wxdlg .dlg__x:hover{color:#1f3b5c;border-color:#1f3b5c}
+.wxdlg .cand{background:#fff;border:1px solid #b9c8d8;color:#2b3a4d}
+.wxdlg .cand:hover{border-color:#3f7fbf;color:#1f3b5c}
+.wxdlg .cand.is-on{border-color:#3f7fbf;background:#e7f1fb}
+.wxdlg .cand b{color:#1f3b5c}
+.wxdlg .cand span{color:#6c8299}
+.ning-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+.ning-opt{
+  display:flex;align-items:center;gap:7px;padding:10px 12px;cursor:pointer;font-family:inherit;
+  background:#fff;border:1px solid #b9c8d8;color:#2b3a4d;font-size:12.5px;text-align:left;
+}
+.ning-opt:hover{border-color:#3f7fbf}
+.ning-opt.is-on{border-color:#3f7fbf;background:#e7f1fb;box-shadow:inset 0 0 0 1px #3f7fbf}
+.ning-opt i{width:7px;height:7px;border:1px solid #8fa6bd;border-radius:50%;flex-shrink:0}
+.ning-opt.is-on i{background:#3f7fbf;border-color:#3f7fbf}
+.ning-opt b{margin-left:auto;font-family:var(--mono);color:#4a6b8f;font-weight:400;font-size:11.5px}
+.wxdlg-note{text-align:center;font-size:11px;color:#b23a3a;margin-top:12px}
+.wxdlg-acts{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+.wxdlg-acts .ok{
+  padding:8px 26px;font-family:inherit;font-size:12.5px;cursor:pointer;
+  background:linear-gradient(180deg,#f3e2bb,#e2cb9b);border:1px solid #b99f6b;color:#4a3a12;
+}
+.wxdlg-acts .ok:disabled{opacity:.5;cursor:not-allowed}
+.cheng-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:9px}
+.cheng-opt{
+  padding:9px 6px;cursor:pointer;font-family:inherit;text-align:center;
+  background:#fff;border:1px solid #b9c8d8;color:#2b3a4d;
+}
+.cheng-opt:hover{border-color:#3f7fbf}
+.cheng-opt.is-on{border-color:#3f7fbf;background:#e7f1fb;box-shadow:inset 0 0 0 1px #3f7fbf}
+.cheng-opt.dis{opacity:.42;cursor:not-allowed}
+.cheng-opt img{width:42px;height:42px;object-fit:contain;display:block;margin:0 auto 5px}
+.cheng-opt b{display:block;font-size:11.5px;color:#1f3b5c;line-height:1.4}
+.cheng-opt span{display:block;font-size:10.5px;color:#6c8299;font-family:var(--mono)}
+
+/* 卡槽选择弹窗 */
+.slot-pick{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px}
+.slot-pick button{
+  padding:9px 6px;cursor:pointer;font-family:inherit;background:#fff;border:1px solid #b9c8d8;color:#2b3a4d;
+}
+.slot-pick button:hover{border-color:#3f7fbf}
+.slot-pick button.is-on{border-color:#3f7fbf;background:#e7f1fb}
+.slot-pick img{width:40px;height:40px;object-fit:contain;display:block;margin:0 auto 4px}
+.slot-pick b{display:block;font-size:11.5px;color:#1f3b5c}
+.slot-pick span{display:block;font-size:10px;color:#6c8299}
+
 .product{margin-top:14px;padding:12px;text-align:left;background:rgba(9,24,42,.72);border:2px solid var(--line)}
 .product__head{display:flex;align-items:center;gap:9px;margin-bottom:8px;flex-wrap:wrap}
 .product__head img{width:34px;height:34px;object-fit:contain}
@@ -352,33 +510,40 @@ dialog::backdrop{background:rgba(4,10,18,.76)}
 
   <!-- ================= 衍心模拟 ================= -->
   <section class="pane" id="pane-draw">
-    <div class="star-layout">
-      <aside class="booklist booklist--short">
-        <div class="booklist__head" style="font-size:11.5px;color:var(--dim);letter-spacing:.1em">选择要衍心的心法</div>
-        <div class="booklist__body" id="books2"></div>
+    <div class="wxfx-layout">
+      <!-- 左：保底 + 里程碑 -->
+      <aside class="wxfx-side">
+        <div class="sidecard">
+          <div class="sidecard__head"><h3 id="pityTitle">绝品保底</h3></div>
+          <div class="sidecard__body" id="pityBody"></div>
+        </div>
+        <div class="sidecard">
+          <div class="sidecard__head"><h3>衍心奖励</h3><span id="mileQ">—</span></div>
+          <div class="sidecard__body" id="mileBody"></div>
+        </div>
       </aside>
 
-      <div class="stage">
+      <!-- 中：衍心台 -->
+      <div class="stage wxfx-center">
         <div class="stage__head">
-          <h2 id="dBookName">—</h2>
-          <span class="stage__sub" id="dBookSub"></span>
+          <h2>无象衍心</h2>
+          <span class="stage__sub" id="dBookSub">选择心法与衍心卷</span>
           <div class="stage__right">
             <button class="dbtn" id="btnResetDraw" type="button" style="min-width:0;padding:6px 12px;font-size:12px">重置模拟</button>
           </div>
         </div>
-        <div class="draw-stage">
-          <p class="draw-stage__title" id="drawTitle">选择心法开始衍心</p>
-          <div class="slots-show">
-            <div class="slotbox2" id="slotNing" tabindex="0" role="button" aria-label="凝心结果">
-              <div class="slotbox2__orb" id="orbNing">？</div>
-              <div class="slotbox2__name" id="nameNing">凝心</div>
-              <div class="slotbox2__hint">点击查看词条</div>
+        <div class="draw-stage wxfx-stage">
+          <div class="wx-hero"><h3>无象衍心</h3><p id="drawTitle">选择心法与衍心卷</p></div>
+          <div class="wx-orbit">
+            <div class="wx-node" id="slotBook" tabindex="0" role="button" aria-label="选择心法">
+              <div class="wx-node__ring"><img id="imgSlotBook" alt="" /></div>
+              <div class="wx-node__label" id="labelSlotBook">选择心法</div>
+              <span class="wx-node__plus" id="plusBook">+</span>
             </div>
-            <div class="connector" aria-hidden="true">›</div>
-            <div class="slotbox2" id="slotCheng" tabindex="0" role="button" aria-label="承武结果">
-              <div class="slotbox2__orb" id="orbCheng">？</div>
-              <div class="slotbox2__name" id="nameCheng">承武</div>
-              <div class="slotbox2__hint">点击查看来源</div>
+            <div class="wx-node" id="slotJuan" tabindex="0" role="button" aria-label="选择衍心卷">
+              <div class="wx-node__ring"><img id="imgSlotJuan" alt="" /></div>
+              <div class="wx-node__label" id="labelSlotJuan">衍心卷</div>
+              <span class="wx-node__plus" id="plusJuan">+</span>
             </div>
           </div>
           <div class="draw-btns">
@@ -386,21 +551,28 @@ dialog::backdrop{background:rgba(4,10,18,.76)}
             <button class="dbtn dbtn--gold" id="btnDraw5" type="button">衍心五次</button>
             <button class="dbtn" id="btnAddTickets" type="button" style="min-width:0;padding:11px 14px">补券 +10</button>
           </div>
-          <p class="draw-note">持有衍心券 <b id="ticketCnt" style="color:var(--gold)">0</b> 张 · 每次衍心消耗 1 张；里程碑衍心卷可在右侧兑换为券（1 卷 = 10 券）。</p>
-          <p class="draw-note" id="drawNote">凝心与承武各自独立判定；硬保底到期时把「未领悟」提升到保底档。抽中后点击两个球查看属性并选择凝心词条 / 承武来源。</p>
-          <div class="product" id="productBox" style="display:none"></div>
+          <p class="draw-note">持有 <b id="ticketCnt" style="color:var(--gold)">0</b> 张 <b id="ticketName">绝品·衍心卷</b> · 每次衍心消耗 1 张（衍心卷不限量，仅记录消耗）。</p>
         </div>
       </div>
 
-      <div class="side">
+      <!-- 右：产物详情（对齐原站右侧属性面板） -->
+      <aside class="wxfx-right">
         <div class="sidecard">
-          <div class="sidecard__head"><h3>保底进度</h3><span id="pityQ">绝品</span></div>
-          <div class="sidecard__body" id="pityBody"></div>
+          <div class="sidecard__head"><h3 id="pvTitle">产物详情</h3><span id="pvCount"></span></div>
+          <div class="sidecard__body" id="productBox"><div class="empty">先选心法</div></div>
         </div>
-        <div class="sidecard">
-          <div class="sidecard__head"><h3>里程碑</h3><span id="mileQ">—</span></div>
-          <div class="sidecard__body" id="mileBody"></div>
-        </div>
+      </aside>
+    </div>
+
+    <!-- 心法库 -->
+    <div class="panel" style="margin-top:14px">
+      <div class="panel__head">
+        <h2>心法库</h2><i></i>
+        <span style="font-size:11px;color:var(--dim)" id="libMeta">0 本</span>
+        <button class="dbtn" id="btnDismantle" type="button" style="min-width:0;padding:5px 10px;font-size:11.5px;margin-left:8px">批量分解</button>
+      </div>
+      <div class="panel__body">
+        <div class="lib" id="libBox"><div class="empty">还没有衍心产物</div></div>
       </div>
     </div>
 
@@ -478,8 +650,8 @@ dialog::backdrop{background:rgba(4,10,18,.76)}
   var POWER_TOTAL = { 1: 6303, 2: 9313 };   // 公示总功力
   var NODE_TOTAL = 153;
 
-  var D = null, BOOKS = {}, training = {};
-  var curBook = null, curLayer = 1, drawBook = null;
+  var D = null, BOOKS = {}, training = {}, SRC = {};
+  var curBook = null, curLayer = 1, drawBook = null, selectedInv = null;
   var pickMap = {};        // "bookId:layer:idx" -> 1
   var drawState = null;
 
@@ -494,13 +666,17 @@ dialog::backdrop{background:rgba(4,10,18,.76)}
     if (o && typeof o === 'object') {
       base.book = o.book || null;
       base.last = o.last || null;
-      base.tickets = (o.tickets == null) ? 10 : (Number(o.tickets) || 0);
+      base.juan = Number(o.juan) || 1;
+      base.tickets = (o.tickets == null) ? 46 : (Number(o.tickets) || 0);
       base.log = Array.isArray(o.log) ? o.log.slice(0, 120) : [];
+      base.inv = Array.isArray(o.inv) ? o.inv.slice(0, 60) : [];
+      base.invSeq = Number(o.invSeq) || base.inv.length;
       if (o.groups && typeof o.groups === 'object') {
         [1, 2].forEach(function (q) {
           var src = o.groups[q] || o.groups[String(q)] || {}, dst = base.groups[q];
           dst.total = Number(src.total) || 0;
           dst.claimed = Number(src.claimed) || 0;
+          dst.mileClaimed = Number(src.mileClaimed) || 0;
           if (src.pity && typeof src.pity === 'object') {
             Object.keys(dst.pity).forEach(function (t) { dst.pity[t] = Number(src.pity[t]) || 0; });
           }
@@ -513,10 +689,13 @@ dialog::backdrop{background:rgba(4,10,18,.76)}
 
   function freshDraw() {
     return {
-      book: null,
-      groups: { 1: { total: 0, pity: { 2: 0, 3: 0 }, claimed: 0 },
-                2: { total: 0, pity: { 2: 0, 3: 0, 4: 0 }, claimed: 0 } },
-      last: null, log: [], tickets: 10
+      book: null,                 // 当前选中要衍心的心法 id
+      juan: 1,                    // 当前衍心卷品质：1 绝品 / 2 镇派
+      groups: { 1: { total: 0, pity: { 2: 0, 3: 0 }, claimed: 0, mileClaimed: 0 },
+                2: { total: 0, pity: { 2: 0, 3: 0, 4: 0 }, claimed: 0, mileClaimed: 0 } },
+      last: null, log: [], tickets: 46,
+      inv: [],                    // 心法库：衍心产物
+      invSeq: 0
     };
   }
 
@@ -725,6 +904,7 @@ dialog::backdrop{background:rgba(4,10,18,.76)}
     return { ning: ning, cheng: cheng, rawCheng: rawCheng, forced: forced };
   }
 
+  // 凝心词条池（品质 q：1 绝品→3302，2 镇派→3402；tier4 镇派独有）
   function poolFor(q, tier) {
     if (!tier) return [];
     var k = q === 1 ? '3302' : '3402';
@@ -738,135 +918,177 @@ dialog::backdrop{background:rgba(4,10,18,.76)}
     }
     return a.slice(0, n);
   }
+  // 词条在指定心法/档位下的数值
+  function ningVal(bookId, tier, key) {
+    var t = D.ningValues && D.ningValues[String(bookId)];
+    if (!t) return '';
+    var v = t[String(tier)];
+    return (v && v[key]) || '';
+  }
 
   function doDraw(count) {
     if (!drawBook) { toast('先选一本心法'); return; }
-    if (drawState.tickets < count) { toast('衍心券不足（还剩 ' + drawState.tickets + ' 张），可点「补券」继续模拟'); return; }
+    if (drawState.juan !== BOOKS[drawBook].q) { toast('衍心卷品质与心法品级不一致'); return; }
+    if (drawState.tickets < count) { toast('衍心卷不足（还剩 ' + drawState.tickets + ' 张），可点「补券」继续模拟'); return; }
     var b = BOOKS[drawBook], q = b.q;
     var g = drawState.groups[q];
     var out = [];
     for (var i = 0; i < count; i++) {
       var r = rollOrdinary(q);
       var pool = poolFor(q, r.ning);
-      var cands = r.ning ? shuffleTake(pool, 5).map(function (a) { return [a[0], a[2]]; }) : [];
-      var item = { ning: r.ning, cheng: r.cheng, forced: r.forced, cands: cands, no: g.total, picked: null, chengSrc: null };
+      // 5 选 1：取 5 个不同词条，带该档实际数值
+      var cands = r.ning ? shuffleTake(pool, 5).map(function (a) {
+        return { id: a.id, key: a.key, name: a.name, val: ningVal(drawBook, r.ning, a.key) };
+      }) : [];
+      var item = {
+        ning: r.ning, cheng: r.cheng, forced: r.forced, cands: cands,
+        no: g.total, picked: null, chengSrc: null, book: drawBook, juan: q
+      };
       out.push(item);
       drawState.log.unshift(item);
     }
     if (drawState.log.length > 120) drawState.log.length = 120;
     drawState.tickets -= count;
     drawState.last = out[out.length - 1];
-    drawState.book = drawBook;
     saveDraw();
+    afterDraw();
     renderDraw();
-    toast(count === 5 ? '五次衍心完成，消耗 5 张券' : '衍心完成，消耗 1 张券');
+    toast(count === 5 ? '五次衍心完成，消耗 5 张' : '衍心完成，消耗 1 张');
   }
 
   function tierPill(t, prefix) {
-    if (!t) return '<span class="pill pill--none">' + prefix + ' 未领悟</span>';
+    if (!t) return '<span class="pill pill--none">' + prefix + ' 无</span>';
     return '<span class="pill pill--t' + t + '">' + prefix + ' ' + TIERS[t] + '</span>';
   }
 
+  // ===== 心法库产物 =====
+  function invById(id) {
+    for (var i = 0; i < drawState.inv.length; i++) if (drawState.inv[i].id === id) return drawState.inv[i];
+    return null;
+  }
+  function selInv() {
+    if (selectedInv && invById(selectedInv)) return invById(selectedInv);
+    return drawState.inv.length ? drawState.inv[drawState.inv.length - 1] : null;
+  }
+  // 总功力 = 原功力 + 升级增量 + 研习 + 凝心 + 承武
+  function powerBreak(it) {
+    var b = BOOKS[it.book];
+    var ning = (b.ningPower && it.ningTier) ? (b.ningPower[it.ningTier] || 0) : 0;
+    var cheng = (b.chengPower && it.chengTier) ? (b.chengPower[it.chengTier] || 0) : 0;
+    var base = b.originalPower || 0;
+    var up = b.upgradeGain || 0;
+    return {
+      base: base, upgrade: up, train: it.train || 0, ning: ning, cheng: cheng,
+      total: base + up + ning + cheng + (it.train || 0)
+    };
+  }
+
+  function renderInv() {
+    var box = $('#libBox');
+    var inv = drawState ? drawState.inv : [];
+    $('#libMeta').textContent = inv.length + ' 本 · 当前持有 ' + inv.length + ' 本';
+    if (!inv.length) { box.innerHTML = '<div class="empty">还没有衍心产物，点「衍心一次」开始</div>'; return; }
+    var cur = selInv();
+    box.innerHTML = inv.slice().reverse().map(function (it) {
+      var b = BOOKS[it.book];
+      var pb = powerBreak(it);
+      var dots = [1, 2, 3, 4].map(function (t) {
+        var on = (it.ningTier === t) || (it.chengTier === t);
+        return '<i class="' + (on ? 'on' : '') + '"></i>';
+      }).join('');
+      return '<div class="libcard' + (cur && cur.id === it.id ? ' is-on' : '') + '" data-inv="' + it.id + '">' +
+        (it.isNew ? '<span class="libcard__new"></span>' : '') +
+        '<div class="libcard__top">' +
+          '<img src="./img/xinfa/' + esc(b.icon) + '" alt="" onerror="this.style.visibility=\'hidden\'" />' +
+          '<div class="libcard__t"><b>' + (b.q === 2 ? '镇派' : '绝品') + '·' + esc(b.name) + '</b>' +
+            '<span>已修习 · 已鉴定</span>' +
+            '<div class="libcard__dots">' + dots + '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="libcard__powers">当前功力 <b style="color:var(--gold);font-family:var(--mono)">' + fmt(pb.total) + '</b><br />' +
+          '凝心 ' + (it.ningTier ? TIERS[it.ningTier] + (it.ningName ? '·' + esc(it.ningName) : '') : '无') + '<br />' +
+          '承武 ' + (it.chengTier ? TIERS[it.chengTier] + (it.chengName ? '·' + esc(it.chengName) : '') : '无') +
+        '</div>' +
+        '<div class="libcard__acts">' +
+          '<button type="button" data-act="study">研习</button>' +
+          '<button type="button" data-act="compare">对比</button>' +
+          '<button type="button" data-act="dismantle">分解</button>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+    $$('#libBox .libcard').forEach(function (card) {
+      card.addEventListener('click', function (e) {
+        var act = e.target.closest('[data-act]');
+        var id = Number(card.dataset.inv);
+        if (act) {
+          e.stopPropagation();
+          var it = invById(id);
+          if (act.dataset.act === 'dismantle') {
+            if (!confirm('分解「' + BOOKS[it.book].name + '」？不可恢复。')) return;
+            drawState.inv = drawState.inv.filter(function (x) { return x.id !== id; });
+            if (selectedInv === id) selectedInv = null;
+            saveDraw(); renderDraw(); toast('已分解');
+          } else if (act.dataset.act === 'study') {
+            selectedInv = id; saveDraw(); renderDraw();
+            toast('已在右侧选择该心法（研习页可继续点穴位）');
+          } else {
+            toast('对比：' + BOOKS[it.book].name + ' 当前 ' + fmt(powerBreak(it).total) + ' 功力');
+          }
+          return;
+        }
+        selectedInv = id; saveDraw(); renderDraw();
+      });
+    });
+  }
+
+  // ===== 主渲染 =====
   function renderDraw() {
     var b = drawBook ? BOOKS[drawBook] : null;
-    $('#dBookName').textContent = b ? b.name : '—';
-    $('#dBookSub').textContent = b ? (b.q === 2 ? '镇派' : '绝品') : '';
-    $('#drawCount').textContent = drawState ? drawState.log.length : 0;
-    $('#pityQ').textContent = b ? (b.q === 2 ? '镇派' : '绝品') : '—';
-
-    var last = drawState ? drawState.last : null;
     var q = b ? b.q : 1;
+    $('#drawCount').textContent = drawState ? drawState.log.length : 0;
 
-    // 两个球
-    if (last) {
-      var n = last.ning, c = last.cheng;
-      var orbN = $('#orbNing');
-      orbN.textContent = n ? TIERS[n] : '无';
-      orbN.style.color = n ? TCOL[n] : '#98a4b4';
-      orbN.style.borderColor = n ? TCOL[n] : '#23496f';
-      orbN.style.background = n
-        ? 'radial-gradient(circle at 50% 32%, rgba(255,255,255,.28), ' + TCOL[n] + ' 78%)'
-        : 'radial-gradient(circle at 50% 35%, rgba(255,255,255,.07), transparent 70%)';
-      $('#nameNing').textContent = n ? '凝心 · ' + TIERS[n] + '档' : '凝心 · 未领悟';
-      $('#slotNing').classList.toggle('has', !!n);
-
-      var orbC = $('#orbCheng');
-      orbC.textContent = c ? TIERS[c] : '无';
-      orbC.style.color = c ? TCOL[c] : '#98a4b4';
-      orbC.style.borderColor = c ? TCOL[c] : '#23496f';
-      orbC.style.background = c
-        ? 'radial-gradient(circle at 50% 32%, rgba(255,255,255,.28), ' + TCOL[c] + ' 78%)'
-        : 'radial-gradient(circle at 50% 35%, rgba(255,255,255,.07), transparent 70%)';
-      $('#nameCheng').textContent = c ? '承武 · ' + TIERS[c] + '档' : '承武 · 未领悟';
-      $('#slotCheng').classList.toggle('has', !!c);
-      $('#drawTitle').textContent = '第 ' + last.no + ' 次 · ' + (b ? b.name : '');
-      // 球下提示：已确认的词条 / 承武来源
-      $('#nameNing').innerHTML = last.ning
-        ? ('凝心 · ' + TIERS[last.ning] + '档' + (last.picked ? '<span style="color:var(--gold)"> · ' + esc(last.picked[1]) + '</span>' : '<span style="color:var(--dim)"> · 未选词条</span>'))
-        : '凝心 · 未领悟';
-      var srcB = last.chengSrc && SRC[last.chengSrc];
-      $('#nameCheng').innerHTML = last.cheng
-        ? ('承武 · ' + TIERS[last.cheng] + '档' + (srcB ? '<span style="color:var(--gold)"> · ' + esc(srcB.name) + '</span>' : '<span style="color:var(--dim)"> · 未选来源</span>'))
-        : '承武 · 未领悟';
+    // 中栏两个卡槽
+    if (b) {
+      $('#imgSlotBook').src = './img/xinfa/' + b.icon;
+      $('#labelSlotBook').textContent = (b.q === 2 ? '镇派' : '绝品') + '·' + b.name;
+      $('#dBookSub').textContent = '选择心法与衍心卷';
     } else {
-      ['#orbNing', '#orbCheng'].forEach(function (sel) {
-        var el = $(sel);
-        el.textContent = '？';
-        el.style.color = '#7f9ab8'; el.style.borderColor = '#23496f'; el.style.background = '';
-      });
-      $('#nameNing').textContent = '凝心';
-      $('#nameCheng').textContent = '承武';
-      $('#drawTitle').textContent = b ? '点击下方按钮衍心' : '选择心法开始衍心';
+      $('#imgSlotBook').removeAttribute('src');
+      $('#labelSlotBook').textContent = '选择心法';
     }
+    var jn = drawState ? (drawState.juan || 1) : 1;
+    $('#labelSlotJuan').textContent = (jn === 2 ? '镇派' : '绝品') + '·衍心卷';
+    $('#ticketName').textContent = (jn === 2 ? '镇派' : '绝品') + '·衍心卷';
+    $('#imgSlotJuan').src = './img/xinfa/book-' + (jn === 2 ? '523' : '510') + '.png';
 
-    // 保底
-    if (drawState && b) {
-      var gg = drawState.groups[q];
-      var th = THRESHOLDS[q];
-      $('#pityBody').innerHTML = Object.keys(th).map(function (t) {
-        var cur = gg.pity[t], lim = th[t];
-        var pct = Math.min(100, cur / lim * 100);
-        return '<div style="margin-bottom:9px">' +
-          '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--dim);margin-bottom:3px">' +
-            '<span>' + TIERS[t] + '档保底</span><span style="font-family:var(--mono);color:#bddaf1">' + cur + ' / ' + lim + '</span>' +
-          '</div>' +
-          '<div class="mile__bar" style="height:6px"><i style="width:' + pct + '%;background:linear-gradient(90deg,' + TCOL[t] + ',#ffdd95)"></i></div>' +
-        '</div>';
-      }).join('') + '<div class="kv"><span>累计衍心（本品质）</span><b>' + fmt(gg.total) + '</b></div>';
-    } else {
-      $('#pityBody').innerHTML = '<div class="empty">选一本心法</div>';
-    }
-
-    // 里程碑（衍心卷可 1:10 兑换衍心券）
-    if (drawState && b) {
-      var g3 = drawState.groups[q], need = MILESTONE[q];
-      var got = Math.floor(g3.total / need), claimed = g3.claimed;
-      var into = g3.total % need;
-      var canClaim = got - claimed;
-      $('#mileQ').textContent = '每 ' + need + ' 次得 1 卷';
-      $('#mileBody').innerHTML =
-        '<div class="kv"><span>已获衍心卷</span><b class="hl">' + got + ' 卷</b></div>' +
-        '<div class="kv"><span>当前进度</span><b>' + into + ' / ' + need + '</b></div>' +
-        '<div class="mile" style="margin-top:8px"><div class="mile__bar"><i style="width:' + (into / need * 100) + '%"></i></div></div>' +
-        '<div class="kv"><span>距下一卷</span><b>' + (need - into) + ' 次</b></div>' +
-        '<button class="dbtn" id="btnClaimJuan" type="button" style="min-width:0;width:100%;margin-top:8px;padding:8px 12px;font-size:12px"' + (canClaim > 0 ? '' : ' disabled') + '>领取 ' + canClaim + ' 卷 → 兑换 ' + (canClaim * 10) + ' 券</button>';
-      var bc = $('#btnClaimJuan');
-      if (bc && canClaim > 0) bc.addEventListener('click', function () {
-        drawState.tickets += canClaim * 10;
-        g3.claimed = got;
-        saveDraw(); renderDraw();
-        toast('已兑换 ' + (canClaim * 10) + ' 张衍心券');
-      });
-    } else {
-      $('#mileBody').innerHTML = '<div class="empty">—</div>';
-    }
-
-    // 衍心券
     if (drawState) $('#ticketCnt').textContent = drawState.tickets;
     $('#btnDraw1').disabled = !drawState || drawState.tickets < 1;
     $('#btnDraw5').disabled = !drawState || drawState.tickets < 5;
+    $('#drawTitle').textContent = b ? ('第 ' + (drawState.groups[q].total) + ' 次 · ' + b.name) : '选择心法开始衍心';
 
+    // 左：保底
+    var gt = THRESHOLDS[q];
+    $('#pityTitle').textContent = (q === 2 ? '镇派' : '绝品') + '保底';
+    $('#pityBody').innerHTML = drawState && b ? Object.keys(gt).map(function (t) {
+      var cur = drawState.groups[q].pity[t], lim = gt[t];
+      var pct = Math.min(100, cur / lim * 100);
+      return '<div style="margin-bottom:10px">' +
+        '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--dim);margin-bottom:3px">' +
+          '<span>必出承武 · ' + TIERS[t] + '</span><span style="font-family:var(--mono);color:#bddaf1">' + cur + ' / ' + lim + '</span>' +
+        '</div>' +
+        '<div class="mile__bar" style="height:5px"><i style="width:' + pct + '%;background:linear-gradient(90deg,' + TCOL[t] + ',#ffdd95)"></i></div>' +
+      '</div>';
+    }).join('') + '<div class="kv"><span>累计衍心</span><b>' + fmt(drawState.groups[q].total) + ' 次</b></div>'
+      : '<div class="empty">选一本心法</div>';
+
+    // 左：里程碑奖励（原站「累计衍心 N 次可获得」逐档解锁）
+    renderMilestone(q);
+
+    // 右：产物详情
     renderProduct();
+
+    // 心法库
+    renderInv();
 
     // 日志
     var log = drawState ? drawState.log : [];
@@ -878,108 +1100,286 @@ dialog::backdrop{background:rgba(4,10,18,.76)}
         return '<div class="dlrow">' +
           '<span class="dlrow__no">#' + x.no + '</span>' +
           '<span class="dlrow__tags">' + tierPill(x.ning, '凝心') + tierPill(x.cheng, '承武') +
-            (x.forced ? '<span class="pill pill--forced">保底触发</span>' : '') +
+            (x.picked ? '<span class="pill">' + esc(x.picked.name) + '</span>' : '') +
+            (x.chengSrc && SRC[x.chengSrc] ? '<span class="pill">' + esc(SRC[x.chengSrc].name) + '</span>' : '') +
+            (x.forced ? '<span class="pill pill--forced">保底</span>' : '') +
           '</span>' +
         '</div>';
       }).join('');
       $('#logMeta').textContent = '共 ' + log.length + ' 次';
     }
-    renderBooks('#books2', drawBook, function (id) { drawBook = id; saveDraw(); renderDraw(); });
   }
 
-  // ===== 产物属性（功力/属性预览 + 凝心承武加成）=====
-  var SRC = {};   // sourceId -> source
-  function tierOf(item) { return item.ning || 0; }
+  function renderMilestone(q) {
+    var g = drawState && drawState.groups[q];
+    var cfg = D.milestoneReward && D.milestoneReward[String(q)];
+    if (!g || !cfg) { $('#mileBody').innerHTML = '<div class="empty">—</div>'; $('#mileQ').textContent = '—'; return; }
+    var total = g.total;
+    $('#mileQ').textContent = '累计 ' + total + ' 次';
+    var html = '';
+    cfg.steps.forEach(function (s, i) {
+      var reached = total >= s.n;
+      var claimed = g.mileClaimed > i;
+      html += '<div class="mstep' + (reached ? ' is-ok' : '') + '">' +
+        '<div class="mstep__l"><span>' + s.n + ' 次</span>' +
+          '<em>' + esc(s.desc || (s.type + ' ×' + s.qty)) + '</em></div>' +
+        '<button class="dbtn" type="button" data-mile="' + i + '"' +
+          (reached && !claimed ? '' : ' disabled') + '>' + (claimed ? '已领取' : (reached ? '领取' : '尚未达到')) + '</button>' +
+      '</div>';
+    });
+    var rp = cfg.repeat;
+    var rpGot = Math.floor(total / rp.n);
+    html += '<div style="border-top:1px solid var(--line);margin-top:6px;padding-top:8px;font-size:11px;color:var(--dim);line-height:1.7">' +
+      '每 ' + fmt(rp.n) + ' 次可获得 ' + esc(rp.desc) + '<br />当前可领 <b style="color:var(--gold);font-family:var(--mono)">' + rpGot + '</b> 次</div>';
+    $('#mileBody').innerHTML = html;
+    $$('#mileBody [data-mile]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var i = Number(btn.dataset.mile);
+        var s = cfg.steps[i];
+        if (!s || total < s.n || g.mileClaimed > i) return;
+        g.mileClaimed = i + 1;
+        if (s.type === '残页') {
+          drawState.tickets += 0;
+          toast('已领取 ' + s.type + ' ×' + s.qty + '（残页可用于兑换衍心卷）');
+        } else {
+          toast('已领取 ' + s.type + '：' + (s.desc || ''));
+        }
+        saveDraw(); renderDraw();
+      });
+    });
+  }
 
-  function renderProduct() {
+  // 右侧产物详情（对齐原站：功力 / 明细 / 属性区间 / 凝心 / 承武）
+  function renderProduct(override) {
     var box = $('#productBox');
-    var b = drawBook ? BOOKS[drawBook] : null;
-    if (!b) { box.style.display = 'none'; return; }
-    var last = drawState && drawState.last;
-    var ning = last ? (last.ning || 0) : 0;
-    var cheng = last ? (last.cheng || 0) : 0;
-    var pv = D.preview && D.preview[String(b.id)];
-    var html = '<div class="product__head">' +
-      '<img src="./img/xinfa/' + esc(b.icon) + '" alt="" onerror="this.style.visibility=\'hidden\'" />' +
-      '<b>' + esc(b.name) + '</b><span>' + (b.q === 2 ? '镇派' : '绝品') + ' · 衍心产物属性预览</span></div>';
-    if (pv) {
-      html += '<table class="ptable"><tbody>' +
-        '<tr class="head"><td>属性</td><td style="text-align:right">最小 ~ 最大</td></tr>' +
-        pv.attrs.map(function (a) {
-          return '<tr><td>' + esc(a[0]) + '</td><td class="rng">' + esc(a[1]) + ' ~ ' + esc(a[2]) + '</td></tr>';
-        }).join('') +
-        '</tbody></table>' +
-        '<div class="psum"><span class="lbl">产物功力区间 <b>' + fmt(pv.power[0]) + ' ~ ' + fmt(pv.power[1]) + '</b></span>' +
-        '<span class="lbl">基础功力 <b>' + fmt(b.originalPower) + '</b></span></div>';
-    } else {
-      html += '<div class="psum"><span class="lbl">基础功力 <b>' + fmt(b.originalPower) + '</b></span>' +
-        '<span class="lbl">研习满级加成功力 <b>+' + fmt(b.upgradeGain) + '</b></span></div>';
+    var it = override || selInv();
+    if (!it) {
+      $('#pvTitle').textContent = '产物详情';
+      $('#pvCount').textContent = '';
+      box.innerHTML = '<div class="empty">先衍心获得产物</div>';
+      return;
     }
-    // 当前抽次凝心/承武加成功力
-    var parts = [];
-    if (ning && b.ningPower) parts.push('<span class="lbl">本次凝心（' + TIERS[ning] + '）加成功力 <b>+' + fmt(b.ningPower[ning]) + '</b></span>');
-    if (cheng && b.chengPower) parts.push('<span class="lbl">本次承武（' + TIERS[cheng] + '）加成功力 <b>+' + fmt(b.chengPower[cheng]) + '</b></span>');
-    if (last && last.picked) parts.push('<span class="lbl">已选凝心词条 <b>' + esc(last.picked[1]) + '</b></span>');
-    if (last && last.chengSrc && SRC[last.chengSrc]) parts.push('<span class="lbl">已选承武来源 <b>' + esc(SRC[last.chengSrc].name) + '</b></span>');
-    if (parts.length) html += '<div class="psum">' + parts.join('') + '</div>';
-    else if (last) html += '<div class="pickline">本次未领悟，无凝心/承武加成。</div>';
-    else html += '<div class="pickline">衍心一次后此处显示本次凝心/承武加成功力。</div>';
+    var b = BOOKS[it.book];
+    var pb = powerBreak(it);
+    $('#pvTitle').textContent = (b.q === 2 ? '镇派' : '绝品') + '·' + b.name;
+    $('#pvCount').textContent = '第 ' + it.seq + ' 本';
+
+    var pv = D.preview && D.preview[String(b.id)];
+    var html = '<div class="pv-power"><b>' + fmt(pb.base) + '</b><span class="to">›</span><b class="now">' + fmt(pb.total) + '</b></div>' +
+      '<div class="pv-sub">升级增量 +' + fmt(pb.upgrade) + ' 功力（不含凝心、承武与研习）</div>' +
+      '<div class="pv-break">' +
+        '<div><span>· 原心法</span><b>' + fmt(pb.base) + '</b></div>' +
+        '<div><span>· 升级增量</span><b>' + fmt(pb.upgrade) + '</b></div>' +
+        '<div><span>· 研习</span><b class="' + (pb.train ? '' : 'zero') + '">' + fmt(pb.train) + '</b></div>' +
+        '<div><span>· 凝心</span><b class="' + (pb.ning ? '' : 'zero') + '">' + fmt(pb.ning) + '</b></div>' +
+        '<div><span>· 承武</span><b class="' + (pb.cheng ? '' : 'zero') + '">' + fmt(pb.cheng) + '</b></div>' +
+      '</div>';
+
+    if (pv) {
+      html += '<div class="pv-attrs">' + pv.attrs.map(function (a) {
+        var maxed = it.train >= NODE_TOTAL;
+        return '<div class="r"><span>' + esc(a[0]) + '</span>' +
+          '<b class="' + (maxed ? 'on' : '') + '">' + esc(maxed ? a[2] : a[1]) + ' › ' + esc(a[2]) + '</b></div>';
+      }).join('') + '</div>';
+      html += '<div style="font-size:10.5px;color:var(--dim);margin-top:6px;line-height:1.6">' +
+        (it.train >= NODE_TOTAL ? '已研习满：显示满级属性' : '未研习：显示基础属性区间 › 满级上限') + '</div>';
+    }
+
+    // 凝心
+    html += '<div class="pv-ning"><h5>凝心 <em>额外领悟一条属性</em></h5>';
+    if (it.ningTier) {
+      if (it.ningName) {
+        html += '<div class="pv-choice is-on"><span>' + esc(it.ningName) + '</span><b>' + esc(it.ningVal || '') + '</b></div>';
+      } else {
+        html += '<div style="font-size:11px;color:var(--mist);margin-bottom:6px">已领悟 ' + TIERS[it.ningTier] + ' 档，待选择词条（' + (it.ningCands || []).length + ' 选 1）</div>';
+        html += '<button class="dbtn" id="btnPickNing" type="button" style="min-width:0;width:100%;padding:7px;font-size:11.5px">选择凝心词条</button>';
+      }
+    } else {
+      html += '<div style="font-size:11px;color:var(--dim)">未领悟</div>';
+    }
+    html += '</div>';
+
+    // 承武
+    html += '<div class="pv-ning"><h5>承武 <em>可承武心法技能</em></h5>';
+    if (it.chengTier) {
+      if (it.chengName) {
+        html += '<div class="pv-choice is-on"><span>' + esc(it.chengName) + '</span><b>' + Math.round((D.chengEff[String(it.chengTier)] || 0) * 100) + '%</b></div>';
+      } else {
+        html += '<div style="font-size:11px;color:var(--mist);margin-bottom:6px">已领悟 ' + TIERS[it.chengTier] + ' 档，待选择来源心法</div>' +
+          '<button class="dbtn" id="btnPickCheng" type="button" style="min-width:0;width:100%;padding:7px;font-size:11.5px">选择承武来源</button>';
+      }
+    } else {
+      html += '<div style="font-size:11px;color:var(--dim)">未领悟</div>';
+    }
+    html += '</div>';
+
     box.innerHTML = html;
-    box.style.display = 'block';
+    var pn = $('#btnPickNing'), pc = $('#btnPickCheng');
+    if (pn) pn.addEventListener('click', function () { openNingDlg(it); });
+    if (pc) pc.addEventListener('click', function () { openChengDlg(it); });
   }
 
-  // 凝心候选弹窗（5 选 1，可确认）
-  function showNing() {
-    var last = drawState && drawState.last;
-    if (!last || !last.ning) { toast('这次没有凝心结果'); return; }
-    var html = '<ul style="margin:0;padding-left:0;list-style:none;line-height:2;font-size:12.5px;color:var(--mist)">' +
-      last.cands.map(function (c, i) {
-        var on = last.picked && last.picked[0] === c[0] && last.picked[1] === c[1];
-        return '<li style="margin-bottom:6px"><button type="button" class="cand' + (on ? ' is-on' : '') + '" data-ning="' + i + '" style="width:100%">' +
-          '<b>' + esc(c[1]) + '</b><span>' + (on ? '已选择 · 点击取消' : '点击选择该词条') + '</span></button></li>';
-      }).join('') + '</ul>';
-    openDlg('凝心词条 · ' + TIERS[last.ning] + '档（5 选 1）', html);
-    $$('#dlgBody [data-ning]').forEach(function (el) {
+  // ===== 凝心 5 选 1 弹窗 =====
+  function openNingDlg(it) {
+    var cands = it.ningCands || [];
+    if (!cands.length) { toast('没有候选词条'); return; }
+    var pick = -1;
+    var html = '<div style="text-align:center;font-size:11.5px;color:#4a6b8f;margin-bottom:14px">' +
+        '下列属性的功力与战力完全相同，请选择 1 条' +
+        '<div style="margin-top:6px;font-size:11px;color:#6c8299">随机 5 选 1 · 功力 ' + fmt((BOOKS[it.book].ningPower || [])[it.ningTier] || 0) +
+        ' / 战力 ' + Math.round(((BOOKS[it.book].chengPower || [])[it.ningTier] || 0) * 0.167) + '</div>' +
+      '</div>' +
+      '<div class="ning-grid">' + cands.map(function (c, i) {
+        return '<button type="button" class="ning-opt" data-ni="' + i + '"><i></i>' + esc(c.name) + (c.val ? '<b>' + esc(c.val) + '</b>' : '') + '</button>';
+      }).join('') + '</div>' +
+      '<div class="wxdlg-note">凝心属性确认选择后不可更改</div>' +
+      '<div class="wxdlg-acts"><button type="button" class="ok" id="ningOk" disabled>凝心</button></div>';
+    openDlgRaw('心法凝心', html, 'wxdlg');
+    $$('#dlgBody [data-ni]').forEach(function (el) {
       el.addEventListener('click', function () {
-        var i = Number(el.dataset.ning);
-        if (last.picked && last.picked[0] === last.cands[i][0] && last.picked[1] === last.cands[i][1]) last.picked = null;
-        else last.picked = last.cands[i];
-        saveDraw(); $('#dlg').close(); renderDraw();
-        toast(last.picked ? '已确认凝心词条' : '已取消选择');
+        $$('#dlgBody [data-ni]').forEach(function (x) { x.classList.remove('is-on'); });
+        el.classList.add('is-on');
+        pick = Number(el.dataset.ni);
+        $('#ningOk').disabled = false;
       });
     });
-  }
-  // 承武来源选择（承武来源心法）
-  function showCheng() {
-    var last = drawState && drawState.last;
-    if (!last || !last.cheng) { toast('这次没有承武结果'); return; }
-    var html = '<p style="font-size:12px;color:var(--dim);margin:0 0 10px">选择一个来源心法，其技能将附到当前武学上（技能等级 ' + TIERS[last.cheng] + ' 档' + (last.forced ? '，本次由硬保底触发' : '') + '）。</p>' +
-      '<div class="cand-grid">' +
-      D.sources.map(function (s) {
-        var on = last.chengSrc === s.id;
-        return '<button type="button" class="cand' + (on ? ' is-on' : '') + '" data-src="' + s.id + '">' +
-          '<img src="./img/xinfa/' + esc(s.icon) + '" alt="" style="width:22px;height:22px;object-fit:contain;vertical-align:-5px;margin-right:6px" onerror="this.style.display=\'none\'" />' +
-          '<b style="display:inline">' + esc(s.name) + '</b>' +
-          '<span>' + (s.q === 2 ? '镇派' : (s.q === 1 ? '绝品' : '品质 ' + s.q)) + (on ? ' · 已选' : '') + '</span></button>';
-      }).join('') + '</div>';
-    openDlg('承武 · ' + TIERS[last.cheng] + '档 · 选择来源心法', html);
-    $$('#dlgBody [data-src]').forEach(function (el) {
-      el.addEventListener('click', function () {
-        var id = Number(el.dataset.src);
-        last.chengSrc = (last.chengSrc === id) ? null : id;
-        saveDraw(); $('#dlg').close(); renderDraw();
-        toast(last.chengSrc ? '已选择承武来源' : '已取消选择');
-      });
+    $('#ningOk').addEventListener('click', function () {
+      if (pick < 0) return;
+      var c = cands[pick];
+      it.ningName = c.name; it.ningVal = c.val; it.ningCands = null;
+      saveDraw(); $('#dlg').close(); renderDraw();
+      toast('已确认凝心：' + c.name);
     });
   }
+
+  // ===== 承武来源弹窗 =====
+  function openChengDlg(it) {
+    var b = BOOKS[it.book];
+    var eff = D.chengEff[String(it.chengTier)] || 0;
+    var html = '<div style="font-size:11.5px;color:#4a6b8f;margin-bottom:12px">' +
+        '可承武心法（心法技能升空满级后可被承武）· 本次效能 <b style="color:#1f3b5c">' + Math.round(eff * 100) + '%</b>' +
+      '</div>' +
+      '<div class="cheng-grid">' + D.sources.map(function (s) {
+        var dis = s.name === b.name;   // 不能承武同一种心法
+        return '<button type="button" class="cheng-opt' + (dis ? ' dis' : '') + (it.chengName === s.name ? ' is-on' : '') + '" data-cs="' + s.id + '"' + (dis ? ' disabled' : '') + '>' +
+          '<img src="./img/xinfa/' + esc(s.icon) + '" alt="" onerror="this.style.visibility=\'hidden\'" />' +
+          '<b>' + esc(s.name) + '</b><span>' + (s.q >= 3 ? '镇派' : '绝品') + ' · +' + fmt(500) + '</span></button>';
+      }).join('') + '</div>' +
+      '<div class="wxdlg-note">承武后无法更换；同名技能仅生效最强的一个</div>' +
+      '<div class="wxdlg-acts"><button type="button" class="ok" id="chengOk" disabled>承武</button></div>';
+    openDlgRaw('心法承武', html, 'wxdlg');
+    var pickId = null;
+    $$('#dlgBody [data-cs]').forEach(function (el) {
+      if (el.disabled) return;
+      el.addEventListener('click', function () {
+        $$('#dlgBody [data-cs]').forEach(function (x) { x.classList.remove('is-on'); });
+        el.classList.add('is-on');
+        pickId = Number(el.dataset.cs);
+        $('#chengOk').disabled = false;
+      });
+    });
+    $('#chengOk').addEventListener('click', function () {
+      if (!pickId) return;
+      it.chengName = SRC[pickId].name; it.chengSrc = pickId;
+      saveDraw(); $('#dlg').close(); renderDraw();
+      toast('已确认承武：' + it.chengName);
+    });
+  }
+
   function openDlg(title, html) {
     $('#dlgTitle').textContent = title;
     $('#dlgBody').innerHTML = html;
     var d = $('#dlg');
     if (!d.open) d.showModal();
   }
+  // 原站米色风格弹窗
+  function openDlgRaw(title, html, cls) {
+    $('#dlgTitle').textContent = title;
+    $('#dlgBody').innerHTML = html;
+    var d = $('#dlg');
+    d.classList.toggle('wxdlg', cls === 'wxdlg');
+    if (!d.open) d.showModal();
+  }
   $('#dlgX').addEventListener('click', function () { $('#dlg').close(); });
   $('#dlg').addEventListener('click', function (e) { if (e.target === this) this.close(); });
+
+  // ===== 卡槽选择：心法 / 衍心卷 =====
+  function openBookPick() {
+    var html = '<div class="dx-note" style="font-size:11.5px;color:#4a6b8f;margin-bottom:10px">选择要衍心的心法（衍心卷品质需与心法一致）</div>' +
+      '<div class="slot-pick">' + D.books.map(function (b) {
+        return '<button type="button" data-pb="' + b.id + '"' + (drawBook === b.id ? ' class="is-on"' : '') + '>' +
+          '<img src="./img/xinfa/' + esc(b.icon) + '" alt="" onerror="this.style.visibility=\'hidden\'" />' +
+          '<b>' + esc(b.name) + '</b><span>' + (b.q === 2 ? '镇派' : '绝品') + '</span></button>';
+      }).join('') + '</div>';
+    openDlgRaw('选择心法', html, 'wxdlg');
+    $$('#dlgBody [data-pb]').forEach(function (el) {
+      el.addEventListener('click', function () {
+        var id = Number(el.dataset.pb);
+        drawBook = id;
+        drawState.book = id;
+        drawState.juan = BOOKS[id].q;   // 卷品质跟随心法
+        saveDraw(); $('#dlg').close(); renderDraw();
+        toast('已选：' + BOOKS[id].name);
+      });
+    });
+  }
+  function openJuanPick() {
+    var html = '<div style="font-size:11.5px;color:#4a6b8f;margin-bottom:10px">衍心卷不限量，仅记录消耗抽数；卷品质需与心法一致</div>' +
+      '<div class="slot-pick">' +
+        '<button type="button" data-pj="1"' + (drawState.juan === 1 ? ' class="is-on"' : '') + '>' +
+          '<img src="./img/xinfa/book-510.png" alt="" /><b>绝品·衍心卷</b><span>40 绑点 / 张</span></button>' +
+        '<button type="button" data-pj="2"' + (drawState.juan === 2 ? ' class="is-on"' : '') + '>' +
+          '<img src="./img/xinfa/book-523.png" alt="" /><b>镇派·衍心卷</b><span>360 元 / 张（约）</span></button>' +
+      '</div>';
+    openDlgRaw('选择衍心卷', html, 'wxdlg');
+    $$('#dlgBody [data-pj]').forEach(function (el) {
+      el.addEventListener('click', function () {
+        drawState.juan = Number(el.dataset.pj);
+        saveDraw(); $('#dlg').close(); renderDraw();
+        toast('已切换衍心卷品质');
+      });
+    });
+  }
+
+  // 生成产物到心法库
+  function makeProduct(item) {
+    var b = BOOKS[item.book];
+    drawState.invSeq = (drawState.invSeq || 0) + 1;
+    var ningCands = null;
+    if (item.ning) {
+      ningCands = (item.cands || []).slice();
+    }
+    var prod = {
+      id: drawState.invSeq,
+      seq: drawState.invSeq,
+      book: item.book,
+      juan: b.q,
+      ningTier: item.ning || 0,
+      ningName: null,
+      ningVal: null,
+      ningCands: ningCands,
+      chengTier: item.cheng || 0,
+      chengName: null,
+      chengSrc: null,
+      train: 0,
+      isNew: true
+    };
+    // 已有的旧产物去掉 new 标记
+    drawState.inv.forEach(function (x) { x.isNew = false; });
+    drawState.inv.push(prod);
+    if (drawState.inv.length > 60) drawState.inv.shift();
+    return prod;
+  }
+  // 衍心完成后：自动建产物；有凝心的自动弹选择
+  function afterDraw() {
+    var last = drawState.last;
+    if (!last) return;
+    var prod = makeProduct(last);
+    selectedInv = prod.id;
+    last.prodId = prod.id;
+    saveDraw();
+    if (prod.ningTier) openNingDlg(prod);
+  }
 
   // ===== 事件 =====
   $('#q').addEventListener('input', function () {
@@ -1022,10 +1422,19 @@ dialog::backdrop{background:rgba(4,10,18,.76)}
     renderDraw();
     toast('已重置');
   });
-  $('#slotNing').addEventListener('click', showNing);
-  $('#slotCheng').addEventListener('click', showCheng);
-  $('#slotNing').addEventListener('keydown', function (e) { if (e.key === 'Enter') showNing(); });
-  $('#slotCheng').addEventListener('keydown', function (e) { if (e.key === 'Enter') showCheng(); });
+  $('#slotBook').addEventListener('click', openBookPick);
+  $('#slotJuan').addEventListener('click', openJuanPick);
+  $('#slotBook').addEventListener('keydown', function (e) { if (e.key === 'Enter') openBookPick(); });
+  $('#slotJuan').addEventListener('keydown', function (e) { if (e.key === 'Enter') openJuanPick(); });
+  $('#btnDismantle').addEventListener('click', function () {
+    if (!drawState.inv.length) { toast('心法库是空的'); return; }
+    var sel = selInv();
+    if (!sel) return;
+    if (!confirm('分解「' + BOOKS[sel.book].name + '」？不可恢复。')) return;
+    drawState.inv = drawState.inv.filter(function (x) { return x.id !== sel.id; });
+    selectedInv = null;
+    saveDraw(); renderDraw(); toast('已分解');
+  });
 
   // 标签页
   $$('#tabs .tab').forEach(function (b) {
@@ -1057,11 +1466,21 @@ dialog::backdrop{background:rgba(4,10,18,.76)}
 
       loadMap(); loadDraw();
       if (!drawState) drawState = freshDraw();
-      if (drawState.tickets == null) drawState.tickets = 10;
+      if (drawState.tickets == null) drawState.tickets = 46;
+      if (!Array.isArray(drawState.inv)) drawState.inv = [];
+      if (!drawState.invSeq) drawState.invSeq = drawState.inv.length;
       (D.sources || []).forEach(function (s) { SRC[s.id] = s; });
+      // 旧版 slots 兼容：把老 last 转成心法库产物
+      if (!drawState.inv.length && drawState.last && drawState.last.book) {
+        var lp = makeProduct(drawState.last);
+        if (drawState.last.picked) { lp.ningName = drawState.last.picked.name || ''; }
+        selectedInv = lp.id;
+      }
 
       curBook = d.books[0].id;
       drawBook = drawState.book && BOOKS[drawState.book] ? drawState.book : d.books[0].id;
+      drawState.juan = BOOKS[drawBook].q;
+      if (drawState.inv.length) selectedInv = drawState.inv[drawState.inv.length - 1].id;
 
       renderBooks('#books', curBook, selectBook);
       renderMap();
