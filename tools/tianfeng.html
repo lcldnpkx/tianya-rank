@@ -237,7 +237,20 @@ table.acct td{color:var(--fog)}
 .dlgpick__opt.is-on{border-color:var(--gold);background:rgba(255,221,149,.14);color:var(--gold)}
 .dlgpick__opt b{display:block;font-size:11px;color:var(--dim);font-weight:400;margin-top:2px}
 .dlgpick__opt.is-on b{color:rgba(255,221,149,.75)}
+.dlgpick__opt.is-static{cursor:default;border-color:rgba(159,230,194,.35);background:rgba(159,230,194,.07);color:var(--mist)}
+.dlgpick__opt.is-static:hover{border-color:rgba(159,230,194,.35);color:var(--mist)}
 .dlgpick__hint{margin:8px 0 0;font-size:10.5px;color:var(--dim)}
+.tf-toast{
+  position:fixed;left:50%;bottom:26px;transform:translate(-50%,10px);
+  padding:6px 15px;font-size:12px;color:var(--gold);
+  background:rgba(16,41,74,.95);border:2px solid var(--gold);z-index:99;
+  opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;
+}
+.tf-toast.is-on{opacity:1;transform:translate(-50%,0)}
+.dlgpick__level+.dlgpick__level{margin-top:12px;padding-top:11px;border-top:1px dashed rgba(35,73,111,.8)}
+.dlgpick__sub{margin:0 0 7px;font-size:11px;color:var(--gold-dim)}
+.dlgpick__list--sub{grid-template-columns:repeat(auto-fill,minmax(132px,1fr))}
+.dlgpick__list--sub .dlgpick__opt{font-size:11.5px;padding:7px 9px}
 
 dialog{
   width:min(560px,92vw);
@@ -424,7 +437,7 @@ dialog::backdrop{background:rgba(4,10,18,.72)}
     <div class="dlgpick" id="milePick" hidden>
       <h4 id="milePickTitle">打开后选择获得以下任一道具</h4>
       <div class="dlgpick__list" id="milePickList"></div>
-      <p class="dlgpick__hint">未选择时默认取第一项</p>
+      <p class="dlgpick__hint">绿色为必得内容；如需选择，请点选其中一项</p>
     </div>
     <p class="luck" id="mileDesc"></p>
     <div class="dlg__actions">
@@ -440,7 +453,7 @@ dialog::backdrop{background:rgba(4,10,18,.72)}
     <div class="dlgpick" id="dlgPick" hidden>
       <h4 id="dlgPickTitle">打开后选择获得以下任一道具</h4>
       <div class="dlgpick__list" id="dlgPickList"></div>
-      <p class="dlgpick__hint" id="dlgPickHint">未选择时默认取第一项</p>
+      <p class="dlgpick__hint" id="dlgPickHint">绿色为必得内容；如需选择，请点选其中一项</p>
     </div>
     <div class="bonus" id="dlgBonus" hidden>
       <h4 id="dlgBonusTitle"></h4>
@@ -461,6 +474,19 @@ dialog::backdrop{background:rgba(4,10,18,.72)}
   var $ = function (s) { return document.querySelector(s); };
   var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
   var TOKEN_PRICE = 600;
+
+  var toastEl = null, toastTimer = null;
+  function toast(msg) {
+    if (!toastEl) {
+      toastEl = document.createElement('div');
+      toastEl.className = 'tf-toast';
+      document.body.appendChild(toastEl);
+    }
+    toastEl.textContent = msg;
+    toastEl.classList.add('is-on');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toastEl.classList.remove('is-on'); }, 1900);
+  }
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
@@ -548,13 +574,20 @@ dialog::backdrop{background:rgba(4,10,18,.72)}
     var m = it.description.match(/\[gold\]([\s\S]*?)\[\/gold\]/);
     if (!m) return [];
     return m[1]
-      .split(/\n|、|；|;|\s\/\s/)
+      .split(/\n|、|；|;|,|，|\s\/\s/)
       .map(function (x) { return x.trim().replace(/^[，,。]\s*/, '').replace(/[。]$/, ''); })
       .filter(function (x) { return x.length > 1; })
       // 去掉描述性的补充说明（“同时获得…”“随后进入…”“可在…”），只留真正的可选项
       .filter(function (x) { return !/同时获得|随后|以下任一|开启|可获得|可在|本轮已选/.test(x); })
       .filter(function (x) { return x.length <= 60; });
   }
+  // 描述里是“任选其一”还是“全部获得”
+  function pickMode(itemId) {
+    var it = catalog[itemId];
+    var d = (it && it.description) || '';
+    return /任选|任一|可选择|选择获得|任选其一/.test(d) ? 'pick' : 'all';
+  }
+
   function parseQty(txt) {
     var m = String(txt).match(/^(.*?)(?:[×xX*]\s*(\d+))?$/);
     return m ? { name: (m[1] || txt).trim(), qty: Number(m[2] || 1) } : { name: txt, qty: 1 };
@@ -863,7 +896,7 @@ dialog::backdrop{background:rgba(4,10,18,.72)}
     if (state.mileClaimed[i]) { toast('该档位已领取'); return; }
     mileIdx = i;
     var name = D.milestones[i];
-    var itemId = itemNameToId(name);
+    var itemId = (D.milestoneItems && D.milestoneItems[i]) || itemNameToId(name);
     $('#mileTitle').textContent = '里程碑奖励 · 累计消耗 ' + fmt(need) + ' 张';
     $('#mileItem').innerHTML = iconHtml(itemId || '') +
       '<div style="text-align:left"><h3>' + esc(name) + '</h3><p>× 1</p></div>';
@@ -879,8 +912,9 @@ dialog::backdrop{background:rgba(4,10,18,.72)}
     var name = D.milestones[i];
     addGain({ itemId: 'mile:' + name, name: name, grade: 'S', quantity: '× 1', type: 'item' }, state.round);
     if (milePickRef) {
-      var t = milePickRef.get();
-      if (t) { var p = parseQty(t); addGain({ itemId: 'pick:' + p.name, name: p.name, grade: 'S', quantity: '× ' + p.qty, type: 'item' }, state.round); }
+      milePickRef.items().forEach(function (sel) {
+        addGain({ itemId: 'pick:' + sel.name, name: sel.name, grade: 'S', quantity: '× ' + sel.qty, type: 'item' }, state.round);
+      });
       milePickRef = null;
     }
     state.mileClaimed[i] = true;
@@ -933,31 +967,128 @@ dialog::backdrop{background:rgba(4,10,18,.72)}
       '<p class="acct-total">共消耗令牌 <b>' + fmt(paid) + '</b> 张；里程碑按原价累计 <b>' + fmt(spend) + '</b> 张；自动购入 <b>' + fmt(bought) + '</b> 张 ≈ <b>' + fmt(bought * TOKEN_PRICE) + '</b> 点券</p>';
   }
 
-  // ---------- 自选渲染 ----------
-  // 渲染一组选项，返回当前选中项；点击更新选中态
+  // ---------- 自选渲染（支持两层：礼盒 → 自选礼 → 具体道具）----------
+  function itemIdByName(name) {
+    var hit = null;
+    D.items.forEach(function (it) { if (!hit && it.name === name) hit = it.id; });
+    return hit;
+  }
+  // 渲染 itemId 的选项；某一项若本身是“自选礼”则继续下钻一层。
+  // 返回 { get(): {name, qty, path:[...]} }
   function renderPick(boxSel, listSel, titleSel, itemId, onPick) {
     var box = $(boxSel), list = $(listSel);
-    var opts = choicesOf(itemId);
-    if (!opts.length) { box.hidden = true; list.innerHTML = ''; return null; }
-    box.hidden = false;
-    var picked = opts[0];
-    list.innerHTML = opts.map(function (t, i) {
-      var p = parseQty(t);
-      return '<button type="button" class="dlgpick__opt' + (i === 0 ? ' is-on' : '') + '" data-opt="' + i + '">' +
-        esc(p.name) + (p.qty > 1 ? '<b>× ' + p.qty + '</b>' : '') + '</button>';
-    }).join('');
-    $$(listSel + ' [data-opt]').forEach(function (b) {
-      b.addEventListener('click', function () {
-        $$(listSel + ' [data-opt]').forEach(function (x) { x.classList.remove('is-on'); });
-        b.classList.add('is-on');
-        picked = opts[Number(b.dataset.opt)];
-        if (onPick) onPick(picked);
+    var picked = null;
+    var chain = [];                       // 已选路径
+    var isAll = pickMode(itemId) === 'all';   // “开启获得”= 全部到手，不用选
+
+    function nodesHtml(opts, depth, parentCls) {
+      return '<div class="dlgpick__list' + (depth > 0 ? ' dlgpick__list--sub' : '') + '" data-depth="' + depth + '">' +
+        opts.map(function (t, i) {
+          return '<button type="button" class="dlgpick__opt" data-opt="' + i + '" data-depth="' + depth + '">' +
+            esc(t) + '</button>';
+        }).join('') + '</div>';
+    }
+
+    function levelHtml(depth, opts, label) {
+      return '<div class="dlgpick__level" data-level="' + depth + '">' +
+        (depth > 0 ? '<p class="dlgpick__sub">' + esc(label) + ' 的具体内容：</p>' : '') +
+        nodesHtml(opts, depth) + '</div>';
+    }
+
+    function draw() {
+      var opts = choicesOf(itemId);
+      if (!opts.length) { box.hidden = true; list.innerHTML = ''; picked = null; return; }
+      box.hidden = false;
+      var lvl = 0, cur = itemId, html = '';
+      while (true) {
+        var o = choicesOf(cur);
+        if (!o.length) break;
+        html += levelHtml(lvl, o, lvl === 0 ? '' : chain[lvl - 1].name);
+        lvl++;
+        // 若当前路径已选到某一项，并且它是自选礼，继续下钻
+        if (chain[lvl - 1]) {
+          var sub = itemIdByName(parseQty(chain[lvl - 1].text).name);
+          var subOpts = sub ? choicesOf(sub) : [];
+          if (subOpts.length) { cur = sub; continue; }
+        }
+        break;
+      }
+      list.innerHTML = html;
+      bind();
+    }
+
+    function bind() {
+      $$(listSel + ' .dlgpick__opt').forEach(function (b) {
+        b.addEventListener('click', function () {
+          var depth = Number(b.dataset.depth);
+          var parentId = itemId;
+          // 找到该层对应的父物品
+          if (depth > 0) {
+            var sel = chain[depth - 1];
+            parentId = itemIdByName(parseQty(sel.text).name) || itemId;
+          }
+          var opts = choicesOf(parentId);
+          var txt = opts[Number(b.dataset.opt)];
+          chain = chain.slice(0, depth);
+          chain.push({ text: txt, name: parseQty(txt).name, qty: parseQty(txt).qty });
+          // 若该选项自身还能展开，继续下钻；否则视为最终选择
+          var subId = itemIdByName(chain[depth].name);
+          var subOpts = subId ? choicesOf(subId) : [];
+          if (subOpts.length) {
+            chain.length = depth + 1;
+            draw();
+            // 让新出现的那一层高亮待选
+            var next = list.querySelector('[data-level="' + (depth + 1) + '"]');
+            if (next) next.scrollIntoView({ block: 'nearest' });
+            picked = null;
+          } else {
+            chain.length = depth + 1;
+            picked = { name: chain[depth].name, qty: chain[depth].qty, text: chain[depth].text,
+                       path: chain.map(function (x) { return x.text; }) };
+            markSel(depth, Number(b.dataset.opt));
+            if (onPick) onPick(picked);
+          }
+        });
       });
-    });
-    return { opts: opts, get: function () { return picked; } };
+    }
+
+    function markSel(depth, idx) {
+      $$(listSel + ' .dlgpick__opt').forEach(function (x) { x.classList.remove('is-on'); });
+      var b = list.querySelector('.dlgpick__opt[data-depth="' + depth + '"][data-opt="' + idx + '"]');
+      if (b) b.classList.add('is-on');
+    }
+
+    draw();
+    if (isAll) {
+      $$(listSel + ' .dlgpick__opt').forEach(function (x) {
+        x.classList.add('is-static');
+        x.setAttribute('aria-disabled', 'true');
+      });
+    }
+
+    return {
+      all: isAll,
+      get: function () { return picked; },
+      // 全部获得时返回所有项；未选择时取第一项兜底
+      items: function () {
+        var opts = choicesOf(itemId);
+        if (isAll) return opts.map(function (t) { var p = parseQty(t); return { name: p.name, qty: p.qty, text: t, path: [t] }; });
+        if (picked) return [picked];
+        if (!opts.length) return [];
+        var p0 = parseQty(opts[0]);
+        return [{ name: p0.name, qty: p0.qty, text: opts[0], path: [opts[0]] }];
+      },
+      fallback: function () {
+        if (picked) return picked;
+        var opts = choicesOf(itemId);
+        if (!opts.length) return null;
+        var t = opts[0], p = parseQty(t);
+        return { name: p.name, qty: p.qty, text: t, path: [t] };
+      }
+    };
   }
 
-  // ---------- 结果弹窗 ----------
+  // ---------- 结果弹窗 ----------  // ---------- 结果弹窗 ----------
   function showResult(r) {
     var dlg = $('#resultDlg');
     var done = state.finished;
@@ -1006,11 +1137,12 @@ dialog::backdrop{background:rgba(4,10,18,.72)}
   var pickRef = null;
   function commitPick() {
     if (!pickRef) return;
-    var t = pickRef.get();
-    if (!t) return;
-    var p = parseQty(t);
-    addGain({ itemId: 'pick:' + p.name, name: p.name, grade: 'S', quantity: '× ' + p.qty, type: 'item' }, state.round);
+    var list = pickRef.items();
     pickRef = null;
+    if (!list || !list.length) return;
+    list.forEach(function (sel) {
+      addGain({ itemId: 'pick:' + sel.name, name: sel.name, grade: 'S', quantity: '× ' + sel.qty, type: 'item' }, state.round);
+    });
     save();
   }
   $('#dlgOk').addEventListener('click', function () { commitPick(); $('#resultDlg').close(); render(); });
