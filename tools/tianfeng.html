@@ -188,6 +188,14 @@ body{
 .mile span{display:block;line-height:1.35;min-height:29px}
 .mile.done{border-color:rgba(255,221,149,.6);color:var(--gold)}
 .mile.done b{color:var(--gold)}
+/* 可点击领取的里程碑 */
+button.mile{font-family:inherit;cursor:pointer;transition:border-color .14s,background .14s}
+button.mile:not([disabled]):hover{border-color:var(--gold);background:rgba(255,221,149,.1)}
+button.mile[disabled]{cursor:not-allowed;opacity:.55}
+button.mile:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.mile.claimed{border-color:rgba(159,230,194,.5)}
+.mile em{display:block;font-style:normal;font-size:10px;margin-top:4px;color:var(--gold)}
+.mile.claimed em{color:var(--ok)}
 
 /* 面板 */
 .panel{background:rgba(13,35,64,.5);border:2px solid var(--line);margin-bottom:14px}
@@ -216,6 +224,21 @@ table.acct td{color:var(--fog)}
 .btn--gold:hover{background:rgba(255,221,149,.16)}
 
 /* 结果弹窗 */
+/* 自选奖励 */
+.dlgpick{margin-top:14px;padding:12px;background:rgba(9,24,42,.6);border:1px solid var(--line)}
+.dlgpick[hidden]{display:none}
+.dlgpick h4{margin:0 0 9px;font-size:12px;color:var(--gold);font-weight:600;letter-spacing:.03em}
+.dlgpick__list{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:7px}
+.dlgpick__opt{
+  padding:9px 11px;text-align:left;cursor:pointer;font-family:inherit;font-size:12px;
+  background:#12304f;border:2px solid var(--line-2);color:var(--mist);line-height:1.45;
+}
+.dlgpick__opt:hover{border-color:rgba(255,221,149,.55);color:var(--gold)}
+.dlgpick__opt.is-on{border-color:var(--gold);background:rgba(255,221,149,.14);color:var(--gold)}
+.dlgpick__opt b{display:block;font-size:11px;color:var(--dim);font-weight:400;margin-top:2px}
+.dlgpick__opt.is-on b{color:rgba(255,221,149,.75)}
+.dlgpick__hint{margin:8px 0 0;font-size:10.5px;color:var(--dim)}
+
 dialog{
   width:min(560px,92vw);
   padding:0;border:2px solid rgba(255,221,149,.5);
@@ -394,10 +417,31 @@ dialog::backdrop{background:rgba(4,10,18,.72)}
 
 </main>
 
+<dialog id="mileDlg">
+  <div class="dlg__body">
+    <p class="dlg__title" id="mileTitle">里程碑奖励</p>
+    <div class="dlg__item" id="mileItem"></div>
+    <div class="dlgpick" id="milePick" hidden>
+      <h4 id="milePickTitle">打开后选择获得以下任一道具</h4>
+      <div class="dlgpick__list" id="milePickList"></div>
+      <p class="dlgpick__hint">未选择时默认取第一项</p>
+    </div>
+    <p class="luck" id="mileDesc"></p>
+    <div class="dlg__actions">
+      <button class="btn btn--gold" id="mileOk" type="button">领取</button>
+    </div>
+  </div>
+</dialog>
+
 <dialog id="resultDlg">
   <div class="dlg__body">
     <p class="dlg__title" id="dlgTitle">恭喜获得</p>
     <div class="dlg__item" id="dlgItem"></div>
+    <div class="dlgpick" id="dlgPick" hidden>
+      <h4 id="dlgPickTitle">打开后选择获得以下任一道具</h4>
+      <div class="dlgpick__list" id="dlgPickList"></div>
+      <p class="dlgpick__hint" id="dlgPickHint">未选择时默认取第一项</p>
+    </div>
     <div class="bonus" id="dlgBonus" hidden>
       <h4 id="dlgBonusTitle"></h4>
       <div class="bonus-list" id="dlgBonusList"></div>
@@ -415,6 +459,7 @@ dialog::backdrop{background:rgba(4,10,18,.72)}
 
   var LS = 'cy:tianfeng:v1';
   var $ = function (s) { return document.querySelector(s); };
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
   var TOKEN_PRICE = 600;
 
   function esc(s) {
@@ -444,7 +489,8 @@ dialog::backdrop{background:rgba(4,10,18,.72)}
       finished: false,
       // 累计获得：key -> { key, itemId, name, grade, round, qty, n, gift }
       gains: {},
-      gainLog: []            // 逐次抽取记录（新在前）
+      gainLog: [],           // 逐次抽取记录（新在前）
+      mileClaimed: {}        // 里程碑已领取：index -> true
     };
   }
 
@@ -483,6 +529,7 @@ dialog::backdrop{background:rgba(4,10,18,.72)}
           });
           if (!o.gains) o.gains = {};
           if (!o.gainLog) o.gainLog = [];
+          if (!o.mileClaimed || typeof o.mileClaimed !== 'object') o.mileClaimed = {};
           if (!o.nextRate && o.nextRate !== 0) o.nextRate = 1;
           if (!o.phase) o.phase = 'select';
           state = o; return true;
@@ -493,6 +540,25 @@ dialog::backdrop{background:rgba(4,10,18,.72)}
   }
 
   function itemOf(id) { return catalog[id]; }
+
+  // 从物品描述里解析「任选其一」的选项（数据里用 [gold]...[/gold] 包裹）
+  function choicesOf(itemId) {
+    var it = catalog[itemId];
+    if (!it || !it.description) return [];
+    var m = it.description.match(/\[gold\]([\s\S]*?)\[\/gold\]/);
+    if (!m) return [];
+    return m[1]
+      .split(/\n|、|；|;|\s\/\s/)
+      .map(function (x) { return x.trim().replace(/^[，,。]\s*/, '').replace(/[。]$/, ''); })
+      .filter(function (x) { return x.length > 1; })
+      // 去掉描述性的补充说明（“同时获得…”“随后进入…”“可在…”），只留真正的可选项
+      .filter(function (x) { return !/同时获得|随后|以下任一|开启|可获得|可在|本轮已选/.test(x); })
+      .filter(function (x) { return x.length <= 60; });
+  }
+  function parseQty(txt) {
+    var m = String(txt).match(/^(.*?)(?:[×xX*]\s*(\d+))?$/);
+    return m ? { name: (m[1] || txt).trim(), qty: Number(m[2] || 1) } : { name: txt, qty: 1 };
+  }
   function iconHtml(itemId, cls) {
     var it = itemOf(itemId);
     var url = it && it.iconUrl ? D.imgBase + it.iconUrl : '';
@@ -764,13 +830,66 @@ dialog::backdrop{background:rgba(4,10,18,.72)}
     return null; // 礼包数量在结算弹窗中展示
   }
 
+  function itemNameToId(name) {
+    var hit = null;
+    D.items.forEach(function (it) { if (!hit && it.name === name) hit = it.id; });
+    return hit;
+  }
+
   function renderMiles() {
     var spent = state.spend.reduce(function (a, b) { return a + b; }, 0);
-    $('#mileSpent').textContent = '累计消耗（原价）' + fmt(spent) + ' 张';
+    state.mileClaimed = state.mileClaimed || {};
+    $('#mileSpent').textContent = '累计消耗（原价）' + fmt(spent) + ' 张 · 点击已解锁档位领取';
     $('#mileTrack').innerHTML = D.thresholds.map(function (n, i) {
-      return '<div class="mile' + (spent >= n ? ' done' : '') + '"><b>' + fmt(n) + ' 张</b><span>' + esc(D.milestones[i]) + '</span></div>';
+      var done = spent >= n;
+      var claimed = !!state.mileClaimed[i];
+      var cls = 'mile' + (done ? ' done' : '') + (claimed ? ' claimed' : '');
+      return '<button type="button" class="' + cls + '" data-mile="' + i + '"' + (done ? '' : ' disabled') + '>' +
+        '<b>' + fmt(n) + ' 张</b><span>' + esc(D.milestones[i]) + '</span>' +
+        (claimed ? '<em>已领取</em>' : (done ? '<em>可领取 · 点击</em>' : '')) +
+      '</button>';
     }).join('');
+    $$('#mileTrack [data-mile]').forEach(function (b) {
+      b.addEventListener('click', function () { openMile(Number(b.dataset.mile)); });
+    });
   }
+
+  // 里程碑领取：展示奖励并支持自选
+  var milePickRef = null, mileIdx = -1;
+  function openMile(i) {
+    var spent = state.spend.reduce(function (a, b) { return a + b; }, 0);
+    var need = D.thresholds[i];
+    if (spent < need) return;
+    if (state.mileClaimed[i]) { toast('该档位已领取'); return; }
+    mileIdx = i;
+    var name = D.milestones[i];
+    var itemId = itemNameToId(name);
+    $('#mileTitle').textContent = '里程碑奖励 · 累计消耗 ' + fmt(need) + ' 张';
+    $('#mileItem').innerHTML = iconHtml(itemId || '') +
+      '<div style="text-align:left"><h3>' + esc(name) + '</h3><p>× 1</p></div>';
+    milePickRef = renderPick('#milePick', '#milePickList', '#milePickTitle', itemId);
+    var desc = itemId && catalog[itemId] ? (catalog[itemId].description || '') : '';
+    $('#mileDesc').textContent = desc.replace(/\[\/?gold\]/g, '');
+    var d = $('#mileDlg');
+    if (!d.open) d.showModal();
+  }
+  $('#mileOk').addEventListener('click', function () {
+    var i = mileIdx;
+    if (i < 0 || state.mileClaimed[i]) { $('#mileDlg').close(); return; }
+    var name = D.milestones[i];
+    addGain({ itemId: 'mile:' + name, name: name, grade: 'S', quantity: '× 1', type: 'item' }, state.round);
+    if (milePickRef) {
+      var t = milePickRef.get();
+      if (t) { var p = parseQty(t); addGain({ itemId: 'pick:' + p.name, name: p.name, grade: 'S', quantity: '× ' + p.qty, type: 'item' }, state.round); }
+      milePickRef = null;
+    }
+    state.mileClaimed[i] = true;
+    save();
+    $('#mileDlg').close();
+    render();
+    toast('已领取：' + name);
+  });
+  $('#mileDlg').addEventListener('close', function () { milePickRef = null; });
 
   function renderGains() {
     var list = Object.keys(state.gains || {}).map(function (k) { return state.gains[k]; });
@@ -814,6 +933,30 @@ dialog::backdrop{background:rgba(4,10,18,.72)}
       '<p class="acct-total">共消耗令牌 <b>' + fmt(paid) + '</b> 张；里程碑按原价累计 <b>' + fmt(spend) + '</b> 张；自动购入 <b>' + fmt(bought) + '</b> 张 ≈ <b>' + fmt(bought * TOKEN_PRICE) + '</b> 点券</p>';
   }
 
+  // ---------- 自选渲染 ----------
+  // 渲染一组选项，返回当前选中项；点击更新选中态
+  function renderPick(boxSel, listSel, titleSel, itemId, onPick) {
+    var box = $(boxSel), list = $(listSel);
+    var opts = choicesOf(itemId);
+    if (!opts.length) { box.hidden = true; list.innerHTML = ''; return null; }
+    box.hidden = false;
+    var picked = opts[0];
+    list.innerHTML = opts.map(function (t, i) {
+      var p = parseQty(t);
+      return '<button type="button" class="dlgpick__opt' + (i === 0 ? ' is-on' : '') + '" data-opt="' + i + '">' +
+        esc(p.name) + (p.qty > 1 ? '<b>× ' + p.qty + '</b>' : '') + '</button>';
+    }).join('');
+    $$(listSel + ' [data-opt]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        $$(listSel + ' [data-opt]').forEach(function (x) { x.classList.remove('is-on'); });
+        b.classList.add('is-on');
+        picked = opts[Number(b.dataset.opt)];
+        if (onPick) onPick(picked);
+      });
+    });
+    return { opts: opts, get: function () { return picked; } };
+  }
+
   // ---------- 结果弹窗 ----------
   function showResult(r) {
     var dlg = $('#resultDlg');
@@ -822,6 +965,17 @@ dialog::backdrop{background:rgba(4,10,18,.72)}
     var w = r.winner;
     $('#dlgItem').innerHTML = iconHtml(w.itemId) +
       '<div style="text-align:left"><h3>' + esc(w.name) + '</h3><p>' + esc(w.quantity) + '</p></div>';
+
+    // 秘藏 / 天峰遗珍：让玩家选择要拿的道具
+    pickRef = null;
+    if (w.type === 'treasure') {
+      pickRef = renderPick('#dlgPick', '#dlgPickList', '#dlgPickTitle', w.itemId);
+    } else if (done) {
+      pickRef = renderPick('#dlgPick', '#dlgPickList', '#dlgPickTitle', 'completion-tianfeng-gift');
+    } else {
+      $('#dlgPick').hidden = true;
+      $('#dlgPickList').innerHTML = '';
+    }
     var bonusBox = $('#dlgBonus');
     if (r.bonus && r.bonus.length) {
       bonusBox.hidden = false;
@@ -849,8 +1003,19 @@ dialog::backdrop{background:rgba(4,10,18,.72)}
     dlg.showModal();
   }
 
-  $('#dlgOk').addEventListener('click', function () { $('#resultDlg').close(); render(); });
-  $('#resultDlg').addEventListener('close', function () { render(); });
+  var pickRef = null;
+  function commitPick() {
+    if (!pickRef) return;
+    var t = pickRef.get();
+    if (!t) return;
+    var p = parseQty(t);
+    addGain({ itemId: 'pick:' + p.name, name: p.name, grade: 'S', quantity: '× ' + p.qty, type: 'item' }, state.round);
+    pickRef = null;
+    save();
+  }
+  $('#dlgOk').addEventListener('click', function () { commitPick(); $('#resultDlg').close(); render(); });
+  $('#resultDlg').addEventListener('cancel', function () { commitPick(); });
+  $('#resultDlg').addEventListener('close', function () { commitPick(); render(); });
 
   // ---------- 事件 ----------
   $('#gradeTabs').addEventListener('click', function (e) {

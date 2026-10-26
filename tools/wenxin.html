@@ -427,14 +427,32 @@ body{
   // · 总功力 = 属性功力 + 特技功力
   var CH_SEC = ['起', '承', '转', '合'];
 
-  function pickAttrs(n) {
+  // 按号位单双数取不同攻防配比的属性池；同本不重复，且进攻词条数量受限
+  function pickAttrs(n, slot) {
     var pool = (DATA.attrPool && DATA.attrPool.length)
       ? DATA.attrPool
-      : DATA.chapters.map(function (c) { return { n: c[0], t: 'flat', max: c[1] }; });
-    var out = [];
+      : DATA.chapters.map(function (c) { return { n: c[0], t: 'flat', max: c[1], cat: 'other' }; });
+    var w = (DATA.slotWeight || {})[(slot % 2) ? 'odd' : 'even'] || { atk: 0.5, def: 0.5, other: 0 };
+    var maxAtk = DATA.maxAtk == null ? 2 : DATA.maxAtk;
+    var out = [], used = {}, atkCount = 0;
+
     for (var i = 0; i < n; i++) {
-      var p = pool[Math.floor(Math.random() * pool.length)];
-      out.push({ n: p.n, t: p.t, max: p.max });
+      // 先按类别掷骰，再从该类里挑一个未用过的
+      var cat = 'other';
+      var r = Math.random();
+      if (r < w.atk && atkCount < maxAtk) cat = 'atk';
+      else if (r < w.atk + w.def) cat = 'def';
+      else cat = 'other';
+
+      var cands = pool.filter(function (a) { return (a.cat || 'other') === cat && !used[a.n]; });
+      if (!cands.length) cands = pool.filter(function (a) { return !used[a.n] && (a.cat || 'other') !== 'atk'; });
+      if (!cands.length) cands = pool.filter(function (a) { return !used[a.n]; });
+      if (!cands.length) break;
+
+      var p = cands[Math.floor(Math.random() * cands.length)];
+      used[p.n] = 1;
+      if ((p.cat || 'other') === 'atk') atkCount++;
+      out.push({ n: p.n, t: p.t, max: p.max, cat: p.cat || 'other' });
     }
     return out;
   }
@@ -446,9 +464,10 @@ body{
   // opts.band：奖励书目标功力段；opts.bonusPct：固定特技比例
   function rollResult(opts) {
     opts = opts || {};
+    var slot = opts.slot || 1;
     var R = DATA.ratio;
     var K = R.powerK || 11.7;
-    var picks = pickAttrs(4);
+    var picks = pickAttrs(4, slot);
     var bonusPct = opts.bonusPct || (20 + 10 * Math.floor(Math.random() * 4));   // 20/30/40/50
     var count = opts.count || (Math.random() < 0.15 ? 2 : 1);                    // 双特技约 15%
     var fi = Math.floor(Math.random() * picks.length);
@@ -532,7 +551,7 @@ body{
     var n = 0;
     st.items.forEach(function (it) {
       if (it.p == null && !it.r) {
-        it.r = rollResult();
+        it.r = rollResult({ slot: it.s });
         it.p = it.r.totalPower;
         st.total++;
         if (it.p >= DATA.threshold) st.hit++;
@@ -734,7 +753,7 @@ body{
     var r = DATA.rewards[ri];
     if (st.items.length >= DATA.capacity) { toast('背包满了（' + DATA.capacity + ' 格）'); return; }
     if (claimableOf(r) <= 0) return;
-    var res = rollResult({ band: r.band, bonusPct: 50 });
+    var res = rollResult({ band: r.band, bonusPct: 50, slot: slot });
     st.claimed = st.claimed || {};
     st.claimed[r.n] = claimedOf(r.n) + 1;
     st.items.push({ s: slot, p: res.totalPower, r: res, reward: true, band: r.band.slice() });
@@ -752,7 +771,7 @@ body{
       if (it.p == null) return;
       if (it.p > CAP) {
         var band = it.reward && it.band ? it.band : null;
-        var res = rollResult(band ? { band: band, bonusPct: 50 } : {});
+        var res = rollResult(band ? { band: band, bonusPct: 50, slot: it.s } : { slot: it.s });
         it.r = res;
         it.p = res.totalPower;
         fixed++;
