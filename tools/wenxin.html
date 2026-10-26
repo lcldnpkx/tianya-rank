@@ -131,6 +131,10 @@ body{
   padding-top:4px;
 }
 .cell--hit .cell__p{color:var(--gold);font-weight:700;font-size:10px}
+.cell__rw{
+  position:absolute;right:1px;top:1px;font-size:9px;line-height:1;
+  padding:1px 3px;background:#b99f6b;color:#241a05;font-weight:700;
+}
 .cell--new{animation:flash .5s ease}
 @keyframes flash{0%{box-shadow:0 0 0 2px rgba(255,221,149,.9)}100%{box-shadow:none}}
 
@@ -149,6 +153,83 @@ body{
 
 .note{font-size:11.5px;line-height:1.9;color:var(--dim);margin-top:12px}
 .note b{color:var(--mist)}
+
+/* 奖励卡（对齐原站三卡布局） */
+.rhint{
+  margin-left:auto;font-size:11px;color:var(--mist);
+  padding:3px 10px;background:rgba(255,221,149,.1);border:1px solid rgba(255,221,149,.35);
+}
+.rhint.is-ready{color:var(--gold);background:rgba(255,221,149,.2);border-color:var(--gold)}
+.rewards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media(max-width:760px){.rewards{grid-template-columns:1fr}}
+.rwcard{
+  display:flex;flex-direction:column;background:rgba(9,24,42,.6);
+  border:1px solid var(--line);padding:0 0 12px;
+}
+.rwcard.is-ready{border-color:rgba(255,221,149,.55);box-shadow:0 0 16px rgba(255,221,149,.1)}
+.rwcard__h{
+  text-align:center;font-size:12.5px;color:var(--fog);letter-spacing:.04em;
+  padding:7px 0;background:linear-gradient(180deg,rgba(255,221,149,.16),rgba(255,221,149,.04));
+  border-bottom:1px solid var(--line);
+}
+.rwcard__book{
+  display:flex;align-items:center;gap:10px;justify-content:center;
+  padding:14px 10px 10px;text-align:center;
+}
+.rwcard__book img{width:46px;height:46px;object-fit:contain;filter:drop-shadow(0 2px 6px rgba(0,0,0,.5))}
+.rwcard__txt{font-size:11px;color:var(--dim);line-height:1.65}
+.rwcard__txt b{color:var(--gold);font-size:12px}
+.rwcard__p{
+  text-align:center;font-size:11px;color:var(--dim);
+  padding:6px 8px;margin:0 10px;
+  background:rgba(255,255,255,.04);border-radius:2px;
+}
+.rwcard__p b{color:var(--fog);font-family:var(--mono)}
+.rwcard__btn{
+  margin:11px 10px 0;padding:8px 0;font-family:inherit;font-size:12.5px;cursor:pointer;
+  background:#1a3a5e;border:1px solid var(--line-2);color:var(--mist);
+}
+.rwcard__btn.is-on{
+  background:linear-gradient(180deg,#f3e2bb,#e2cb9b);border-color:#b99f6b;color:#4a3a12;font-weight:600;
+}
+.rwcard__btn.is-on:hover{background:linear-gradient(180deg,#f8ebcc,#e8d4a6)}
+.rwcard__btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* 领奖弹窗 */
+.claimdlg{width:min(520px,94vw)}
+.claim__desc{margin:0 0 12px;font-size:12.5px;color:var(--mist);line-height:1.7}
+.claim__desc b{color:var(--gold);font-family:var(--mono)}
+.claim__slots{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.slot-choice{
+  padding:9px 4px;cursor:pointer;font-family:inherit;text-align:center;
+  background:#12304f;border:2px solid var(--line-2);color:var(--mist);
+}
+.slot-choice:hover{border-color:rgba(255,221,149,.6);color:var(--gold)}
+.slot-choice b{display:block;font-size:15px;font-family:var(--mono);color:var(--gold);line-height:1.3}
+.slot-choice small{display:block;font-size:10.5px;color:var(--dim)}
+
+/* 悬停提示（原站深色浮层） */
+.wxtip{
+  position:fixed;z-index:95;display:none;pointer-events:none;
+  width:340px;max-width:calc(100vw - 24px);padding:12px 14px;
+  background:rgba(8,16,28,.97);border:1px solid #3a5a80;
+  box-shadow:0 10px 30px rgba(0,0,0,.6);
+  font-size:11.5px;line-height:1.75;color:var(--mist);
+}
+.wxtip.is-on{display:block}
+.wxtip__head{display:flex;align-items:center;gap:9px;padding-bottom:8px;border-bottom:1px solid rgba(58,90,128,.6);margin-bottom:8px}
+.wxtip__head img{width:38px;height:38px;object-fit:contain}
+.wxtip__head b{display:block;font-size:12.5px;color:var(--gold);line-height:1.35}
+.wxtip__head span{font-size:10.5px;color:var(--dim)}
+.wxtip .k{color:var(--dim)}
+.wxtip .v{color:var(--fog);font-family:var(--mono)}
+.wxtip .big{color:var(--gold);font-family:var(--mono);font-size:13px;font-weight:700}
+.wxtip .sec{margin-top:9px;color:var(--gold);font-size:11.5px;letter-spacing:.05em}
+.wxtip .row{display:flex;gap:6px;color:var(--mist)}
+.wxtip .row em{font-style:normal;color:var(--dim)}
+.wxtip .ex{color:var(--orange);font-family:var(--mono)}
+.wxtip .feat{color:var(--mist)}
+.wxtip .feat b{color:var(--gold)}
 
 /* 鉴定详情 */
 .detail{display:none;margin-top:12px;padding:12px 14px;background:rgba(9,24,42,.7);border:2px solid var(--line-2)}
@@ -259,7 +340,11 @@ body{
   </section>
 
   <section class="panel">
-    <div class="panel__head"><h2>鉴定奖励</h2><i></i></div>
+    <div class="panel__head">
+      <h2>镇派武学鉴定奖励</h2><i></i>
+      <span style="font-size:12px;color:var(--dim)">当前已鉴定：<b id="rewardTotal" style="color:var(--gold);font-family:var(--mono)">0</b></span>
+      <span class="rhint" id="rewardHint">再鉴定 0 次可得奖励</span>
+    </div>
     <div class="panel__body">
       <div class="rewards" id="rewards"></div>
       <div class="note">
@@ -276,6 +361,19 @@ body{
   </footer>
 
 </main>
+
+<dialog id="claimDlg" class="claimdlg">
+  <div class="dlg__head">
+    <h3>选择奖励号位</h3>
+    <button class="dlg__x" id="claimX" type="button" aria-label="关闭">×</button>
+  </div>
+  <div class="dlg__body">
+    <p id="claimDesc" class="claim__desc"></p>
+    <div class="claim__slots" id="claimSlots"></div>
+  </div>
+</dialog>
+
+<div class="wxtip" id="wxtip" role="tooltip"></div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
@@ -301,7 +399,7 @@ body{
   }
 
   var DATA = null;
-  var st = { items: [], total: 0, hit: 0, best: 0 };
+  var st = { items: [], total: 0, hit: 0, best: 0, claimed: {} };
 
   function load() {
     try {
@@ -313,6 +411,7 @@ body{
           st.total = Number(o.total) || 0;
           st.hit = Number(o.hit) || 0;
           st.best = Number(o.best) || 0;
+          st.claimed = (o.claimed && typeof o.claimed === 'object') ? o.claimed : {};
         }
       }
     } catch (e) {}
@@ -321,27 +420,71 @@ body{
     try { localStorage.setItem(LS, JSON.stringify(st)); } catch (e) {}
   }
 
-  // 功力生成：比例 60~99 偏下分布；章节值 = max × 比例；特技功力 ≈ 属性功力 × 特技提升 × 0.25
-  // （与原站实测样本对齐：ratio 90.4 → 属性功力 1056，特技 30% → 特技功力 79，总功力 1135）
-  function rollResult() {
+  // 文心数值模型（对齐原站实测）：
+  // 整体比例 ratio 决定四条章法数值 = 上限 × ratio；属性功力 = 章法上限和 × 0.727 × ratio；
+  // 特技落在其中一条章法上（20%~50%），特技功力 = 属性功力 × 特技% × 0.25；总功力 = 两者相加。
+  var FEAT_KEYS = ['起', '承', '转', '合'];
+  function pickAttrs(n) {
+    var pool = (DATA.attrPool || DATA.chapters.map(function (c) { return { n: c[0], t: 'flat', max: c[1] }; })).slice();
+    var out = [];
+    for (var i = 0; i < n && pool.length; i++) {
+      out.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+    }
+    return out;
+  }
+  function fmtVal(v, isPct) {
+    if (isPct) return (Math.round(v * 10) / 10) + '%';
+    return String(Math.round(v));
+  }
+  // scale：章法上限整体缩放，用于奖励书凑到指定功力段
+  function rollResult(opts) {
+    opts = opts || {};
     var R = DATA.ratio;
     var t = Math.pow(Math.random(), R.pow || 1.12);
-    var ratio = R.min + t * (R.max - R.min);          // 60~99.99
-    var chapters = DATA.chapters.map(function (c) {
-      return { name: c[0], max: c[1], value: Math.round(c[1] * ratio / 100), extra: null };
+    var ratio = R.min + t * (R.max - R.min);
+    var picks = pickAttrs(4);
+    var maxSum = picks.reduce(function (a, c) { return a + c.max; }, 0);
+
+    // 目标总功力：奖励书按功力段精确落点，普通鉴定走公式
+    var target = null;
+    if (opts.band) target = opts.band[0] + Math.floor(Math.random() * (opts.band[1] - opts.band[0] + 1));
+
+    var bonusPct = opts.bonusPct || (20 + 10 * Math.floor(Math.random() * 4));
+    var attr, skill;
+
+    if (target) {
+      // 反推属性功力，使 属性+特技 正好落在功力段内
+      attr = Math.round(target / (1 + bonusPct / 400));
+      while (attr + Math.round(attr * bonusPct / 400) < target) attr++;
+      while (attr + Math.round(attr * bonusPct / 400) > target) attr--;
+      skill = target - attr;
+      ratio = attr * 100 / (maxSum * 0.727);               // 由属性功力回算比例
+      if (ratio > 100) ratio = 100;
+    } else {
+      attr = Math.round(maxSum * 0.727 * ratio / 100);
+      skill = Math.round(attr * bonusPct / 100 * 0.25);
+    }
+
+    var fi = Math.floor(Math.random() * picks.length);
+    var chapters = picks.map(function (c, i) {
+      var max = Math.round(c.max * (target ? (ratio / 99) : 1));
+      var val = Math.round(max * ratio / 100);
+      return {
+        name: c.n, pct: c.t === 'pct', max: max, value: val,
+        text: fmtVal(val, c.t === 'pct'),
+        extra: (i === fi ? Math.max(1, Math.round(val * bonusPct / 100)) : null)
+      };
     });
-    var fi = Math.floor(Math.random() * chapters.length);           // 特技落在某一章
-    var bonusPct = 20 + 10 * Math.floor(Math.random() * 4);         // 20/30/40/50
-    chapters[fi].extra = Math.round(chapters[fi].value * bonusPct / 100);
-    var attr = Math.round(DATA.chapters.reduce(function (a, c) { return a + c[1]; }, 0) * 0.727 * ratio / 100);
-    var skill = Math.round(attr * bonusPct / 100 * 0.25);
+    chapters[fi].extraText = chapters[fi].extra == null ? '' : fmtVal(chapters[fi].extra, chapters[fi].pct);
+
     return {
       ratio: Math.round(ratio),
       chapters: chapters,
       feature: { name: chapters[fi].name, bonusPct: bonusPct },
       attributePower: attr,
       skillPower: skill,
-      totalPower: attr + skill
+      totalPower: attr + skill,
+      reward: !!target
     };
   }
 
@@ -400,14 +543,74 @@ body{
       var hit = it.p != null && it.p >= DATA.threshold;
       var icon = './img/wenxin/' + it.s + (it.p == null ? '-u' : '-i') + '.webp';
       html += '<div class="cell' + (hit ? ' cell--hit' : '') + (i === newIdx ? ' cell--new' : '') + '" data-idx="' + i + '" ' +
-        'title="' + esc(DATA.slots[it.s - 1].n) + (it.p != null ? ' · 功力 ' + it.p + '（点击查看详情）' : ' · 未鉴定') + '">' +
+        'aria-label="' + esc(DATA.slots[it.s - 1].n) + (it.p != null ? ' 功力 ' + it.p : ' 未鉴定') + '">' +
         '<img src="' + icon + '" alt="" loading="lazy" />' +
+        (it.reward ? '<span class="cell__rw">奖</span>' : '') +
         (it.p != null ? '<span class="cell__p">' + fmt(it.p) + '</span>' : '') +
       '</div>';
     }
     box.innerHTML = html;
     $('#bagMeta').textContent = st.items.length + ' / ' + cap;
   }
+
+  // ---------- 悬停提示：鼠标移到心法上显示文心数值 ----------
+  var tipEl = $('#wxtip');
+  var CH_SEC = ['起', '承', '转', '合'];
+
+  function tipHtml(it) {
+    var name = DATA.slots[it.s - 1].n;
+    var icon = './img/wenxin/' + it.s + '-i.webp';
+    var head = '<div class="wxtip__head"><img src="' + icon + '" alt="" onerror="this.style.visibility=\'hidden\'" />' +
+      '<div><b>' + esc(name) + '</b><span>' + (it.p == null ? '未鉴定' : '已鉴定') + '</span></div></div>';
+
+    if (it.p == null) {
+      return head + '<div style="color:var(--mist)">普通鉴定书</div>' +
+        '<div style="margin-top:4px;color:var(--dim)">点击下方「一键鉴定」开始鉴定。</div>';
+    }
+    var r = it.r;
+    if (!r) {
+      return head + '<div><span class="k">总功力：</span><span class="big">' + fmt(it.p) + '</span></div>' +
+        '<div style="margin-top:4px;color:var(--dim)">旧记录，重新鉴定可查看完整文心数值。</div>';
+    }
+    var maxSum = r.chapters.reduce(function (a, c) { return a + c.max; }, 0);
+    var ratioDisp = Math.round(r.attributePower / (maxSum * 0.727) * 100);
+    var html = head +
+      '<div><span class="k">总功力：</span><span class="big">' + fmt(r.totalPower) + '</span></div>' +
+      '<div style="display:flex;justify-content:space-between;gap:10px">' +
+        '<span><span class="k">属性功力：</span><span class="v">' + fmt(r.attributePower) + '</span>' +
+          '<span class="k">（' + ratioDisp + '%/100%）</span></span>' +
+        '<span><span class="k">特技功力：</span><span class="v">' + fmt(r.skillPower) + '</span></span>' +
+      '</div>' +
+      '<div class="sec">属性章节</div>' +
+      r.chapters.map(function (c, i) {
+        return '<div class="row"><span>【' + CH_SEC[i] + '】</span>' +
+          '<span>' + esc(c.name) + '+' + esc(c.text) + '</span>' +
+          (c.extra != null ? '<span class="ex">(+' + esc(c.extraText) + ')</span>' : '') +
+        '</div>';
+      }).join('') +
+      '<div class="sec">特技章节</div>' +
+      '<div class="feat">该武学属性中的' + esc(r.feature.name) + '提升<b>' + r.feature.bonusPct + '%</b>' +
+        '<span class="k">（20%~50%）</span></div>' +
+      (it.reward ? '<div style="margin-top:6px;color:var(--ok);font-size:10.5px">★ 鉴定奖励 · 固定功力段</div>' : '');
+    return html;
+  }
+
+  var lastEv = null;
+  function showTip(it, ev) {
+    tipEl.innerHTML = tipHtml(it);
+    tipEl.classList.add('is-on');
+    lastEv = { clientX: ev.clientX, clientY: ev.clientY };
+    moveTip(ev);
+  }
+  function moveTip(ev) {
+    var w = tipEl.offsetWidth, h = tipEl.offsetHeight;
+    var x = ev.clientX + 16, y = ev.clientY + 14;
+    if (x + w > innerWidth - 8) x = ev.clientX - w - 16;
+    if (y + h > innerHeight - 8) y = Math.max(8, innerHeight - h - 8);
+    tipEl.style.left = x + 'px';
+    tipEl.style.top = y + 'px';
+  }
+  function hideTip() { tipEl.classList.remove('is-on'); }
 
   // ---------- 鉴定详情 ----------
   var CN_SEC = ['起', '承', '转', '合'];
@@ -428,10 +631,12 @@ body{
     }
     var r = it.r;
     var rows = r.chapters.map(function (c, i) {
+      var tv = c.text != null ? c.text : fmt(c.value);
+      var te = c.extra != null ? (c.extraText != null ? c.extraText : fmt(c.extra)) : null;
       return '<tr' + (r.feature && r.feature.name === c.name ? ' class="feat"' : '') + '><td>' + CN_SEC[i] + '</td>' +
         '<td>' + esc(c.name) + '</td>' +
-        '<td class="v">+' + fmt(c.value) + (c.extra != null ? ' <span class="extra">+' + fmt(c.extra) + '</span>' : '') + '</td>' +
-        '<td class="mx">上限 ' + fmt(c.max) + '</td></tr>';
+        '<td class="v">+' + esc(tv) + (te ? ' <span class="extra">(+' + esc(te) + ')</span>' : '') + '</td>' +
+        '<td class="mx">上限 ' + (c.pct ? (Math.round(c.max * 10) / 10) + '%' : fmt(c.max)) + '</td></tr>';
     }).join('');
     box.innerHTML = head +
       '<div class="detail__powers">' +
@@ -454,18 +659,73 @@ body{
     $('#sRate').textContent = st.total ? (st.hit / st.total * 100).toFixed(1) + '%' : '—';
   }
 
+  // 奖励档：每 interval 次可领 1 本固定功力段心法（可循环领取）
+  function claimedOf(n) { return (st.claimed && st.claimed[n]) || 0; }
+  function claimableOf(r) { return Math.floor(st.total / r.n) - claimedOf(r.n); }
+
   function renderRewards() {
-    $('#rewards').innerHTML = DATA.rewards.map(function (r) {
-      var done = st.total >= r.n;
-      var pct = Math.min(100, st.total / r.n * 100);
-      return '<div class="rw">' +
-        '<span class="rw__n">累计 ' + r.n + ' 次</span>' +
-        '<span class="rw__bar"><i class="' + (done ? 'done' : '') + '" style="width:' + pct + '%"></i></span>' +
-        '<span class="rw__t' + (done ? ' done' : '') + '">' +
-          (done ? '已达标 · ' + r.band[0] + '-' + r.band[1] : st.total + ' / ' + r.n) +
-        '</span>' +
+    $('#rewardTotal').textContent = fmt(st.total);
+    var next = null;
+    DATA.rewards.forEach(function (r) {
+      var wait = r.n - (st.total % r.n);
+      if (claimableOf(r) > 0) wait = 0;
+      if (next === null || wait < next) next = wait;
+    });
+    $('#rewardHint').textContent = next === 0
+      ? '有奖励可领取'
+      : ('再鉴定 ' + (next || 0) + ' 次可得奖励');
+    $('#rewardHint').classList.toggle('is-ready', next === 0);
+
+    $('#rewards').innerHTML = DATA.rewards.map(function (r, i) {
+      var got = Math.floor(st.total / r.n);
+      var claimed = claimedOf(r.n);
+      var can = claimableOf(r) > 0;
+      return '<div class="rwcard' + (can ? ' is-ready' : '') + '">' +
+        '<div class="rwcard__h">每鉴定镇派' + r.n + '次</div>' +
+        '<div class="rwcard__book">' +
+          '<img src="./img/wenxin/9-u.webp" alt="" onerror="this.style.visibility=\'hidden\'" />' +
+          '<div class="rwcard__txt">自选1~9号位<br /><b>' + r.band[0] + '~' + r.band[1] + '功力必出</b> × 1</div>' +
+        '</div>' +
+        '<div class="rwcard__p">每鉴定 <b>' + (st.total % r.n || (got ? r.n : 0)) + '</b>/' + r.n + ' 次可得　已领取' + claimed + '次</div>' +
+        '<button class="rwcard__btn' + (can ? ' is-on' : '') + '" type="button" data-rw="' + i + '"' + (can ? '' : ' disabled') + '>' +
+          (can ? '领取' : '未达成') + '</button>' +
       '</div>';
     }).join('');
+
+    $$('#rewards [data-rw]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        openSlotClaim(Number(btn.dataset.rw));
+      });
+    });
+  }
+
+  // 领取：选号位 → 生成固定功力段心法
+  function openSlotClaim(ri) {
+    var r = DATA.rewards[ri];
+    if (claimableOf(r) <= 0) { toast('还未达成'); return; }
+    $('#claimDesc').innerHTML = '本次奖励必出总功力 <b>' + r.band[0] + '~' + r.band[1] + '</b>，请选择号位：';
+    $('#claimSlots').innerHTML = DATA.slots.map(function (sl) {
+      return '<button type="button" class="slot-choice" data-cs="' + sl.i + '">' +
+        '<b>' + sl.i + '</b><small>' + esc(sl.n.replace('镇派武学', '')) + '</small></button>';
+    }).join('');
+    $$('#claimSlots [data-cs]').forEach(function (b) {
+      b.addEventListener('click', function () { doClaim(ri, Number(b.dataset.cs)); });
+    });
+    var d = $('#claimDlg');
+    if (!d.open) d.showModal();
+  }
+  function doClaim(ri, slot) {
+    var r = DATA.rewards[ri];
+    if (st.items.length >= DATA.capacity) { toast('背包满了（' + DATA.capacity + ' 格）'); return; }
+    if (claimableOf(r) <= 0) return;
+    var res = rollResult({ band: r.band, bonusPct: 50 });
+    st.claimed = st.claimed || {};
+    st.claimed[r.n] = claimedOf(r.n) + 1;
+    st.items.push({ s: slot, p: res.totalPower, r: res, reward: true });
+    save();
+    $('#claimDlg').close();
+    renderAll();
+    toast('已领取 ' + DATA.slots[slot - 1].n + ' · ' + res.totalPower + ' 功力');
   }
 
   function renderAll() {
@@ -482,6 +742,45 @@ body{
     if (!c) return;
     showDetail(Number(c.getAttribute('data-idx')));
   });
+
+  // 悬停显示文心数值（触屏改为点击时短暂显示）
+  var isTouch = matchMedia('(hover: none)').matches;
+  $('#bag').addEventListener('mouseover', function (e) {
+    if (isTouch) return;
+    var c = e.target.closest('.cell[data-idx]');
+    if (!c) return;
+    var it = st.items[Number(c.getAttribute('data-idx'))];
+    if (it) showTip(it, e);
+  });
+  $('#bag').addEventListener('mousemove', function (e) {
+    if (isTouch) return;
+    lastEv = { clientX: e.clientX, clientY: e.clientY };
+    if (tipEl.classList.contains('is-on')) moveTip(e);
+  });
+  $('#bag').addEventListener('mouseout', function (e) {
+    if (isTouch) return;
+    var c = e.target.closest('.cell[data-idx]');
+    if (c && !c.contains(e.relatedTarget)) hideTip();
+  });
+  $('#bag').addEventListener('touchstart', function (e) {
+    var c = e.target.closest('.cell[data-idx]');
+    if (!c) return;
+    var it = st.items[Number(c.getAttribute('data-idx'))];
+    if (!it || it.p == null) return;
+    var r = c.getBoundingClientRect();
+    showTip(it, { clientX: r.left + r.width / 2, clientY: r.bottom });
+    clearTimeout(window.__tipTimer);
+    window.__tipTimer = setTimeout(hideTip, 2600);
+  }, { passive: true });
+  addEventListener('scroll', function () {
+    if (!tipEl.classList.contains('is-on')) return;
+    // 滚动导致的误触发：只要鼠标还停在心里法格子上，就重新贴住光标
+    if (document.querySelector('#bag .cell[data-idx]:hover') && lastEv) moveTip(lastEv);
+    else hideTip();
+  }, true);
+
+  $('#claimX').addEventListener('click', function () { $('#claimDlg').close(); });
+  $('#claimDlg').addEventListener('click', function (e) { if (e.target === this) this.close(); });
 
   $('#btnGrant9').addEventListener('click', function () {
     var n = 0;
@@ -506,7 +805,7 @@ body{
 
   $('#btnReset').addEventListener('click', function () {
     if (!confirm('重置背包、统计和奖励进度？')) return;
-    st = { items: [], total: 0, hit: 0, best: 0 };
+    st = { items: [], total: 0, hit: 0, best: 0, claimed: {} };
     save();
     renderAll();
     toast('已重置');
