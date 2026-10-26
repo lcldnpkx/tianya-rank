@@ -475,7 +475,18 @@ dialog::backdrop{background:rgba(4,10,18,.72)}
       var raw = localStorage.getItem(LS);
       if (raw) {
         var o = JSON.parse(raw);
-        if (o && o.pool) { state = o; return true; }
+        if (o && o.pool) {
+          // 兼容早期存档：轮数相关数组统一补齐到 3 轮，避免第三轮 selections 缺失导致按钮永远禁用
+          ['selections', 'paid', 'spend', 'purchased', 'gifted', 'balance'].forEach(function (k) {
+            if (!Array.isArray(o[k])) o[k] = [];
+            while (o[k].length < 3) o[k].push(k === 'selections' ? [] : 0);
+          });
+          if (!o.gains) o.gains = {};
+          if (!o.gainLog) o.gainLog = [];
+          if (!o.nextRate && o.nextRate !== 0) o.nextRate = 1;
+          if (!o.phase) o.phase = 'select';
+          state = o; return true;
+        }
       }
     } catch (e) {}
     return false;
@@ -499,7 +510,11 @@ dialog::backdrop{background:rgba(4,10,18,.72)}
 
   function buildFixedSlots() {
     D.stages.forEach(function (s, i) {
-      var arr = [{ type: 'treasure', itemId: D.fixed[s.treasure], grade: 'S', name: s.treasure, quantity: '1', id: 'fx-' + i + '-treasure' }];
+      var arr = [];
+      // 仅当数据中定义了固定秘藏位时才加入（天峰为最终轮，无秘藏位）
+      if (s.treasure && D.fixed[s.treasure]) {
+        arr.push({ type: 'treasure', itemId: D.fixed[s.treasure], grade: 'S', name: s.treasure, quantity: '1', id: 'fx-' + i + '-treasure' });
+      }
       // 仅前两轮有「下轮令牌礼包」；天峰为最终轮，无令牌礼包
       if (s.tokenPack && D.fixed[s.tokenPack]) {
         arr.push({ type: 'token', itemId: D.fixed[s.tokenPack], grade: 'S', name: s.tokenPack, quantity: s.giftRange[0] + '~' + s.giftRange[1] + ' 张', id: 'fx-' + i + '-token' });
@@ -560,7 +575,17 @@ dialog::backdrop{background:rgba(4,10,18,.72)}
     var cfg = (D.probabilities && D.probabilities.rounds && D.probabilities.rounds[round]) || null;
     if (!cfg) return null;
     var w = (cfg.draws && cfg.draws[String(ordinal)]) || null;
-    if (!w) w = { A: cfg.default, B: cfg.default * 5, C: cfg.default * 20 };
+    if (!w) {
+      // fallback：按本轮全部档位生成权重（避免缺 D 档/token/treasure 导致永远抽不到）
+      w = {};
+      Object.keys(D.stages[round].quota).forEach(function (g) { w[g] = cfg.default || 1; });
+      w.B = (cfg.default || 1) * 5; w.C = (cfg.default || 1) * 20;
+      w.token = 0; w.treasure = 0;
+    }
+    // 补齐缺失键，保证每个档位和固定奖位都可能被抽中
+    Object.keys(D.stages[round].quota).forEach(function (g) { if (w[g] == null) w[g] = cfg.default || 1; });
+    if (w.token == null) w.token = 0;
+    if (w.treasure == null) w.treasure = fixedSlots[round] && fixedSlots[round].length ? 0.1 : 0;
     return w;
   }
   function rollSlot(round, ordinal) {

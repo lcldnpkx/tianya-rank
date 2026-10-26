@@ -150,6 +150,28 @@ body{
 .note{font-size:11.5px;line-height:1.9;color:var(--dim);margin-top:12px}
 .note b{color:var(--mist)}
 
+/* 鉴定详情 */
+.detail{display:none;margin-top:12px;padding:12px 14px;background:rgba(9,24,42,.7);border:2px solid var(--line-2)}
+.detail.is-on{display:block}
+.detail__head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.detail__head img{width:44px;height:44px;object-fit:contain}
+.detail__head h4{margin:0;font-size:14px;color:var(--gold)}
+.detail__head span{font-size:11px;color:var(--dim)}
+.detail__close{margin-left:auto;background:none;border:1px solid var(--line-2);color:var(--dim);font-size:11px;padding:4px 10px;cursor:pointer;font-family:inherit}
+.detail__close:hover{color:var(--fog);border-color:var(--gold)}
+.detail__powers{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;margin-bottom:8px}
+.detail__powers b{color:var(--gold);font-family:var(--mono)}
+.detail__powers .lbl{color:var(--dim)}
+.dtable{width:100%;border-collapse:collapse;font-size:12px}
+.dtable td{padding:5px 8px;border-top:1px solid var(--line)}
+.dtable td:first-child{color:var(--dim);width:52px}
+.dtable .v{font-family:var(--mono);color:var(--fog)}
+.dtable .mx{color:var(--dim);font-family:var(--mono);font-size:11px}
+.dtable .extra{color:var(--orange);font-family:var(--mono);font-size:11px}
+.dtable .feat{color:var(--gold)}
+.detail__feature{margin-top:8px;font-size:12px;color:var(--mist)}
+.detail__feature b{color:var(--gold)}
+
 .toast{
   position:fixed;left:50%;bottom:36px;transform:translate(-50%,20px);
   padding:10px 20px;font-size:13px;color:var(--gold);
@@ -232,6 +254,7 @@ body{
     </div>
     <div class="panel__body">
       <div class="bag" id="bag"></div>
+      <div class="detail" id="detail"></div>
     </div>
   </section>
 
@@ -240,7 +263,7 @@ body{
     <div class="panel__body">
       <div class="rewards" id="rewards"></div>
       <div class="note">
-        <b>说明：</b>奖励档位来自游戏内设定（累计鉴定次数达标可领），功力数值为近似模拟——真实算法未公开，此处按「整体比例 × 系数」生成，仅供体验。所有数据只存在本机浏览器。
+        <b>说明：</b>奖励档位来自游戏内设定（累计鉴定次数达标可领）。鉴定结果按原站实测模型还原：整体比例 60%~99% 决定四项章法数值（起·承·转·合，含上限），随机一条章法附带 20%~50% 特技提升，属性功力 + 特技功力 = 总功力。点击背包中已鉴定的书可查看完整属性。所有数据只存在本机浏览器。
       </div>
     </div>
   </section>
@@ -298,13 +321,28 @@ body{
     try { localStorage.setItem(LS, JSON.stringify(st)); } catch (e) {}
   }
 
-  // 功力生成：比例 60~99 偏下分布，功力 ≈ 比例 × 系数 ± 波动
-  function rollPower() {
+  // 功力生成：比例 60~99 偏下分布；章节值 = max × 比例；特技功力 ≈ 属性功力 × 特技提升 × 0.25
+  // （与原站实测样本对齐：ratio 90.4 → 属性功力 1056，特技 30% → 特技功力 79，总功力 1135）
+  function rollResult() {
     var R = DATA.ratio;
-    var t = Math.pow(Math.random(), R.pow || 1.12);   // 略偏下，贴近实测分布
-    var ratio = R.min + t * (R.max - R.min);
-    var p = ratio * R.k + (Math.random() * 24 - 12);
-    return Math.max(1, Math.round(p));
+    var t = Math.pow(Math.random(), R.pow || 1.12);
+    var ratio = R.min + t * (R.max - R.min);          // 60~99.99
+    var chapters = DATA.chapters.map(function (c) {
+      return { name: c[0], max: c[1], value: Math.round(c[1] * ratio / 100), extra: null };
+    });
+    var fi = Math.floor(Math.random() * chapters.length);           // 特技落在某一章
+    var bonusPct = 20 + 10 * Math.floor(Math.random() * 4);         // 20/30/40/50
+    chapters[fi].extra = Math.round(chapters[fi].value * bonusPct / 100);
+    var attr = Math.round(DATA.chapters.reduce(function (a, c) { return a + c[1]; }, 0) * 0.727 * ratio / 100);
+    var skill = Math.round(attr * bonusPct / 100 * 0.25);
+    return {
+      ratio: Math.round(ratio),
+      chapters: chapters,
+      feature: { name: chapters[fi].name, bonusPct: bonusPct },
+      attributePower: attr,
+      skillPower: skill,
+      totalPower: attr + skill
+    };
   }
 
   function renderSlots() {
@@ -326,11 +364,17 @@ body{
     renderBag(st.items.length - 1);
   }
 
+  function powerOf(it) {
+    if (it.r) return it.r.totalPower;
+    return it.p;
+  }
+
   function identifyAll() {
     var n = 0;
     st.items.forEach(function (it) {
-      if (it.p == null) {
-        it.p = rollPower();
+      if (it.p == null && !it.r) {
+        it.r = rollResult();
+        it.p = it.r.totalPower;
         st.total++;
         if (it.p >= DATA.threshold) st.hit++;
         if (it.p > st.best) st.best = it.p;
@@ -355,14 +399,52 @@ body{
       }
       var hit = it.p != null && it.p >= DATA.threshold;
       var icon = './img/wenxin/' + it.s + (it.p == null ? '-u' : '-i') + '.webp';
-      html += '<div class="cell' + (hit ? ' cell--hit' : '') + (i === newIdx ? ' cell--new' : '') + '" ' +
-        'title="' + esc(DATA.slots[it.s - 1].n) + (it.p != null ? ' · 功力 ' + it.p : ' · 未鉴定') + '">' +
+      html += '<div class="cell' + (hit ? ' cell--hit' : '') + (i === newIdx ? ' cell--new' : '') + '" data-idx="' + i + '" ' +
+        'title="' + esc(DATA.slots[it.s - 1].n) + (it.p != null ? ' · 功力 ' + it.p + '（点击查看详情）' : ' · 未鉴定') + '">' +
         '<img src="' + icon + '" alt="" loading="lazy" />' +
         (it.p != null ? '<span class="cell__p">' + fmt(it.p) + '</span>' : '') +
       '</div>';
     }
     box.innerHTML = html;
     $('#bagMeta').textContent = st.items.length + ' / ' + cap;
+  }
+
+  // ---------- 鉴定详情 ----------
+  var CN_SEC = ['起', '承', '转', '合'];
+  function showDetail(idx) {
+    var it = st.items[idx];
+    var box = $('#detail');
+    if (!it || it.p == null) { box.classList.remove('is-on'); return; }
+    var name = DATA.slots[it.s - 1].n;
+    var head = '<div class="detail__head">' +
+      '<img src="./img/wenxin/' + it.s + '-i.webp" alt="" />' +
+      '<div><h4>' + esc(name) + '</h4><span>已鉴定 · 整体比例 ' + (it.r ? it.r.ratio + '%/100%' : '—') + '</span></div>' +
+      '<button class="detail__close" type="button" id="detailClose">收起</button></div>';
+    if (!it.r) {
+      box.innerHTML = head + '<div class="detail__feature">旧记录仅保存了总功力 <b>' + fmt(it.p) + '</b>，重新鉴定后可查看完整属性。</div>';
+      box.classList.add('is-on');
+      $('#detailClose').addEventListener('click', function () { box.classList.remove('is-on'); });
+      return;
+    }
+    var r = it.r;
+    var rows = r.chapters.map(function (c, i) {
+      return '<tr' + (r.feature && r.feature.name === c.name ? ' class="feat"' : '') + '><td>' + CN_SEC[i] + '</td>' +
+        '<td>' + esc(c.name) + '</td>' +
+        '<td class="v">+' + fmt(c.value) + (c.extra != null ? ' <span class="extra">+' + fmt(c.extra) + '</span>' : '') + '</td>' +
+        '<td class="mx">上限 ' + fmt(c.max) + '</td></tr>';
+    }).join('');
+    box.innerHTML = head +
+      '<div class="detail__powers">' +
+        '<span class="lbl">总功力 <b>' + fmt(r.totalPower) + '</b></span>' +
+        '<span class="lbl">属性功力 <b>' + fmt(r.attributePower) + '</b></span>' +
+        '<span class="lbl">特技功力 <b>' + fmt(r.skillPower) + '</b></span>' +
+        (r.totalPower >= DATA.threshold ? '<span class="lbl" style="color:var(--ok)">✓ 达标（≥' + DATA.threshold + '）</span>' : '') +
+      '</div>' +
+      '<table class="dtable"><tbody>' + rows + '</tbody></table>' +
+      '<div class="detail__feature">特技：该武学属性中的<b>' + esc(r.feature.name) + '</b>提升 <b>' + r.feature.bonusPct + '%</b>（20%~50% 随机）</div>';
+    box.classList.add('is-on');
+    $('#detailClose').addEventListener('click', function () { box.classList.remove('is-on'); });
+    box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 
   function renderStats() {
@@ -394,6 +476,12 @@ body{
 
   // ---------- 事件 ----------
   $('#btnAll').addEventListener('click', identifyAll);
+
+  $('#bag').addEventListener('click', function (e) {
+    var c = e.target.closest('.cell[data-idx]');
+    if (!c) return;
+    showDetail(Number(c.getAttribute('data-idx')));
+  });
 
   $('#btnGrant9').addEventListener('click', function () {
     var n = 0;
