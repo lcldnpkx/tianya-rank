@@ -250,16 +250,27 @@
   }
 
   /* ---------- 帮派口径 ----------
-     官方帮派榜：帮派功力 = 前 80 名成员功力之和；平均功力 = 该值 ÷ 80。
-     本站只收录榜上有名的成员，自算会随收录完整度浮动（小帮派偏差可达 30%），
-     所以**官方值优先**，官方榜没收录这个帮派时才退回自算值并标注。 */
-  function guildOff(g) { return !!(g.off && g.ov !== null && g.ov !== undefined); }
+     帮派功力 = 该帮派功力前 80 名的成员之和（官方口径，与本站自算同源）。
+     官方帮派榜给的数只在**不小于**自算值时才采用：本站只收录榜上有名的成员，
+     自算通常偏低，官方值更全；可官方值反而更小时（实测有帮派差到 1/85），
+     说明上游那个数的口径不再是「前 80 名之和」（多半抓的是帮派等级/繁荣度一栏），
+     这时以自算值为准，并标注「估」，避免强帮被压成几十万。 */
+  var GUILD_CAP = 80;
+  function guildOfficial(g) {
+    return !!(g.off && g.ov !== null && g.ov !== undefined && g.ov >= (g.t80 || 0));
+  }
   function guildPower(g) {
-    return guildOff(g) ? g.ov : (g.t80 || 0);
+    var ov = (g.off && g.ov !== null && g.ov !== undefined) ? g.ov : 0;
+    var t80 = g.t80 || 0;
+    return ov > t80 ? ov : t80;
   }
   function guildAvg(g) {
-    if (guildOff(g)) return (g.oa !== null && g.oa !== undefined) ? g.oa : Math.round((g.ov || 0) / 80);
-    return g.a80 || 0;
+    var p = guildPower(g);
+    if (guildOfficial(g)) {
+      return (g.oa !== null && g.oa !== undefined && g.oa > 0) ? g.oa : Math.round(p / GUILD_CAP);
+    }
+    var n = Math.min(GUILD_CAP, Math.max(1, g.tm || 0));
+    return Math.round(p / n);
   }
 
   /* ---------- 帮派筛选与排序 ---------- */
@@ -357,14 +368,16 @@
   }
 
   function guildRow(g) {
-    var off = guildOff(g);
+    var off = guildOfficial(g);
     var pCell = off
       ? '<span class="pw">' + fmt(guildPower(g)) + '</span>'
       : '<span class="pw est">' + fmt(guildPower(g)) + '<i class="est-tag">估</i></span>';
     var aCell = off ? fmt(guildAvg(g)) : '<span class="guild-est">' + fmt(guildAvg(g)) + '</span>';
     var sub = '上榜 ' + (g.tm || 0) + ' 人' +
       (g.hpm ? ' · 含 ' + g.hpm + ' 名隐藏功力' : ' · 功力全公开') +
-      (off ? '' : ' · 官方榜未收录，数值为本站推算');
+      (off ? '' : (g.off && g.ov != null
+        ? ' · 官方榜数值异常，改用收录成员前 80 名之和'
+        : ' · 官方榜未收录，按收录成员前 80 名之和推算'));
     return '<tr data-guild="' + esc(g.g) + '" data-gidx="' + g._gi + '">' +
       '<td class="rank-cell"><span class="rk" data-rank="' + (state.page - 1) + '"></span></td>' +
       '<td><span class="rn-text">' + esc(g.g) + '</span>' +
@@ -948,7 +961,7 @@
 
   function openGuild(g) {
     var sid = g.rid || ((viewById(state.view) || {}).kind === 'srv' ? state.view : '');
-    var off = guildOff(g);
+    var off = guildOfficial(g);
     var total = g._d0;
     var totalCls = total > 0 ? 'up' : (total < 0 ? 'down' : 'flat');
 
@@ -978,16 +991,21 @@
     }
 
     function head(d) {
-      var power = d ? d.ov : guildPower(g);
-      var isOff = d ? d.off : off;
+      // 详情里的官方值同样只在「不小于自算前 80 之和」时采用
+      var dt80 = (d && d.t80 !== null && d.t80 !== undefined) ? d.t80 : (g.t80 || 0);
+      var dov = (d && d.ov !== null && d.ov !== undefined) ? d.ov : (g.off ? g.ov : null);
+      var isOff = dov !== null && dov !== undefined && dov >= dt80;
+      var power = isOff ? dov : (dt80 || guildPower(g));
       var rg = (viewById(sid) || {}).region || g.rg || DB.region || '';
       return '<p class="dw-eyebrow">帮派 · ' + esc(rg) + ' · ' +
           esc(g.sv || DB.server || '') + '</p>' +
         '<h3 class="dw-name">' + esc(g.g) + '</h3>' +
-        '<p class="dw-rankline">官方帮派榜 · 帮派功力值为<b>前 80 名成员功力之和</b>' +
-          (isOff ? '（含隐藏数值的成员）' : '') + '</p>' +
+        '<p class="dw-rankline">帮派功力＝<b>前 80 名成员功力之和</b>' +
+          (isOff ? '（官方帮派榜口径，含隐藏数值的成员）'
+                 : (g.off && g.ov != null ? '（官方榜给的数明显偏小，此处用本站自算）'
+                                          : '（官方榜未收录，此处用本站自算）')) + '</p>' +
         '<div class="dw-power"><b>' + fmt(power) + '</b>' +
-          '<span>' + (isOff ? '官方帮派功力' : '本站推算 · 前 80 名之和（官方榜未收录）') + '</span>' +
+          '<span>' + (isOff ? '官方帮派功力' : '本站推算 · 前 80 名之和') + '</span>' +
           (total !== null && total !== undefined
             ? '<span style="margin-top:7px">最近一日 <b class="ch-delta ' + totalCls +
               '" style="font-size:15px">' + (total > 0 ? '+' : '') + fmt(total) + '</b></span>'
@@ -1036,8 +1054,9 @@
     if (d.top) rows.push(['功力最高成员', esc(d.top[0]) + ' <b>' + fmt(d.top[1]) + '</b>' +
       (d.top[2] ? '<span class="gd-dim">（名次 ' + d.top[2] + '）</span>' : '')]);
     if (d.ld) rows.push(['官方代表角色 / 盟主', esc(d.ld)]);
-    rows.push(['平均功力', '<b>' + fmt(d.oa || guildAvg(g)) + '</b>' +
-      (d.off ? '<span class="gd-dim">官方值 ÷ 80</span>' : '<span class="gd-dim">本站推算</span>')]);
+    var dOff = d.ov !== null && d.ov !== undefined && d.ov >= (d.t80 || 0);
+    rows.push(['平均功力', '<b>' + fmt(dOff && d.oa ? d.oa : guildAvg(g)) + '</b>' +
+      (dOff ? '<span class="gd-dim">官方值 ÷ 80</span>' : '<span class="gd-dim">本站推算</span>')]);
     if (d.cap) rows.push(['采集时间', '<span class="mono">' + esc(d.cap) + '</span>']);
 
     out += '<div class="dw-sec"><h4>关键数据</h4><dl class="gd-stats">' +
@@ -1342,7 +1361,7 @@
         if (!g) return;
         lines.push([start + i + 1, g.g, g.tm || 0, g.hp || 0, guildPower(g), guildAvg(g),
                     (g._d0 === null || g._d0 === undefined) ? '—' : g._d0,
-                    guildOff(g) ? '官方' : '推算', g.ld || '未知'].join('\t'));
+                    guildOfficial(g) ? '官方' : '推算', g.ld || '未知'].join('\t'));
       });
     }
     var text = lines.join('\n');

@@ -351,10 +351,13 @@ def update_guild_history(pub_dir, guilds_raw, snapshot, exclude_rids=()):
     added = 0
     for x in guilds_raw:
         key = x.get('key')
-        # 与榜单口径一致：官方帮派功力优先，官方未收录时退回前80之和
-        val = x.get('officialValue')
+        # 与榜单口径一致：官方值只在「不小于自算前80之和」时采用，
+        # 官方值更小说明上游那一栏不是功力口径（实测有帮派差到 1/85），退回自算
+        t80 = x.get('top80Power')
+        ov = x.get('officialValue')
+        val = ov if (ov is not None and t80 is not None and ov >= t80) else t80
         if val is None:
-            val = x.get('top80Power')
+            val = ov
         if not key or val is None:
             continue
         arr = gmap.setdefault(key, [])

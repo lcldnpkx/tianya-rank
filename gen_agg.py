@@ -159,7 +159,12 @@ def build(pub_dir):
         reg['roles'].sort(key=lambda x: x[0] if x[0] is not None else 10 ** 9)
 
     def gkey(x):
-        return -(x[3] if x[3] is not None else (x[5] or 0))
+        # 帮派功力 = 官方值与前80之和取大（与前端 guildPower 一致）。
+        # 官方值反而更小时说明上游那栏不是功力口径，不能用来排序，
+        # 否则 1500 万的帮派会被 47 万的"官方值"挤到几百名开外。
+        ov = x[3] or 0
+        t80 = x[5] or 0
+        return -(ov if ov > t80 else t80)
 
     all_guilds.sort(key=gkey)
     for reg in by_region.values():
