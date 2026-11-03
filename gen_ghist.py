@@ -97,6 +97,28 @@ def build(pub_dir):
             out[key] = arr
             kept += 1
 
+    # 清洗「根本不是帮派功力」的尾段：
+    # 历史是由现在的成员回溯出来的，帮派换血后早期只剩个别成员有曲线数据，
+    # 会拼出「26 万 → 2335 万」这种荒唐走势（看着像帮派一夜暴涨 88 倍）。
+    # 判据：低于 100 万、而该帮峰值超过 500 万 —— 真实功力不会在 30 天内翻三十倍。
+    # 置空不删除，前端画线遇到 null 会跳过。
+    dirty = 0
+    drop = []
+    for key, arr in out.items():
+        vals = [v for v in arr if v]
+        if not vals or max(vals) < 5000000:
+            continue
+        for i, v in enumerate(arr):
+            if v and v < 1000000:
+                arr[i] = None
+                dirty += 1
+        if sum(1 for x in arr if x) < 2:      # 洗完只剩一个点就没意义了
+            drop.append(key)
+    for key in drop:
+        out.pop(key, None)
+    if dirty:
+        print('  [ghist] 清洗历史脏点 %d 个' % dirty, file=sys.stderr)
+
     js = 'window.__GHIST=%s;' % json.dumps(
         {'days': days, 'g': out}, ensure_ascii=False, separators=(',', ':'))
     p = os.path.join(pub_dir, 'data', 'ghist.js')

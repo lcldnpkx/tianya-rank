@@ -316,28 +316,6 @@ def pack_history(pts, day_idx):
     return [day_idx[pts[0]['date']]] + seq
 
 
-def clean_guild_hist(hist):
-    """剔除历史曲线里「根本不是帮派功力」的脏点。
-
-    官方帮派榜有一段时间抓的是别的栏目（帮派等级/繁荣度一类），
-    数值只有真实功力的 1/30~1/85，特征是**几十万级、且每天几乎不动**。
-    真实帮派功力不会在几十天内翻三十倍，所以：
-        「低于 100 万」且「该帮派峰值超过 500 万」→ 判为脏点，置空。
-    置空而不是删除：days 与数组下标必须对齐，前端画线时会跳过 null。
-    """
-    gm = hist.get('g') or {}
-    n = 0
-    for arr in gm.values():
-        vals = [v for v in arr if v]
-        if not vals or max(vals) < 5000000:
-            continue
-        for i, v in enumerate(arr):
-            if v and v < 1000000:
-                arr[i] = None
-                n += 1
-    return n
-
-
 def update_guild_history(pub_dir, guilds_raw, snapshot, exclude_rids=()):
     """把当天各帮派的功力快照追加进自建历史，长期累积。
 
@@ -389,13 +367,8 @@ def update_guild_history(pub_dir, guilds_raw, snapshot, exclude_rids=()):
             arr[idx] = val
             added += 1
 
-    # 清洗历史里的脏点（官方榜曾经抓到别的栏目，留下几十万级的假战力）
-    cleaned = clean_guild_hist(hist)
-
     js = 'window.__GHIST=%s;' % json.dumps(hist, ensure_ascii=False, separators=(',', ':'))
     write_file(path, js)
-    if cleaned:
-        print('  [ghist] 清洗历史脏点 %d 个' % cleaned, file=sys.stderr)
     return added
 
 
