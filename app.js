@@ -128,7 +128,8 @@
       // 最近一天的功力变化：f = [[MM-DD, 总变化, 留守增长, 走人数, 来人数], ...]
       var f = g.f || [];
       g._d = f.length ? f[f.length - 1] : null;
-      g._d0 = g._d ? g._d[1] : null;
+      g._d0 = g._d ? (g._d[1] || 0) : null;   // 总变化（含成员进出）
+      g._d1 = g._d ? (g._d[2] || 0) : null;   // 留守增长（仅练功）
     });
   }
 
@@ -288,8 +289,8 @@
       if (k === 'tm') return (b.tm || 0) - (a.tm || 0);
       if (k === 'hp') return (b.hp || 0) - (a.hp || 0);
       if (k === 'oa') return guildAvg(b) - guildAvg(a);
-      if (k === 'up') return (b._d0 === null ? -1e18 : b._d0) - (a._d0 === null ? -1e18 : a._d0);
-      if (k === 'down') return (a._d0 === null ? 1e18 : a._d0) - (b._d0 === null ? 1e18 : b._d0);
+      if (k === 'up') return (b._d1 === null ? -1e18 : b._d1) - (a._d1 === null ? -1e18 : a._d1);
+      if (k === 'down') return (a._d1 === null ? 1e18 : a._d1) - (b._d1 === null ? 1e18 : b._d1);
       return guildPower(b) - guildPower(a);
     });
     return list;
@@ -322,7 +323,7 @@
       $('ledgerCols').innerHTML = '<col style="width:66px"><col><col style="width:82px"><col style="width:108px"><col style="width:108px"><col style="width:94px"><col style="width:102px"><col style="width:96px">';
       $('ledgerHead').innerHTML =
         '<th>排行</th><th>帮派</th><th class="num">上榜成员</th><th class="num">总功力</th>' +
-        '<th class="num">帮派功力</th><th class="num">平均功力</th><th class="num">日变化</th>' +
+        '<th class="num">帮派功力</th><th class="num">平均功力</th><th class="num" title="留守成员的功力增长（不含成员进出），悬停可看总变化">日练功</th>' +
         '<th class="ctr">盟主</th>';
     }
 
@@ -357,16 +358,18 @@
   }
 
   function guildDeltaCell(g) {
-    if (g._d0 === null || g._d0 === undefined) return '<span class="guild-est">—</span>';
-    var f = g._d, d = g._d0;
-    var stay = f[2] || 0, outN = f[3] || 0, inN = f[4] || 0;
-    var cls = d > 0 ? 'up' : (d < 0 ? 'down' : 'flat');
-    // 悬停摊开：总变化含人员进出，留守增长才是「练功」的部分
-    var tip = '总变化 ' + (d > 0 ? '+' : '') + fmt(d) + '（含成员进出）\n' +
-              '留守增长 ' + (stay > 0 ? '+' : '') + fmt(stay) + '\n' +
+    if (g._d1 === null || g._d1 === undefined) return '<span class="guild-est">—</span>';
+    var f = g._d || [];
+    var stay = g._d1, d = g._d0;
+    var outN = f[3] || 0, inN = f[4] || 0;
+    var cls = stay > 0 ? 'up' : (stay < 0 ? 'down' : 'flat');
+    // 主显示「留守增长」：只算留下的人练功涨了多少，不被成员进出淹没。
+    // 悬停摊开：总变化含人员进出，走/来人数一目了然。
+    var tip = '日练功（留守成员）' + (stay > 0 ? '+' : '') + fmt(stay) + '\n' +
+              '总变化 ' + (d > 0 ? '+' : '') + fmt(d) + '（含成员进出）\n' +
               '走 ' + outN + ' 人 / 来 ' + inN + ' 人';
     return '<span class="ch-delta ' + cls + '" title="' + esc(tip) + '">' +
-           (d > 0 ? '+' : '') + fmt(d) + '</span>';
+           (stay > 0 ? '+' : '') + fmt(stay) + '</span>';
   }
 
   function guildRow(g) {
@@ -964,8 +967,8 @@
   function openGuild(g) {
     var sid = g.rid || ((viewById(state.view) || {}).kind === 'srv' ? state.view : '');
     var off = guildOfficial(g);
-    var total = g._d0;
-    var totalCls = total > 0 ? 'up' : (total < 0 ? 'down' : 'flat');
+    var stay = g._d1;
+    var stayCls = (stay === null || stay === undefined) ? null : (stay > 0 ? 'up' : stay < 0 ? 'down' : 'flat');
 
     function wireDrawer(g) {
       var btn = $('guildMembersBtn');
@@ -1008,9 +1011,9 @@
                                           : '（官方榜未收录，此处用本站自算）')) + '</p>' +
         '<div class="dw-power"><b>' + fmt(power) + '</b>' +
           '<span>' + (isOff ? '官方帮派功力' : '本站推算 · 前 80 名之和') + '</span>' +
-          (total !== null && total !== undefined
-            ? '<span style="margin-top:7px">最近一日 <b class="ch-delta ' + totalCls +
-              '" style="font-size:15px">' + (total > 0 ? '+' : '') + fmt(total) + '</b></span>'
+          (stay !== null && stay !== undefined
+            ? '<span style="margin-top:7px">最近一日练功 <b class="ch-delta ' + stayCls +
+              '" style="font-size:15px">' + (stay > 0 ? '+' : '') + fmt(stay) + '</b></span>'
             : '') +
         '</div>';
     }
@@ -1355,14 +1358,14 @@
           [r.m, r.g || '无', powerText(r)]).join('\t'));
       });
     } else {
-      lines.push('排行\t帮派\t上榜成员\t总功力\t帮派功力\t平均功力\t日变化\t口径\t盟主');
+      lines.push('排行\t帮派\t上榜成员\t总功力\t帮派功力\t平均功力\t日练功\t口径\t盟主');
       var list = filterGuilds();
       var start = (state.page - 1) * state.pageSize;
       rows.forEach(function (tr, i) {
         var g = list[start + i];
         if (!g) return;
         lines.push([start + i + 1, g.g, g.tm || 0, g.hp || 0, guildPower(g), guildAvg(g),
-                    (g._d0 === null || g._d0 === undefined) ? '—' : g._d0,
+                    (g._d1 === null || g._d1 === undefined) ? '—' : g._d1,
                     guildOfficial(g) ? '官方' : '推算', g.ld || '未知'].join('\t'));
       });
     }
