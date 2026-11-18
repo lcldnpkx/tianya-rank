@@ -494,34 +494,32 @@
     return null;
   }
 
+  function histKey(r) { return (r.rid || '') + '|' + r.r + '|' + r.n; }
+
+  function histLoadingHtml(r) {
+    return '<div class="dw-sec"><h4>功力成长曲线</h4><p class="dw-note">' +
+      '正在载入 ' + esc(r.sv || '') + ' 的服务器分包…该服约 2 MB，首次需要十几秒到一分钟，载入后会缓存。</p></div>';
+  }
+
+  function histNoneHtml(r) {
+    return '<div class="dw-sec"><h4>功力成长曲线</h4><p class="dw-note">' +
+      '该角色在数据源里<b>只有最近一天（' + esc((DB && DB.snapshot) || '—') + '）</b>的记录，画不出曲线。' +
+      '常见于这天刚上榜、或前一日刚改过名——曲线是按名字记录的，改名之后等于一个全新的人，' +
+      '历史从改名那天重新算起。</p></div>';
+  }
+
   function historyChart(r) {
     var pts = parseHistory(r);
     if (!pts && DB && DB.kind === 'agg' && r.rid) {
-      var hk = (r.rid || '') + '|' + r.r + '|' + r.n;
-      var st = ROLE_HIST_TRY[hk];
-      if (!st) {
-        ROLE_HIST_TRY[hk] = 'loading';
-        loadServerData(r.rid).then(function (sd) {
-          var hit = findRoleInServer(sd, r);
-          ROLE_HIST_TRY[hk] = (hit && hit.h) ? 'ok' : 'none';
-          if (hit && hit.h) r.h = hit.h;
-          // 用户还停在同一个角色上才重绘，避免把抽屉里的内容换掉
-          if (r._i != null && ROLES[r._i] === r && $('drawer') && $('drawer').classList.contains('open')) {
-            openRole(r._i);
-          }
-        }, function () { ROLE_HIST_TRY[hk] = 'none'; });
-        return '<div class="dw-sec"><h4>功力成长曲线</h4><p class="dw-note">' +
-          '正在载入该角色所在服务器（' + esc(r.sv || '') + '）的历史…</p></div>';
-      }
-      if (st === 'loading') {
-        return '<div class="dw-sec"><h4>功力成长曲线</h4><p class="dw-note">' +
-          '正在载入该角色所在服务器（' + esc(r.sv || '') + '）的历史…</p></div>';
-      }
-      if (st === 'none') {
-        return '<div class="dw-sec"><h4>功力成长曲线</h4><p class="dw-note">' +
-          '该角色在数据源里<b>只有最近一天（' + esc(DB.snapshot || '—') + '）</b>的记录，画不出曲线。' +
-          '常见于这天刚上榜、或前一日刚改过名——曲线是按名字记录的，改名之后等于一个全新的人，' +
-          '历史从改名那天重新开始算。</p></div>';
+      var st = ROLE_HIST_TRY[histKey(r)];
+      if (st === 'loading') return histLoadingHtml(r);
+      if (st === 'none') return histNoneHtml(r);
+      if (st !== 'ok') {
+        // 不自动下载 2 MB 的分包，给个按钮让用户自己决定
+        return '<div class="dw-sec"><h4>功力成长曲线</h4>' +
+          '<p class="dw-note">曲线存在单服分包里（' + esc(r.sv || '') + '），当前是大区/全服视图，没有随页面一起载入。</p>' +
+          '<button type="button" class="dw-hist-btn" data-hist-load="1">载入 ' + esc(r.sv || '') + ' 的成长曲线</button>' +
+          '<p class="dw-note" style="margin-top:8px;font-size:12px">该分包约 2 MB，只下载一次，之后同一服务器直接出图。</p></div>';
       }
     }
     if (!pts && r.h) pts = parseHistory(r);
@@ -615,9 +613,12 @@
   }
 
   /* ---------- 详情抽屉 ---------- */
+  var CUR_ROLE = null;
+
   function openRole(idx) {
     var r = ROLES[idx];
     if (!r) return;
+    CUR_ROLE = r;
     var maxRef = Math.max(maxPower, r.p || 0);
     var powerBlock = r.ph
       ? (r.pe
@@ -690,6 +691,27 @@
     $('drawer').setAttribute('aria-hidden', 'true');
     $('drawerBackdrop').hidden = true;
   }
+
+  // 「载入成长曲线」按钮：点一下才去下载单服分包
+  document.addEventListener('click', function (e) {
+    var btn = e.target && e.target.closest ? e.target.closest('[data-hist-load]') : null;
+    if (!btn) return;
+    var r = CUR_ROLE;
+    if (!r || !r.rid) return;
+    var k = histKey(r);
+    if (ROLE_HIST_TRY[k] === 'loading') return;
+    ROLE_HIST_TRY[k] = 'loading';
+    openRole(r._i);
+    loadServerData(r.rid).then(function (sd) {
+      var hit = findRoleInServer(sd, r);
+      ROLE_HIST_TRY[k] = (hit && hit.h) ? 'ok' : 'none';
+      if (hit && hit.h) r.h = hit.h;
+      if (CUR_ROLE === r && $('drawer') && $('drawer').classList.contains('open')) openRole(r._i);
+    }, function () {
+      ROLE_HIST_TRY[k] = 'none';
+      if (CUR_ROLE === r && $('drawer') && $('drawer').classList.contains('open')) openRole(r._i);
+    });
+  });
 
   /* ---------- 帮派详情 ---------- */
   // 详情数据按服分包（data/gd-<serverId>.js），点到某个帮派才加载那个服的
