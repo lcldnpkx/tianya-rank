@@ -2203,8 +2203,54 @@ td.rank-cell { width: 74px; }
     return out.length >= 2 ? out : null;
   }
 
+  /* 大区 / 全服视图里点开角色时，按需把他所在服务器的历史拉过来把曲线补上。
+     以前这里只提示「切到单服自己看」，可大多数人切过去还是一条线都没有——
+     因为数据源的曲线是按名字存的，改过名的人新名字只有一天记录。 */
+  var ROLE_HIST_TRY = {};
+
+  function findRoleInServer(sd, r) {
+    var list = (sd && sd.roles) || [], i, x;
+    for (i = 0; i < list.length; i++) {
+      x = list[i];
+      if (x.r === r.r && x.n === r.n) return x;
+    }
+    for (i = 0; i < list.length; i++) {
+      if (list[i].r === r.r) return list[i];
+    }
+    return null;
+  }
+
   function historyChart(r) {
     var pts = parseHistory(r);
+    if (!pts && DB && DB.kind === 'agg' && r.rid) {
+      var hk = (r.rid || '') + '|' + r.r + '|' + r.n;
+      var st = ROLE_HIST_TRY[hk];
+      if (!st) {
+        ROLE_HIST_TRY[hk] = 'loading';
+        loadServerData(r.rid).then(function (sd) {
+          var hit = findRoleInServer(sd, r);
+          ROLE_HIST_TRY[hk] = (hit && hit.h) ? 'ok' : 'none';
+          if (hit && hit.h) r.h = hit.h;
+          // 用户还停在同一个角色上才重绘，避免把抽屉里的内容换掉
+          if (r._i != null && ROLES[r._i] === r && $('drawer') && $('drawer').classList.contains('open')) {
+            openRole(r._i);
+          }
+        }, function () { ROLE_HIST_TRY[hk] = 'none'; });
+        return '<div class="dw-sec"><h4>功力成长曲线</h4><p class="dw-note">' +
+          '正在载入该角色所在服务器（' + esc(r.sv || '') + '）的历史…</p></div>';
+      }
+      if (st === 'loading') {
+        return '<div class="dw-sec"><h4>功力成长曲线</h4><p class="dw-note">' +
+          '正在载入该角色所在服务器（' + esc(r.sv || '') + '）的历史…</p></div>';
+      }
+      if (st === 'none') {
+        return '<div class="dw-sec"><h4>功力成长曲线</h4><p class="dw-note">' +
+          '该角色在数据源里<b>只有最近一天（' + esc(DB.snapshot || '—') + '）</b>的记录，画不出曲线。' +
+          '常见于这天刚上榜、或前一日刚改过名——曲线是按名字记录的，改名之后等于一个全新的人，' +
+          '历史从改名那天重新开始算。</p></div>';
+      }
+    }
+    if (!pts && r.h) pts = parseHistory(r);
     if (!pts) {
       var why;
       if (DB && DB.kind === 'agg') {
@@ -2322,7 +2368,7 @@ td.rank-cell { width: 74px; }
       ? '<div class="dw-formers">' + r.fn.map(function (f) {
           return '<span class="fm">' + esc(f) + ' <i>推断</i></span>';
         }).join('') + '</div>'
-      : '<p class="dw-note">无推断出的曾用名记录。官方接口不提供改名履历，本站曾用名全部来自历次数据比对推断，仅供参考。</p>';
+      : '<p class="dw-note">无推断出的曾用名记录。官方接口不提供改名履历，曾用名是由历次榜单数据比对推断出来的，仅供参考——对照不到的人（比如刚改名、或在榜人数变动大）就会漏。</p>';
 
     var sigHtml = r.sig
       ? '<p class="dw-sig">' + esc(r.sig) + '</p>'
@@ -3330,6 +3376,7 @@ td.rank-cell { width: 74px; }
       if (state.view === id && DB === data) {
         ROLES = data.roles;                 // 数组已被替换，必须同步引用
         GUILDS = data.guilds.slice();
+        recomputeDerived();                 // 新并入的行没有 _search / _i，不重算搜索会报错
         refresh();
       }
     }, function () { /* 拉不到就保持首屏，不影响使用 */ });
