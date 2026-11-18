@@ -2426,6 +2426,14 @@ td.rank-cell { width: 74px; }
     $('drawerBackdrop').hidden = true;
   }
 
+  // 按「对象」而不是「索引」重绘抽屉：列表可能因为后台补齐而重排
+  function redrawRole(r) {
+    if (!r || CUR_ROLE !== r) return;
+    if (!$('drawer') || !$('drawer').classList.contains('open')) return;
+    var pos = ROLES.indexOf(r);
+    if (pos >= 0) openRole(pos);
+  }
+
   // 「载入成长曲线」按钮：点一下才去下载单服分包
   document.addEventListener('click', function (e) {
     var btn = e.target && e.target.closest ? e.target.closest('[data-hist-load]') : null;
@@ -2435,15 +2443,15 @@ td.rank-cell { width: 74px; }
     var k = histKey(r);
     if (ROLE_HIST_TRY[k] === 'loading') return;
     ROLE_HIST_TRY[k] = 'loading';
-    openRole(r._i);
+    redrawRole(r);
     loadServerData(r.rid).then(function (sd) {
       var hit = findRoleInServer(sd, r);
       ROLE_HIST_TRY[k] = (hit && hit.h) ? 'ok' : 'none';
       if (hit && hit.h) r.h = hit.h;
-      if (CUR_ROLE === r && $('drawer') && $('drawer').classList.contains('open')) openRole(r._i);
+      redrawRole(r);
     }, function () {
       ROLE_HIST_TRY[k] = 'none';
-      if (CUR_ROLE === r && $('drawer') && $('drawer').classList.contains('open')) openRole(r._i);
+      redrawRole(r);
     });
   });
 
@@ -3400,11 +3408,14 @@ td.rank-cell { width: 74px; }
       var raw = window.__AGG_ALL_REST;
       if (!raw) return;
       var more = decodeAgg({ label: data.label, kind: data.kind, roles: raw.roles || [], guilds: raw.guilds || [] });
-      data.roles = data.roles.concat(more.roles);
-      data.guilds = data.guilds.concat(more.guilds);
+      // 原地追加，不新建数组：抽屉里可能正开着某个角色对象，
+      // 换成新数组会让它变成「孤儿」，_i 指向别人，重绘就开错人。
+      var i;
+      for (i = 0; i < more.roles.length; i++) data.roles.push(more.roles[i]);
+      for (i = 0; i < more.guilds.length; i++) data.guilds.push(more.guilds[i]);
       data.partial = 0;
       if (state.view === id && DB === data) {
-        ROLES = data.roles;                 // 数组已被替换，必须同步引用
+        ROLES = data.roles;
         GUILDS = data.guilds.slice();
         recomputeDerived();                 // 新并入的行没有 _search / _i，不重算搜索会报错
         refresh();
